@@ -31,6 +31,9 @@ export default function RootLayout({
                 <a href="/indicators" className="hover:text-royal-100">
                   ตัวชี้วัด
                 </a>
+                <a href="/map" className="hover:text-royal-100">
+                  แผนที่
+                </a>
                 <a href="/staff" className="hover:text-royal-100">
                   บุคลากร
                 </a>
