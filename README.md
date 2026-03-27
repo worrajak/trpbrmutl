@@ -20,8 +20,9 @@
 |---|---|---|
 | ภาพรวม | `/` | สรุปโครงการ งบประมาณ สถานะ ตัวชี้วัด |
 | โครงการย่อย | `/projects` | รายการโครงการย่อย กรอง/ค้นหา |
-| รายละเอียดโครงการ | `/projects/[id]` | งบประมาณ ผู้รับผิดชอบ ผลตอบตัวชี้วัด |
+| รายละเอียดโครงการ | `/projects/[id]` | งบประมาณ ผู้รับผิดชอบ S-Curve ผลตอบตัวชี้วัด |
 | ตัวชี้วัด | `/indicators` | รายงานผล 5 ตัวชี้วัด (KPI 10, 35, 36, 39, 40) |
+| แผนที่ | `/map` | แผนที่พื้นที่ดำเนินงาน 21 จุด คลิกหมุดดูโครงการ |
 | บุคลากร | `/staff` | บุคลากรกลุ่มแผนงานใต้ร่มพระบารมี |
 
 ## Tech Stack
@@ -31,6 +32,8 @@
 | Framework | Next.js 14 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
+| Map | Leaflet + OpenStreetMap |
+| Data | Google Sheets (CSV realtime, revalidate 5 นาที) |
 | Database | Supabase (PostgreSQL) — planned |
 | Deployment | Vercel |
 
@@ -60,19 +63,28 @@
 trpbrmutl/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx              # ภาพรวม
+│   │   ├── page.tsx              # ภาพรวม (ดึง Google Sheets realtime)
 │   │   ├── layout.tsx            # Layout + Navbar
 │   │   ├── globals.css
 │   │   ├── projects/
 │   │   │   ├── page.tsx          # รายการโครงการย่อย
-│   │   │   └── [id]/page.tsx     # รายละเอียดโครงการ
+│   │   │   └── [id]/page.tsx     # รายละเอียด + S-Curve
 │   │   ├── indicators/
 │   │   │   └── page.tsx          # รายงานตัวชี้วัด
-│   │   └── staff/
-│   │       └── page.tsx          # บุคลากร
+│   │   ├── map/
+│   │   │   └── page.tsx          # แผนที่พื้นที่ดำเนินงาน
+│   │   ├── staff/
+│   │   │   └── page.tsx          # บุคลากร
+│   │   └── api/
+│   │       └── projects/route.ts # API ดึงข้อมูลจาก Google Sheets
+│   ├── components/
+│   │   ├── SCurveChart.tsx       # กราฟ S-Curve ความก้าวหน้า
+│   │   └── ProjectMap.tsx        # แผนที่ Leaflet
 │   └── lib/
 │       ├── types.ts              # TypeScript interfaces
-│       └── data.ts               # ข้อมูล (จะย้ายไป Supabase)
+│       ├── data.ts               # ข้อมูล static (fallback)
+│       ├── sheets.ts             # ดึงข้อมูลจาก Google Sheets
+│       └── locations.ts          # พิกัด GPS พื้นที่ 21 แห่ง
 ├── data/                         # ข้อมูลร่าง (markdown)
 │   ├── staff.md
 │   ├── researchers.md
@@ -93,12 +105,14 @@ trpbrmutl/
 - [x] สร้างหน้าภาพรวม โครงการย่อย ตัวชี้วัด บุคลากร
 - [x] ดึงข้อมูลจาก Google Sheets / Excel / trpb.rmutl.ac.th
 - [x] จัดทำร่างข้อมูล markdown สำหรับ cross-check
+- [x] ดึงข้อมูล Google Sheets แบบ realtime (ISR revalidate 5 นาที)
+- [x] S-Curve กราฟความก้าวหน้าโครงการ (SVG)
+- [x] แผนที่พื้นที่ดำเนินงาน (Leaflet) คลิกหมุดเข้าดูโครงการ
+- [x] Deploy บน Vercel
 - [ ] ย้ายข้อมูลจาก static data ไป Supabase
 - [ ] เพิ่มระบบรายงานผลดำเนินงาน (กรอกผล actual)
-- [ ] เพิ่มหน้าพื้นที่โครงการหลวง พร้อมแผนที่
 - [ ] เพิ่มหน้าโปรไฟล์นักวิจัย/อาจารย์
 - [ ] Authentication สำหรับผู้กรอกข้อมูล
-- [ ] Deploy บน Vercel
 
 ## Getting Started
 
