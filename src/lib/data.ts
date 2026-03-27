@@ -599,12 +599,17 @@ export function getSubProjectById(id: string): SubProject | undefined {
 }
 
 export function getIndicatorSummary(): IndicatorSummary[] {
+  return computeIndicatorSummary(subProjects);
+}
+
+// Dynamic versions: ใช้กับข้อมูลที่ดึงจาก Google Sheets
+export function computeIndicatorSummary(projects: SubProject[]): IndicatorSummary[] {
   return indicators.map((indicator) => {
     const contributions: IndicatorSummary["contributions"] = [];
     let totalTarget = 0;
     let totalActual = 0;
 
-    subProjects.forEach((sp) => {
+    projects.forEach((sp) => {
       sp.indicatorContributions.forEach((ic) => {
         if (ic.indicatorId === indicator.id) {
           contributions.push({
@@ -629,6 +634,14 @@ export function getIndicatorSummary(): IndicatorSummary[] {
       contributions,
     };
   });
+}
+
+export function findSubProjectById(projects: SubProject[], id: string): SubProject | undefined {
+  return projects.find((sp) => sp.id === id);
+}
+
+export function findMainProjectById(id: string): MainProject | undefined {
+  return mainProjects.find((mp) => mp.id === id);
 }
 
 // ===== บุคลากรกลุ่มแผนงานใต้ร่มพระบารมี (จาก trpb.rmutl.ac.th) =====

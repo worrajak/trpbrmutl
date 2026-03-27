@@ -1,15 +1,31 @@
-import { mainProjects, subProjects, indicators, getIndicatorSummary } from "@/lib/data";
+import {
+  mainProjects,
+  subProjects as staticProjects,
+  indicators,
+  computeIndicatorSummary,
+} from "@/lib/data";
+import { fetchAllProjects } from "@/lib/sheets";
+
+export const revalidate = 300; // revalidate ทุก 5 นาที
 
 function formatBudget(n: number): string {
   return n.toLocaleString("th-TH");
 }
 
-export default function Home() {
+export default async function Home() {
+  // ดึงจาก Google Sheets ถ้าได้ ไม่ได้ใช้ static
+  let liveProjects = await fetchAllProjects();
+  const subProjects = liveProjects.length > 0 ? liveProjects : staticProjects;
+  const isLive = liveProjects.length > 0;
+
   const totalBudget = subProjects.reduce((s, p) => s + p.budget, 0);
-  const approvedCount = subProjects.filter((p) => p.status === "approved" || p.status === "completed").length;
-  const completedCount = subProjects.filter((p) => p.status === "completed").length;
-  const revisionCount = subProjects.filter((p) => p.status === "revision").length;
-  const summaries = getIndicatorSummary();
+  const approvedCount = subProjects.filter(
+    (p) => p.status === "approved" || p.status === "completed"
+  ).length;
+  const completedCount = subProjects.filter(
+    (p) => p.status === "completed"
+  ).length;
+  const summaries = computeIndicatorSummary(subProjects);
 
   return (
     <div className="space-y-8">
@@ -22,24 +38,40 @@ export default function Home() {
           มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา | รวม 3 โครงการหลัก: ขับเคลื่อนกลไก,
           ผลักดันเทคโนโลยี, พัฒนากำลังคน
         </p>
+        {isLive && (
+          <p className="mt-1 text-xs text-green-600">
+            ข้อมูลจาก Google Sheets (อัปเดตทุก 5 นาที)
+          </p>
+        )}
+        {!isLive && (
+          <p className="mt-1 text-xs text-orange-500">
+            ใช้ข้อมูล static (ไม่สามารถเชื่อมต่อ Google Sheets)
+          </p>
+        )}
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-lg bg-white p-4 shadow">
           <p className="text-xs text-gray-500">โครงการย่อยทั้งหมด</p>
-          <p className="text-3xl font-bold text-royal-700">{subProjects.length}</p>
+          <p className="text-3xl font-bold text-royal-700">
+            {subProjects.length}
+          </p>
         </div>
         <div className="rounded-lg bg-white p-4 shadow">
           <p className="text-xs text-gray-500">งบประมาณรวม</p>
-          <p className="text-2xl font-bold text-royal-700">{formatBudget(totalBudget)}</p>
+          <p className="text-2xl font-bold text-royal-700">
+            {formatBudget(totalBudget)}
+          </p>
           <p className="text-xs text-gray-400">บาท</p>
         </div>
         <div className="rounded-lg bg-white p-4 shadow">
           <p className="text-xs text-gray-500">อนุมัติแล้ว / ดำเนินการแล้ว</p>
           <p className="text-3xl font-bold text-green-600">
             {approvedCount}
-            <span className="text-lg text-gray-400">/{subProjects.length}</span>
+            <span className="text-lg text-gray-400">
+              /{subProjects.length}
+            </span>
           </p>
         </div>
         <div className="rounded-lg bg-white p-4 shadow">
@@ -50,11 +82,14 @@ export default function Home() {
 
       {/* Main Projects */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">โครงการหลัก</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-800">
+          โครงการหลัก
+        </h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {mainProjects.map((mp) => {
-            const subs = subProjects.filter((sp) => sp.mainProjectId === mp.id);
-            const usedBudget = subs.reduce((s, sp) => s + (sp.budgetUsed ?? 0), 0);
+            const subs = subProjects.filter(
+              (sp) => sp.mainProjectId === mp.id
+            );
             return (
               <a
                 key={mp.id}
@@ -72,10 +107,13 @@ export default function Home() {
                   <div>
                     <p className="text-xs text-gray-400">งบประมาณ</p>
                     <p className="font-semibold text-royal-700">
-                      {formatBudget(mp.budget)} <span className="text-xs font-normal">บาท</span>
+                      {formatBudget(mp.budget)}{" "}
+                      <span className="text-xs font-normal">บาท</span>
                     </p>
                   </div>
-                  <p className="text-xs text-gray-500">{subs.length} โครงการย่อย</p>
+                  <p className="text-xs text-gray-500">
+                    {subs.length} โครงการย่อย
+                  </p>
                 </div>
               </a>
             );

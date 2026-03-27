@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   mainProjects,
-  subProjects,
+  subProjects as staticProjects,
   getIndicatorById,
   getMainProjectById,
 } from "@/lib/data";
+import type { SubProject } from "@/lib/types";
 
 function formatBudget(n: number): string {
   return n.toLocaleString("th-TH");
@@ -20,9 +21,23 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
 };
 
 export default function ProjectsPage() {
+  const [subProjects, setSubProjects] = useState<SubProject[]>(staticProjects);
+  const [isLive, setIsLive] = useState(false);
   const [filterMain, setFilterMain] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.projects?.length > 0) {
+          setSubProjects(data.projects);
+          setIsLive(data.isLive);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = subProjects.filter((sp) => {
     if (filterMain !== "all" && sp.mainProjectId !== filterMain) return false;
