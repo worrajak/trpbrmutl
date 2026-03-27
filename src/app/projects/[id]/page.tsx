@@ -1,5 +1,6 @@
 import { subProjects, getMainProjectById, getIndicatorById } from "@/lib/data";
 import { notFound } from "next/navigation";
+import SCurveChart from "@/components/SCurveChart";
 
 function formatBudget(n: number): string {
   return n.toLocaleString("th-TH");
@@ -11,6 +12,44 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
   pending: { text: "อยู่ในกระบวนการ", cls: "bg-yellow-100 text-yellow-700" },
   revision: { text: "ปรับแก้ไข", cls: "bg-red-100 text-red-700" },
 };
+
+// คำนวณเดือนปัจจุบันเทียบกับ ต.ค. 68 (index 0)
+function getCurrentMonth(): number {
+  const now = new Date();
+  // ต.ค. 68 = October 2025 (month 9, year 2025)
+  const startYear = 2025;
+  const startMonth = 9; // October (0-indexed)
+  const diff = (now.getFullYear() - startYear) * 12 + (now.getMonth() - startMonth);
+  return Math.max(0, Math.min(11, diff));
+}
+
+// สร้างข้อมูล actual ตาม status
+function generateActual(status: string, currentMonth: number): number[] {
+  const planned = [2, 8, 18, 32, 48, 62, 74, 84, 91, 96, 99, 100];
+
+  if (status === "completed") {
+    // ดำเนินการแล้วเสร็จ — actual ≈ planned
+    return planned.slice(0, currentMonth + 1).map((v) =>
+      Math.min(100, v + Math.round(Math.random() * 3))
+    );
+  }
+  if (status === "approved") {
+    // อนุมัติแล้ว กำลังดำเนินการ — actual ต่ำกว่า planned เล็กน้อย
+    return planned.slice(0, currentMonth + 1).map((v, i) =>
+      Math.max(0, Math.round(v * 0.85))
+    );
+  }
+  if (status === "revision") {
+    // ปรับแก้ไข — ยังไม่ค่อยมีความก้าวหน้า
+    return planned.slice(0, currentMonth + 1).map((v) =>
+      Math.max(0, Math.round(v * 0.3))
+    );
+  }
+  // pending
+  return planned.slice(0, currentMonth + 1).map((v) =>
+    Math.max(0, Math.round(v * 0.5))
+  );
+}
 
 export function generateStaticParams() {
   return subProjects.map((sp) => ({ id: sp.id }));
@@ -124,6 +163,24 @@ export default function ProjectDetailPage({
             </p>
           </div>
         )}
+      </div>
+
+      {/* S-Curve Progress */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <SCurveChart
+          currentMonth={getCurrentMonth()}
+          actual={generateActual(project.status, getCurrentMonth())}
+          milestones={
+            project.status === "completed"
+              ? [
+                  { month: 0, label: "เริ่มโครงการ" },
+                  { month: getCurrentMonth(), label: "แล้วเสร็จ" },
+                ]
+              : project.status === "approved"
+              ? [{ month: 0, label: "อนุมัติ" }]
+              : []
+          }
+        />
       </div>
 
       {/* KPI Output */}
