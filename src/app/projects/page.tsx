@@ -122,7 +122,7 @@ export default function ProjectsPage() {
         <table className="w-full text-sm">
           <thead className="bg-royal-700 text-white">
             <tr>
-              <th className="px-3 py-2 text-left">รหัส</th>
+              <th className="w-20 px-3 py-2 text-left">รหัส</th>
               <th className="px-3 py-2 text-left">ชื่อโครงการ</th>
               <th className="px-3 py-2 text-left">ผู้รับผิดชอบ</th>
               <th className="px-3 py-2 text-left">พื้นที่</th>
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
               const st = statusLabel[sp.status];
               return (
                 <tr key={sp.id} className="border-t hover:bg-gray-50">
-                  <td className="px-3 py-2 font-mono text-xs">{sp.code}</td>
+                  <td className="w-20 whitespace-nowrap px-3 py-2 font-mono text-xs">{sp.code}</td>
                   <td className="max-w-xs px-3 py-2">
                     <a
                       href={`/projects/${sp.id}`}
