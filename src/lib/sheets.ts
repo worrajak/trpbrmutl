@@ -212,8 +212,10 @@ export async function fetchPhlakdan(): Promise<SubProject[]> {
   const projects: SubProject[] = [];
 
   for (const row of rows) {
-    const code = row[0] || "";
-    if (!/^\d+\.\d+\.\d+\.\d+/.test(code)) continue;
+    const cell0 = row[0] || "";
+    const codeMatch = cell0.match(/^(\d+\.\d+\.\d+\.\d+)/);
+    if (!codeMatch) continue;
+    const code = codeMatch[1];
 
     const budget = parseBudget(row[1]);
     const responsibleInternal = row[2] || "";
@@ -273,8 +275,10 @@ export async function fetchPattanakhon(): Promise<SubProject[]> {
   const projects: SubProject[] = [];
 
   for (const row of rows) {
-    const code = row[0] || "";
-    if (!/^\d+\.\d+\.\d+\.\d+/.test(code)) continue;
+    const cell0 = row[0] || "";
+    const codeMatch = cell0.match(/^(\d+\.\d+\.\d+\.\d+)/);
+    if (!codeMatch) continue;
+    const code = codeMatch[1];
 
     const budget = parseBudget(row[1]);
     const responsibleInternal = row[2] || "";
