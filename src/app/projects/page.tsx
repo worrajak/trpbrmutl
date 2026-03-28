@@ -119,19 +119,10 @@ export default function ProjectsPage() {
 
       {/* Project table */}
       <div className="overflow-x-auto rounded-lg bg-white shadow">
-        <table className="w-full table-fixed text-sm">
-          <colgroup>
-            <col className="w-[70px]" />
-            <col />
-            <col className="w-[120px]" />
-            <col className="w-[120px]" />
-            <col className="w-[100px]" />
-            <col className="w-[90px]" />
-            <col className="w-[90px]" />
-          </colgroup>
+        <table className="w-full text-sm">
           <thead className="bg-royal-700 text-white">
             <tr>
-              <th className="px-3 py-2 text-left">รหัส</th>
+              <th className="whitespace-nowrap px-3 py-2 text-left">รหัส</th>
               <th className="px-3 py-2 text-left">ชื่อโครงการ</th>
               <th className="px-3 py-2 text-left">ผู้รับผิดชอบ</th>
               <th className="px-3 py-2 text-left">พื้นที่</th>
