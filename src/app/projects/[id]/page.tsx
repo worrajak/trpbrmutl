@@ -1,5 +1,13 @@
-import { subProjects, getMainProjectById, getIndicatorById } from "@/lib/data";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import {
+  subProjects as staticProjects,
+  getMainProjectById,
+  getIndicatorById,
+} from "@/lib/data";
+import type { SubProject } from "@/lib/types";
 import SCurveChart from "@/components/SCurveChart";
 
 function formatBudget(n: number): string {
@@ -13,55 +21,88 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
   revision: { text: "ปรับแก้ไข", cls: "bg-red-100 text-red-700" },
 };
 
-// คำนวณเดือนปัจจุบันเทียบกับ ต.ค. 68 (index 0)
 function getCurrentMonth(): number {
   const now = new Date();
-  // ต.ค. 68 = October 2025 (month 9, year 2025)
   const startYear = 2025;
-  const startMonth = 9; // October (0-indexed)
-  const diff = (now.getFullYear() - startYear) * 12 + (now.getMonth() - startMonth);
+  const startMonth = 9;
+  const diff =
+    (now.getFullYear() - startYear) * 12 + (now.getMonth() - startMonth);
   return Math.max(0, Math.min(11, diff));
 }
 
-// สร้างข้อมูล actual ตาม status
 function generateActual(status: string, currentMonth: number): number[] {
   const planned = [2, 8, 18, 32, 48, 62, 74, 84, 91, 96, 99, 100];
 
   if (status === "completed") {
-    // ดำเนินการแล้วเสร็จ — actual ≈ planned
-    return planned.slice(0, currentMonth + 1).map((v) =>
-      Math.min(100, v + Math.round(Math.random() * 3))
-    );
+    return planned
+      .slice(0, currentMonth + 1)
+      .map((v) => Math.min(100, v + Math.round(Math.random() * 3)));
   }
   if (status === "approved") {
-    // อนุมัติแล้ว กำลังดำเนินการ — actual ต่ำกว่า planned เล็กน้อย
-    return planned.slice(0, currentMonth + 1).map((v, i) =>
-      Math.max(0, Math.round(v * 0.85))
-    );
+    return planned
+      .slice(0, currentMonth + 1)
+      .map((v) => Math.max(0, Math.round(v * 0.85)));
   }
   if (status === "revision") {
-    // ปรับแก้ไข — ยังไม่ค่อยมีความก้าวหน้า
-    return planned.slice(0, currentMonth + 1).map((v) =>
-      Math.max(0, Math.round(v * 0.3))
+    return planned
+      .slice(0, currentMonth + 1)
+      .map((v) => Math.max(0, Math.round(v * 0.3)));
+  }
+  return planned
+    .slice(0, currentMonth + 1)
+    .map((v) => Math.max(0, Math.round(v * 0.5)));
+}
+
+export default function ProjectDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const [project, setProject] = useState<SubProject | null | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    const found = staticProjects.find((sp) => sp.id === id);
+    if (found) {
+      setProject(found);
+      return;
+    }
+
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((data) => {
+        const liveProject = data.projects?.find(
+          (sp: SubProject) => sp.id === id
+        );
+        setProject(liveProject || null);
+      })
+      .catch(() => setProject(null));
+  }, [id]);
+
+  if (project === undefined) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-gray-500">กำลังโหลดข้อมูลโครงการ...</p>
+      </div>
     );
   }
-  // pending
-  return planned.slice(0, currentMonth + 1).map((v) =>
-    Math.max(0, Math.round(v * 0.5))
-  );
-}
 
-export function generateStaticParams() {
-  return subProjects.map((sp) => ({ id: sp.id }));
-}
-
-export default function ProjectDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const project = subProjects.find((sp) => sp.id === params.id);
-  if (!project) return notFound();
+  if (!project) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <p className="text-lg font-medium text-gray-700">
+            ไม่พบโครงการนี้
+          </p>
+          <a
+            href="/projects"
+            className="mt-2 inline-block text-royal-600 hover:underline"
+          >
+            กลับหน้ารายการโครงการ
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const main = getMainProjectById(project.mainProjectId);
   const st = statusLabel[project.status];
@@ -92,19 +133,26 @@ export default function ProjectDetailPage({
             <span className="inline-block rounded bg-royal-100 px-2 py-0.5 text-xs font-medium text-royal-700">
               {main?.source}
             </span>
-            <span className={`ml-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${st.cls}`}>
+            <span
+              className={`ml-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${st.cls}`}
+            >
               {st.text}
             </span>
           </div>
-          <span className="font-mono text-sm text-gray-500">{project.code}</span>
+          <span className="font-mono text-sm text-gray-500">
+            {project.code}
+          </span>
         </div>
-        <h1 className="mt-3 text-xl font-bold text-gray-900">{project.name}</h1>
+        <h1 className="mt-3 text-xl font-bold text-gray-900">
+          {project.name}
+        </h1>
 
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
             <p className="text-xs text-gray-500">งบประมาณ</p>
             <p className="text-lg font-bold text-royal-700">
-              {formatBudget(project.budget)} <span className="text-xs font-normal">บาท</span>
+              {formatBudget(project.budget)}{" "}
+              <span className="text-xs font-normal">บาท</span>
             </p>
           </div>
           {project.budgetUsed !== undefined && (
@@ -112,7 +160,9 @@ export default function ProjectDetailPage({
               <p className="text-xs text-gray-500">ใช้จ่ายแล้ว</p>
               <p className="text-lg font-bold text-blue-600">
                 {formatBudget(project.budgetUsed)}{" "}
-                <span className="text-xs font-normal">บาท ({budgetUsedPct}%)</span>
+                <span className="text-xs font-normal">
+                  บาท ({budgetUsedPct}%)
+                </span>
               </p>
             </div>
           )}
@@ -206,7 +256,10 @@ export default function ProjectDetailPage({
           <div className="space-y-4">
             {project.indicatorContributions.map((ic) => {
               const ind = getIndicatorById(ic.indicatorId);
-              const pct = ic.target > 0 ? Math.round((ic.actual / ic.target) * 100) : 0;
+              const pct =
+                ic.target > 0
+                  ? Math.round((ic.actual / ic.target) * 100)
+                  : 0;
               return (
                 <div key={ic.indicatorId} className="rounded border p-4">
                   <div className="flex items-start justify-between">
@@ -249,7 +302,11 @@ export default function ProjectDetailPage({
                   <div className="mt-2 h-1.5 rounded-full bg-gray-200">
                     <div
                       className={`h-1.5 rounded-full transition-all ${
-                        pct >= 80 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-400"
+                        pct >= 80
+                          ? "bg-green-500"
+                          : pct >= 40
+                          ? "bg-yellow-500"
+                          : "bg-red-400"
                       }`}
                       style={{ width: `${Math.min(pct, 100)}%` }}
                     />
@@ -261,7 +318,7 @@ export default function ProjectDetailPage({
         )}
       </div>
 
-      {/* Expected outputs (สวพส.) */}
+      {/* Expected outputs */}
       {project.expectedOutputs && project.expectedOutputs.length > 0 && (
         <div className="rounded-lg bg-white p-6 shadow">
           <h2 className="mb-2 text-lg font-semibold text-gray-800">

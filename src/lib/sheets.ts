@@ -76,9 +76,11 @@ export async function fetchKabkleuan(): Promise<SubProject[]> {
   const projects: SubProject[] = [];
 
   for (const row of rows) {
-    const code = row[0] || "";
+    const cell0 = row[0] || "";
     // ตรวจจับโครงการย่อยจากรหัส เช่น 3.1.1.1, 5.1.1.1
-    if (!/^\d+\.\d+\.\d+\.\d+/.test(code)) continue;
+    const codeMatch = cell0.match(/^(\d+\.\d+\.\d+\.\d+)/);
+    if (!codeMatch) continue;
+    const code = codeMatch[1];
 
     const budget = parseBudget(row[1]);
     const responsibleInternal = row[2] || "";

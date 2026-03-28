@@ -5,6 +5,7 @@ import {
   computeIndicatorSummary,
 } from "@/lib/data";
 import { fetchAllProjects } from "@/lib/sheets";
+import NewsSection from "@/components/NewsSection";
 
 export const revalidate = 300; // revalidate ทุก 5 นาที
 
@@ -120,6 +121,9 @@ export default async function Home() {
           })}
         </div>
       </section>
+
+      {/* ข่าวล่าสุด */}
+      <NewsSection />
 
       {/* Indicator Summary */}
       <section>
