@@ -8,6 +8,20 @@ import type {
   DBKpiTarget,
 } from "@/lib/supabase-data";
 import SCurveChart from "@/components/SCurveChart";
+import ReportForm from "@/components/ReportForm";
+
+interface ReportData {
+  id: string;
+  report_description: string;
+  evidence_url: string | null;
+  submitted_by: string;
+  submitted_at: string;
+  activities: { activity_order: number; activity_name: string } | null;
+  kpi_contributions: Array<{
+    contribution_value: number;
+    kpi_targets: { kpi_name: string; unit: string } | null;
+  }>;
+}
 
 function formatBudget(n: number): string {
   return Number(n).toLocaleString("th-TH");
@@ -109,22 +123,32 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<DBProject | null | undefined>(undefined);
   const [activities, setActivities] = useState<DBActivity[]>([]);
   const [kpis, setKpis] = useState<DBKpiTarget[]>([]);
+  const [reports, setReports] = useState<ReportData[]>([]);
+  const [reportActivity, setReportActivity] = useState<DBActivity | null>(null);
+
+  async function loadData() {
+    try {
+      const [projRes, reportRes] = await Promise.all([
+        fetch(`/api/supabase/project?id=${id}`),
+        fetch(`/api/supabase/report?project_id=${id}`),
+      ]);
+      if (!projRes.ok) throw new Error("not found");
+      const projData = await projRes.json();
+      setProject(projData.project || null);
+      setActivities(projData.activities || []);
+      setKpis(projData.kpis || []);
+
+      if (reportRes.ok) {
+        const reportData = await reportRes.json();
+        setReports(reportData.reports || []);
+      }
+    } catch {
+      setProject(null);
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      try {
-        // ดึงข้อมูลจาก Supabase ผ่าน API route
-        const res = await fetch(`/api/supabase/project?id=${id}`);
-        if (!res.ok) throw new Error("not found");
-        const data = await res.json();
-        setProject(data.project || null);
-        setActivities(data.activities || []);
-        setKpis(data.kpis || []);
-      } catch {
-        setProject(null);
-      }
-    }
-    load();
+    loadData();
   }, [id]);
 
   if (project === undefined) {
@@ -302,6 +326,9 @@ export default function ProjectDetailPage() {
                   <th className="px-3 py-2 text-center" style={{ minWidth: 80 }}>
                     สถานะ
                   </th>
+                  <th className="px-2 py-2 text-center" style={{ minWidth: 40 }}>
+
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -362,6 +389,15 @@ export default function ProjectDetailPage() {
                         <span className={`rounded px-1.5 py-0.5 text-xs ${actSt.cls}`}>
                           {actSt.text}
                         </span>
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        <button
+                          onClick={() => setReportActivity(act)}
+                          className="rounded bg-royal-700 px-2 py-1 text-xs text-white hover:bg-royal-800"
+                          title="รายงานความก้าวหน้า"
+                        >
+                          +
+                        </button>
                       </td>
                     </tr>
                   );
@@ -534,6 +570,72 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
+      {/* Report History */}
+      {reports.length > 0 && (
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold text-gray-800">
+            ประวัติการรายงาน ({reports.length} ครั้ง)
+          </h2>
+          <div className="space-y-3">
+            {reports.map((r) => (
+              <div key={r.id} className="rounded border-l-4 border-l-royal-500 bg-gray-50 p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">
+                      {r.activities
+                        ? `${r.activities.activity_order}. ${r.activities.activity_name}`
+                        : "กิจกรรม"}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {r.report_description}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {new Date(r.submitted_at).toLocaleDateString("th-TH", {
+                      day: "numeric",
+                      month: "short",
+                      year: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-gray-500">
+                    &#128100; {r.submitted_by}
+                  </span>
+                  {r.evidence_url && (
+                    <a
+                      href={r.evidence_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      &#128206; หลักฐาน
+                    </a>
+                  )}
+                  {r.kpi_contributions.length > 0 && (
+                    <>
+                      {r.kpi_contributions.map((kc, i) => (
+                        <span
+                          key={i}
+                          className="rounded bg-green-100 px-1.5 py-0.5 text-green-700"
+                        >
+                          &#10003;{" "}
+                          {kc.kpi_targets
+                            ? kc.kpi_targets.kpi_name.substring(0, 25)
+                            : "KPI"}{" "}
+                          +{Number(kc.contribution_value)}
+                          {kc.kpi_targets ? ` ${kc.kpi_targets.unit}` : ""}
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Activity Budget Breakdown */}
       {activities.some((a) => Number(a.budget) > 0) && (
         <div className="rounded-lg bg-white p-6 shadow">
@@ -582,6 +684,24 @@ export default function ProjectDetailPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Report Form Modal */}
+      {reportActivity && (
+        <ReportForm
+          projectId={id}
+          activity={{
+            id: reportActivity.id,
+            activity_order: reportActivity.activity_order,
+            activity_name: reportActivity.activity_name,
+          }}
+          kpis={kpis}
+          onClose={() => setReportActivity(null)}
+          onSaved={() => {
+            setReportActivity(null);
+            loadData();
+          }}
+        />
       )}
     </div>
   );
