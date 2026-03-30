@@ -10,6 +10,7 @@ import type {
 import SCurveChart from "@/components/SCurveChart";
 import ReportForm from "@/components/ReportForm";
 import TokenLogin from "@/components/TokenLogin";
+import TronWalletConnect from "@/components/TronWalletConnect";
 
 interface ReportData {
   id: string;
@@ -129,6 +130,7 @@ export default function ProjectDetailPage() {
   const [tokenCode, setTokenCode] = useState<string | null>(null);
   const [tokenInfo, setTokenInfo] = useState<{ responsible_name: string; tron_wallet: string | null } | null>(null);
   const [rpfBalance, setRpfBalance] = useState<{ total_rpf: number; report_count: number; streak_count: number } | null>(null);
+  const [tronWallet, setTronWallet] = useState<string | null>(null);
 
   async function loadData() {
     try {
@@ -227,26 +229,35 @@ export default function ProjectDetailPage() {
           }}
         />
       ) : (
-        <div className="flex items-center justify-between rounded-lg bg-gradient-to-r from-royal-700 to-blue-600 px-5 py-3 text-white shadow">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">&#128176;</span>
-            <div>
-              <p className="text-sm font-medium">
-                {tokenInfo?.responsible_name || "หัวหน้าโครงการ"}
+        <div className="rounded-lg bg-gradient-to-r from-royal-700 to-blue-600 px-5 py-3 text-white shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">&#128176;</span>
+              <div>
+                <p className="text-sm font-medium">
+                  {tokenInfo?.responsible_name || "หัวหน้าโครงการ"}
+                </p>
+                <p className="text-xs text-white/70">
+                  Token: {tokenCode}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold">
+                {(rpfBalance?.total_rpf || 0).toLocaleString()} RPF
               </p>
               <p className="text-xs text-white/70">
-                Token: {tokenCode}
-                {tokenInfo?.tron_wallet && ` | Wallet: ${tokenInfo.tron_wallet.slice(0, 8)}...`}
+                {rpfBalance?.report_count || 0} รายงาน | streak {rpfBalance?.streak_count || 0}
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold">
-              {(rpfBalance?.total_rpf || 0).toLocaleString()} RPF
-            </p>
-            <p className="text-xs text-white/70">
-              {rpfBalance?.report_count || 0} รายงาน | streak {rpfBalance?.streak_count || 0}
-            </p>
+          <div className="mt-2 flex items-center justify-between border-t border-white/20 pt-2">
+            <span className="text-xs text-white/70">TRON Wallet:</span>
+            <TronWalletConnect
+              tokenCode={tokenCode}
+              currentWallet={tronWallet || tokenInfo?.tron_wallet || null}
+              onWalletLinked={(addr) => setTronWallet(addr)}
+            />
           </div>
         </div>
       )}
