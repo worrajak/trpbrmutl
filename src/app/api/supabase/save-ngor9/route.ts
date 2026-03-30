@@ -19,7 +19,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ต้องระบุชื่อโครงการ" }, { status: 400 });
   }
 
+  const fiscal_year = body.fiscal_year || 2569;
   const projectId = generateProjectId(project_name);
+
+  // ตรวจซ้ำ: ชื่อโครงการใกล้เคียง + ผู้รับผิดชอบเดียวกัน + ปีเดียวกัน
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("id, project_name, responsible, fiscal_year")
+    .eq("fiscal_year", fiscal_year)
+    .ilike("responsible", responsible || "");
+
+  let duplicateInfo = null;
+  if (existing && existing.length > 0) {
+    duplicateInfo = existing.map((e: { id: string; project_name: string; responsible: string | null }) => ({
+      id: e.id,
+      project_name: e.project_name,
+      responsible: e.responsible,
+    }));
+  }
 
   // 1. Insert project
   const { error: projErr } = await supabase.from("projects").insert({
@@ -33,7 +50,7 @@ export async function POST(req: NextRequest) {
     budget_total: budget_total || 0,
     budget_used: 0,
     budget_remaining: budget_total || 0,
-    fiscal_year: 2569,
+    fiscal_year,
     project_period: project_period || null,
     site: site || null,
     status: "approved",
@@ -150,5 +167,7 @@ export async function POST(req: NextRequest) {
     success: true,
     project_id: projectId,
     token_code: tokenCode,
+    fiscal_year,
+    duplicate_warning: duplicateInfo,
   });
 }

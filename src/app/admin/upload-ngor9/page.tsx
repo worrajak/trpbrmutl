@@ -62,6 +62,9 @@ export default function UploadNgor9Page() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [savedToken, setSavedToken] = useState("");
+  const [duplicateWarning, setDuplicateWarning] = useState<Array<{ id: string; project_name: string; responsible: string | null }> | null>(null);
+  const [fiscalYear, setFiscalYear] = useState(2570);
 
   useEffect(() => {
     const s = sessionStorage.getItem("admin_token_auth");
@@ -174,12 +177,14 @@ export default function UploadNgor9Page() {
       const res = await fetch("/api/supabase/save-ngor9", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed),
+        body: JSON.stringify({ ...parsed, fiscal_year: fiscalYear }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
 
+      setSavedToken(data.token_code || "");
+      setDuplicateWarning(data.duplicate_warning || null);
       setSaved(true);
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
@@ -205,18 +210,67 @@ export default function UploadNgor9Page() {
   // Success screen
   if (saved) {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <div className="text-5xl mb-4">&#10003;</div>
-        <h1 className="text-2xl font-bold text-green-700">บันทึกสำเร็จ!</h1>
-        <p className="mt-2 text-gray-600">โครงการ &quot;{parsed?.project_name}&quot; ถูกเพิ่มลง Supabase แล้ว</p>
-        <div className="mt-6 flex justify-center gap-3">
-          <button onClick={() => { setParsed(null); setSaved(false); setFile(null); }}
-            className="rounded bg-royal-700 px-4 py-2 text-white hover:bg-royal-800">
-            นำเข้าไฟล์ใหม่
-          </button>
-          <a href="/projects" className="rounded border px-4 py-2 text-gray-600 hover:bg-gray-100">
-            ดูรายการโครงการ
-          </a>
+      <div className="mx-auto max-w-lg py-10">
+        <div className="rounded-lg bg-white p-8 shadow text-center">
+          <div className="text-5xl mb-4">&#10003;</div>
+          <h1 className="text-2xl font-bold text-green-700">บันทึกสำเร็จ!</h1>
+          <p className="mt-2 text-gray-600">
+            โครงการ &quot;{parsed?.project_name}&quot; ปี {fiscalYear}
+          </p>
+
+          {/* Token ที่สร้าง */}
+          {savedToken && (
+            <div className="mt-4 rounded-lg bg-royal-50 border-2 border-royal-300 p-4">
+              <p className="text-sm text-gray-600">Token สำหรับ หน.โครงการ:</p>
+              <p className="mt-1 font-mono text-3xl font-bold tracking-[0.3em] text-royal-700">
+                {savedToken}
+              </p>
+              <button
+                onClick={() => { navigator.clipboard.writeText(savedToken); }}
+                className="mt-2 rounded bg-royal-700 px-3 py-1 text-xs text-white hover:bg-royal-800"
+              >
+                Copy Token
+              </button>
+              <p className="mt-2 text-xs text-gray-500">
+                ส่ง Token นี้ให้ {parsed?.responsible || "หัวหน้าโครงการ"} เพื่อรายงานผลและรับ RPF Coin
+              </p>
+            </div>
+          )}
+
+          {/* Duplicate Warning */}
+          {duplicateWarning && duplicateWarning.length > 0 && (
+            <div className="mt-4 rounded bg-yellow-50 border border-yellow-300 p-3 text-left">
+              <p className="text-sm font-medium text-yellow-800">
+                &#9888; พบผู้รับผิดชอบซ้ำในปี {fiscalYear}:
+              </p>
+              <ul className="mt-1 space-y-1">
+                {duplicateWarning.map((d) => (
+                  <li key={d.id} className="text-xs text-yellow-700">
+                    <a href={`/projects/${d.id}`} className="underline hover:text-yellow-900">
+                      {d.project_name}
+                    </a>
+                    {" — "}{d.responsible}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-yellow-600">
+                หน.โครงการ อาจใช้ Token เดิมได้ ดูที่หน้า Token/RPF
+              </p>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-center gap-3">
+            <button onClick={() => { setParsed(null); setSaved(false); setFile(null); setSavedToken(""); setDuplicateWarning(null); }}
+              className="rounded bg-royal-700 px-4 py-2 text-white hover:bg-royal-800">
+              นำเข้าไฟล์ใหม่
+            </button>
+            <a href="/admin/tokens" className="rounded border px-4 py-2 text-gray-600 hover:bg-gray-100">
+              จัดการ Token
+            </a>
+            <a href="/projects" className="rounded border px-4 py-2 text-gray-600 hover:bg-gray-100">
+              ดูโครงการ
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -295,11 +349,14 @@ export default function UploadNgor9Page() {
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 font-semibold text-gray-800">2. ข้อมูลโครงการ</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="text-xs text-gray-500">ชื่อโครงการ</label>
-                <input type="text" value={parsed.project_name}
-                  onChange={(e) => updateField("project_name", e.target.value)}
-                  className="w-full rounded border px-3 py-2 text-sm" />
+              <div>
+                <label className="text-xs text-gray-500">ปีงบประมาณ</label>
+                <select value={fiscalYear} onChange={(e) => setFiscalYear(Number(e.target.value))}
+                  className="w-full rounded border px-3 py-2 text-sm font-bold text-royal-700">
+                  <option value={2569}>2569 (ปัจจุบัน)</option>
+                  <option value={2570}>2570 (ปีหน้า)</option>
+                  <option value={2571}>2571</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs text-gray-500">โครงการหลัก</label>
@@ -308,6 +365,12 @@ export default function UploadNgor9Page() {
                   className="w-full rounded border px-3 py-2 text-sm">
                   {PROGRAMS.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs text-gray-500">ชื่อโครงการ</label>
+                <input type="text" value={parsed.project_name}
+                  onChange={(e) => updateField("project_name", e.target.value)}
+                  className="w-full rounded border px-3 py-2 text-sm" />
               </div>
               <div>
                 <label className="text-xs text-gray-500">หน่วยงาน</label>
