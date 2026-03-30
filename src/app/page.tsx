@@ -52,8 +52,8 @@ export default async function Home() {
       {/* Header */}
       <div className="rounded-xl bg-royal-gradient p-6 text-white shadow-lg">
         <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="" className="h-16 w-auto hidden sm:block"
-            onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" className="h-16 w-auto hidden sm:block" />
           <div>
             <h1 className="text-2xl font-bold">
               ภาพรวมโครงการใต้ร่มพระบารมี
