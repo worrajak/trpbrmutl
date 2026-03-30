@@ -82,7 +82,7 @@ async function parseWithClaude(pdfBase64: string, apiKey: string) {
 // ===== Google Gemini API =====
 async function parseWithGemini(pdfBase64: string, apiKey: string) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
