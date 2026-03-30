@@ -65,6 +65,9 @@ export default function RootLayout({
                 <a href="/admin/tokens" className="hover:text-royal-100">
                   Token/RPF
                 </a>
+                <a href="/admin/upload-ngor9" className="hover:text-royal-100">
+                  นำเข้า ง9
+                </a>
               </div>
             </div>
           </div>
