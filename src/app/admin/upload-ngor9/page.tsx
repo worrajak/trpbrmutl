@@ -110,7 +110,11 @@ export default function UploadNgor9Page() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+      if (!res.ok) {
+        const msg = data.error || "เกิดข้อผิดพลาด";
+        const raw = data.raw_text ? "\n\nAI ตอบ:\n" + data.raw_text.substring(0, 500) : "";
+        throw new Error(msg + raw);
+      }
 
       setParsed(data.data as ParsedProject);
     } catch (err: unknown) {
@@ -273,7 +277,7 @@ export default function UploadNgor9Page() {
           </button>
 
           {parseError && (
-            <div className="rounded bg-red-50 p-3 text-sm text-red-700">{parseError}</div>
+            <div className="rounded bg-red-50 p-3 text-sm text-red-700 whitespace-pre-wrap">{parseError}</div>
           )}
         </div>
       )}

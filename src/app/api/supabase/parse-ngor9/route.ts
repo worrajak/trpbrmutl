@@ -15,19 +15,29 @@ export async function POST(req: NextRequest) {
 
   try {
     let result: Record<string, unknown> | null = null;
+    let rawText = "";
 
     if (ai_provider === "claude") {
-      result = await parseWithClaude(pdf_base64, api_key);
+      const r = await parseWithClaude(pdf_base64, api_key);
+      rawText = r.rawText;
+      result = r.data;
     } else if (ai_provider === "gemini") {
-      result = await parseWithGemini(pdf_base64, api_key);
+      const r = await parseWithGemini(pdf_base64, api_key);
+      rawText = r.rawText;
+      result = r.data;
     } else if (ai_provider === "openai") {
-      result = await parseWithOpenAI(pdf_base64, api_key);
+      const r = await parseWithOpenAI(pdf_base64, api_key);
+      rawText = r.rawText;
+      result = r.data;
     } else {
       return NextResponse.json({ error: "AI provider ไม่รองรับ" }, { status: 400 });
     }
 
     if (!result) {
-      return NextResponse.json({ error: "AI ไม่สามารถอ่านข้อมูลได้" }, { status: 422 });
+      return NextResponse.json({
+        error: "AI ไม่สามารถแปลงข้อมูลเป็น JSON ได้",
+        raw_text: rawText.substring(0, 2000),
+      }, { status: 422 });
     }
 
     return NextResponse.json({ success: true, data: result });
@@ -37,8 +47,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
+type ParseResult = { data: Record<string, unknown> | null; rawText: string };
+
 // ===== Claude API (Anthropic) =====
-async function parseWithClaude(pdfBase64: string, apiKey: string) {
+async function parseWithClaude(pdfBase64: string, apiKey: string): Promise<ParseResult> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -56,11 +68,7 @@ async function parseWithClaude(pdfBase64: string, apiKey: string) {
           content: [
             {
               type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: pdfBase64,
-              },
+              source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
             },
             { type: "text", text: NGOR9_USER_PROMPT },
           ],
@@ -76,11 +84,11 @@ async function parseWithClaude(pdfBase64: string, apiKey: string) {
 
   const data = await res.json();
   const text = data.content?.[0]?.text || "";
-  return extractJSON(text);
+  return { data: extractJSON(text), rawText: text };
 }
 
 // ===== Google Gemini API =====
-async function parseWithGemini(pdfBase64: string, apiKey: string) {
+async function parseWithGemini(pdfBase64: string, apiKey: string): Promise<ParseResult> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
@@ -90,22 +98,12 @@ async function parseWithGemini(pdfBase64: string, apiKey: string) {
         contents: [
           {
             parts: [
-              {
-                inline_data: {
-                  mime_type: "application/pdf",
-                  data: pdfBase64,
-                },
-              },
-              {
-                text: NGOR9_SYSTEM_PROMPT + "\n\n" + NGOR9_USER_PROMPT,
-              },
+              { inline_data: { mime_type: "application/pdf", data: pdfBase64 } },
+              { text: NGOR9_SYSTEM_PROMPT + "\n\n" + NGOR9_USER_PROMPT },
             ],
           },
         ],
-        generationConfig: {
-          maxOutputTokens: 4096,
-          temperature: 0.1,
-        },
+        generationConfig: { maxOutputTokens: 8192, temperature: 0.1 },
       }),
     }
   );
@@ -116,14 +114,19 @@ async function parseWithGemini(pdfBase64: string, apiKey: string) {
   }
 
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  return extractJSON(text);
+
+  // Gemini 2.5 อาจมีหลาย parts (thinking + text) — รวม text ทั้งหมด
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const allText = parts
+    .filter((p: { text?: string }) => p.text)
+    .map((p: { text: string }) => p.text)
+    .join("\n");
+
+  return { data: extractJSON(allText), rawText: allText };
 }
 
 // ===== OpenAI API (GPT-4o) =====
-async function parseWithOpenAI(pdfBase64: string, apiKey: string) {
-  // OpenAI ไม่รับ PDF โดยตรง ต้องแปลงเป็น image ก่อน
-  // ใช้ text description แทน
+async function parseWithOpenAI(pdfBase64: string, apiKey: string): Promise<ParseResult> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -138,12 +141,7 @@ async function parseWithOpenAI(pdfBase64: string, apiKey: string) {
         {
           role: "user",
           content: [
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${pdfBase64}`,
-              },
-            },
+            { type: "image_url", image_url: { url: `data:application/pdf;base64,${pdfBase64}` } },
             { type: "text", text: NGOR9_USER_PROMPT },
           ],
         },
@@ -158,5 +156,5 @@ async function parseWithOpenAI(pdfBase64: string, apiKey: string) {
 
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content || "";
-  return extractJSON(text);
+  return { data: extractJSON(text), rawText: text };
 }
