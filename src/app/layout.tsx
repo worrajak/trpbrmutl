@@ -62,11 +62,8 @@ export default function RootLayout({
                 <a href="/regulations" className="hover:text-royal-100">
                   ระเบียบ/ประกาศ
                 </a>
-                <a href="/admin/tokens" className="hover:text-royal-100">
-                  Token/RPF
-                </a>
-                <a href="/admin/upload-ngor9" className="hover:text-royal-100">
-                  นำเข้า ง9
+                <a href="/admin" className="hover:text-royal-100">
+                  Admin
                 </a>
               </div>
             </div>

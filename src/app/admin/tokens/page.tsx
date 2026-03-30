@@ -35,7 +35,7 @@ export default function AdminTokensPage() {
 
   // Auth check
   useEffect(() => {
-    const saved = sessionStorage.getItem("admin_token_auth");
+    const saved = sessionStorage.getItem("admin_auth");
     if (saved === "true") setAuthed(true);
   }, []);
 
@@ -47,7 +47,7 @@ export default function AdminTokensPage() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      sessionStorage.setItem("admin_token_auth", "true");
+      sessionStorage.setItem("admin_auth", "true");
       setAuthed(true);
     } else {
       alert("รหัสผ่านไม่ถูกต้อง");

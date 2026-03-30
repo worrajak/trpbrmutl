@@ -67,7 +67,7 @@ export default function UploadNgor9Page() {
   const [fiscalYear, setFiscalYear] = useState(2570);
 
   useEffect(() => {
-    const s = sessionStorage.getItem("admin_token_auth");
+    const s = sessionStorage.getItem("admin_auth");
     if (s === "true") setAuthed(true);
     // Load saved API key
     const savedKey = localStorage.getItem(`ai_key_${aiProvider}`);
@@ -82,7 +82,7 @@ export default function UploadNgor9Page() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      sessionStorage.setItem("admin_token_auth", "true");
+      sessionStorage.setItem("admin_auth", "true");
       setAuthed(true);
     } else alert("รหัสผ่านไม่ถูกต้อง");
   }
