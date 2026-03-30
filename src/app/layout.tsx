@@ -6,7 +6,7 @@ import PageTracker from "@/components/PageTracker";
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
 export const metadata: Metadata = {
-  title: "RPF - ระบบติดตามโครงการย่อย มูลนิธิโครงการหลวง",
+  title: "ใต้ร่มพระบารมี - ระบบติดตามโครงการ มทร.ล้านนา",
   description:
     "ระบบติดตามโครงการย่อยและรายงานผลตัวชี้วัด งบประมาณปี 2569 มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา",
 };
@@ -37,41 +37,113 @@ export default function RootLayout({
           </>
         )}
         <PageTracker />
-        <nav className="bg-royal-700 text-white shadow-lg">
-          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
+
+        {/* Navbar */}
+        <nav className="bg-royal-gradient shadow-lg">
+          {/* Gold accent line */}
+          <div className="h-1 bg-gradient-to-r from-gold-500 via-gold-300 to-gold-500" />
+          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6">
             <div className="flex items-center justify-between">
-              <a href="/" className="text-lg font-bold">
-                RPF | ระบบติดตามโครงการ
+              {/* Logo + Title */}
+              <a href="/" className="flex items-center gap-3">
+                <img
+                  src="/logo.png"
+                  alt="ใต้ร่มพระบารมี"
+                  className="h-12 w-auto"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                <div>
+                  <p className="text-lg font-bold text-white leading-tight">
+                    ใต้ร่มพระบารมี
+                  </p>
+                  <p className="text-[10px] text-gold-300">
+                    ระบบติดตามโครงการ | มทร.ล้านนา
+                  </p>
+                </div>
               </a>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <a href="/" className="hover:text-royal-100">
+
+              {/* Menu */}
+              <div className="flex flex-wrap gap-1 text-sm sm:gap-3">
+                <a
+                  href="/"
+                  className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                >
                   ภาพรวม
                 </a>
-                <a href="/projects" className="hover:text-royal-100">
-                  โครงการย่อย
+                <a
+                  href="/projects"
+                  className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                >
+                  โครงการ
                 </a>
-                <a href="/indicators" className="hover:text-royal-100">
+                <a
+                  href="/indicators"
+                  className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                >
                   ตัวชี้วัด
                 </a>
-                <a href="/map" className="hover:text-royal-100">
+                <a
+                  href="/map"
+                  className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                >
                   แผนที่
                 </a>
-                <a href="/staff" className="hover:text-royal-100">
+                <a
+                  href="/staff"
+                  className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                >
                   บุคลากร
                 </a>
-                <a href="/regulations" className="hover:text-royal-100">
-                  ระเบียบ/ประกาศ
+                <a
+                  href="/regulations"
+                  className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                >
+                  ระเบียบ
                 </a>
-                <a href="/admin" className="hover:text-royal-100">
+                <a
+                  href="/admin"
+                  className="rounded border border-gold-400/50 px-2 py-1 text-gold-300 transition hover:bg-gold-500/20 hover:text-gold-200"
+                >
                   Admin
                 </a>
               </div>
             </div>
           </div>
         </nav>
+
+        {/* Main Content */}
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
-        <footer className="border-t bg-white py-4 text-center text-xs text-gray-500">
-          มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา | งบประมาณปี พ.ศ. 2569
+
+        {/* Footer */}
+        <footer className="bg-royal-gradient mt-8">
+          <div className="h-0.5 bg-gradient-to-r from-gold-500 via-gold-300 to-gold-500" />
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logo.png"
+                  alt=""
+                  className="h-8 w-auto opacity-80"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                <div>
+                  <p className="text-sm font-medium text-white/90">
+                    กลุ่มแผนงานใต้ร่มพระบารมี
+                  </p>
+                  <p className="text-xs text-white/50">
+                    มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-white/40">
+                งบประมาณปี พ.ศ. 2569 | Powered by Supabase + TRON Blockchain
+              </p>
+            </div>
+          </div>
         </footer>
       </body>
     </html>

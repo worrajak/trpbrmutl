@@ -17,9 +17,9 @@ function formatBudget(n: number): string {
 }
 
 const programLabels: Record<string, { label: string; color: string }> = {
-  "1.ผลักดันเทคโนโลยี": { label: "ผลักดันเทคโนโลยี", color: "bg-blue-600" },
-  "2.ขับเคลื่อนกลไก": { label: "ขับเคลื่อนกลไก", color: "bg-green-600" },
-  "3.พัฒนากำลังคน": { label: "พัฒนากำลังคน", color: "bg-purple-600" },
+  "1.ผลักดันเทคโนโลยี": { label: "ผลักดันเทคโนโลยี", color: "bg-royal-500" },
+  "2.ขับเคลื่อนกลไก": { label: "ขับเคลื่อนกลไก", color: "bg-gold-600" },
+  "3.พัฒนากำลังคน": { label: "พัฒนากำลังคน", color: "bg-royal-700" },
 };
 
 export default async function Home() {
@@ -50,20 +50,28 @@ export default async function Home() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-royal-700">
-          ภาพรวมโครงการใต้ร่มพระบารมี ปีงบประมาณ 2569
-        </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา | รวม 3 โครงการหลัก: ขับเคลื่อนกลไก,
-          ผลักดันเทคโนโลยี, พัฒนากำลังคน
-        </p>
+      <div className="rounded-xl bg-royal-gradient p-6 text-white shadow-lg">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="" className="h-16 w-auto hidden sm:block"
+            onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }} />
+          <div>
+            <h1 className="text-2xl font-bold">
+              ภาพรวมโครงการใต้ร่มพระบารมี
+            </h1>
+            <p className="mt-1 text-sm text-white/80">
+              ปีงบประมาณ 2569 | มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา
+            </p>
+            <p className="text-xs text-gold-300">
+              รวม 3 โครงการหลัก: ขับเคลื่อนกลไก, ผลักดันเทคโนโลยี, พัฒนากำลังคน
+            </p>
+          </div>
+        </div>
         {isLive ? (
-          <p className="mt-1 text-xs text-green-600">
+          <p className="mt-2 text-xs text-green-300">
             ข้อมูลจาก Supabase (realtime) | อัปเดตทุก 1 นาที
           </p>
         ) : (
-          <p className="mt-1 text-xs text-orange-500">
+          <p className="mt-2 text-xs text-orange-300">
             ไม่สามารถเชื่อมต่อ Supabase
           </p>
         )}
@@ -285,7 +293,7 @@ export default async function Home() {
         {/* KPI Table grouped by project */}
         <div className="overflow-x-auto rounded-lg bg-white shadow">
           <table className="w-full text-sm">
-            <thead className="bg-royal-700 text-white">
+            <thead className="bg-royal-gradient text-white">
               <tr>
                 <th className="px-4 py-2 text-left">โครงการ</th>
                 <th className="px-4 py-2 text-left">ตัวชี้วัด</th>

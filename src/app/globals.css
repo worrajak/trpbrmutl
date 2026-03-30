@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  /* Gradient background matching logo */
+  .bg-royal-gradient {
+    background: linear-gradient(135deg, #162d63 0%, #1e3a7b 40%, #2c4ea0 100%);
+  }
+
+  .bg-royal-gradient-light {
+    background: linear-gradient(135deg, #eef2ff 0%, #dce4ff 100%);
+  }
+
+  /* Gold accent border */
+  .border-gold-accent {
+    border-image: linear-gradient(90deg, #d4a017, #f5b83d, #d4a017) 1;
+  }
+}
