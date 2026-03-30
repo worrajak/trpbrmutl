@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import KpiReportPanel from "./KpiReportPanel";
 
 interface KpiTarget {
   id: string;
@@ -9,6 +10,7 @@ interface KpiTarget {
   target_value: number;
   actual_value: number;
   unit: string | null;
+  verified: boolean;
 }
 
 interface Activity {
@@ -49,28 +51,22 @@ export default function ReportForm({
   const [rewardResult, setRewardResult] = useState<RewardInfo | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // KPI contributions state
-  const quantKpis = kpis.filter((k) => k.kpi_type === "quantitative");
-  const [selectedKpis, setSelectedKpis] = useState<
-    Record<string, { checked: boolean; value: string }>
-  >({});
-
-  function toggleKpi(id: string) {
-    setSelectedKpis((prev) => ({
-      ...prev,
-      [id]: {
-        checked: !prev[id]?.checked,
-        value: prev[id]?.value || "",
-      },
-    }));
-  }
-
-  function setKpiValue(id: string, value: string) {
-    setSelectedKpis((prev) => ({
-      ...prev,
-      [id]: { checked: true, value },
-    }));
-  }
+  // KPI contributions from KpiReportPanel
+  const [kpiEntries, setKpiEntries] = useState<
+    Array<{
+      kpi_target_id: string;
+      value: number;
+      evidence_url: string;
+      evidence_type: string;
+      evidence_desc: string;
+      participants: Array<{
+        full_name: string;
+        participant_type: string;
+        student_id: string;
+        organization: string;
+      }>;
+    }>
+  >([]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,11 +82,15 @@ export default function ReportForm({
     setSaving(true);
     setError("");
 
-    const kpiContributions = Object.entries(selectedKpis)
-      .filter(([, v]) => v.checked && Number(v.value) > 0)
-      .map(([kpiId, v]) => ({
-        kpi_target_id: kpiId,
-        value: Number(v.value),
+    const kpiContributions = kpiEntries
+      .filter((e) => e.value > 0 || e.participants.length > 0)
+      .map((e) => ({
+        kpi_target_id: e.kpi_target_id,
+        value: e.value > 0 ? e.value : e.participants.length,
+        evidence_url: e.evidence_url,
+        evidence_type: e.evidence_type,
+        evidence_desc: e.evidence_desc,
+        participants: e.participants,
       }));
 
     try {
@@ -258,63 +258,13 @@ export default function ReportForm({
               />
             </div>
 
-            {/* ตอบตัวชี้วัด */}
-            {quantKpis.length > 0 && (
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  ตอบตัวชี้วัด (เลือกที่ทำได้)
-                </label>
-                <div className="space-y-2">
-                  {quantKpis.map((k) => {
-                    const sel = selectedKpis[k.id];
-                    return (
-                      <div
-                        key={k.id}
-                        className={`rounded border p-3 ${
-                          sel?.checked ? "border-blue-400 bg-blue-50" : ""
-                        }`}
-                      >
-                        <label className="flex cursor-pointer items-start gap-2">
-                          <input
-                            type="checkbox"
-                            checked={sel?.checked || false}
-                            onChange={() => toggleKpi(k.id)}
-                            className="mt-0.5"
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm">{k.kpi_name}</p>
-                            <p className="text-xs text-gray-500">
-                              สะสมเดิม: {Number(k.actual_value)} / เป้า:{" "}
-                              {Number(k.target_value)} {k.unit}
-                            </p>
-                          </div>
-                        </label>
-                        {sel?.checked && (
-                          <div className="mt-2 flex items-center gap-2 pl-6">
-                            <span className="text-xs text-gray-500">ครั้งนี้ +</span>
-                            <input
-                              type="number"
-                              value={sel.value}
-                              onChange={(e) => setKpiValue(k.id, e.target.value)}
-                              min="0"
-                              className="w-20 rounded border px-2 py-1 text-sm"
-                              placeholder="0"
-                            />
-                            <span className="text-xs text-gray-500">{k.unit}</span>
-                            {Number(sel.value) > 0 && (
-                              <span className="text-xs text-blue-600">
-                                = {Number(k.actual_value) + Number(sel.value)}{" "}
-                                {k.unit}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* ตอบตัวชี้วัด + หลักฐาน + รายชื่อ */}
+            <KpiReportPanel
+              projectId={projectId}
+              kpis={kpis}
+              onSubmit={(entries) => setKpiEntries(entries)}
+              onChange={(entries) => setKpiEntries(entries)}
+            />
 
             {/* Error */}
             {error && (

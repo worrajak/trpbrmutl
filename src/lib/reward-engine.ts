@@ -50,6 +50,7 @@ export async function calculateAndGrantReward(
   activityId: string,
   kpiContributions: Array<{ kpi_target_id: string; value: number }>
 ): Promise<{ totalRpf: number; rewards: Array<{ type: string; amount: number; reason: string }> }> {
+  try {
   const supabase = getSupabase();
   if (!supabase) return { totalRpf: 0, rewards: [] };
 
@@ -177,4 +178,8 @@ export async function calculateAndGrantReward(
   });
 
   return { totalRpf, rewards };
+  } catch (err) {
+    console.error("Reward engine error:", err);
+    return { totalRpf: 0, rewards: [] };
+  }
 }

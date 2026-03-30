@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       .eq("id", activity_id);
   }
 
-  // 3. Insert KPI contributions
+  // 3. Insert KPI contributions + evidence + participants
   if (kpi_contributions && kpi_contributions.length > 0) {
     for (const kc of kpi_contributions) {
       // Insert contribution record
@@ -74,9 +74,43 @@ export async function POST(req: NextRequest) {
         kpi_target_id: kc.kpi_target_id,
         report_id: report.id,
         contribution_value: kc.value,
-        evidence: kc.evidence || "",
+        evidence: kc.evidence_desc || "",
         reported_by: submitted_by,
       });
+
+      // Insert KPI evidence (หลักฐาน) - optional, ไม่ block ถ้าตารางยังไม่มี
+      if (kc.evidence_url) {
+        try {
+          await supabase.from("kpi_evidence").insert({
+            kpi_target_id: kc.kpi_target_id,
+            report_id: report.id,
+            evidence_type: kc.evidence_type || "link",
+            evidence_url: kc.evidence_url,
+            description: kc.evidence_desc || "",
+            uploaded_by: submitted_by,
+          });
+        } catch { /* table may not exist yet */ }
+      }
+
+      // Insert participants (รายชื่อผู้เข้าร่วม) - optional
+      if (kc.participants && kc.participants.length > 0) {
+        try {
+          const participantRows = kc.participants
+            .filter((p: { full_name: string }) => p.full_name.trim())
+            .map((p: { full_name: string; participant_type: string; student_id: string; organization: string }) => ({
+              project_id,
+              report_id: report.id,
+              full_name: p.full_name.trim(),
+              participant_type: p.participant_type,
+              student_id: p.student_id || null,
+              organization: p.organization || null,
+            }));
+
+          if (participantRows.length > 0) {
+            await supabase.from("participants").insert(participantRows);
+          }
+        } catch { /* table may not exist yet */ }
+      }
 
       // Update actual_value in kpi_targets (สะสม)
       const { data: kpi } = await supabase
