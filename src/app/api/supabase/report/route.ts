@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { calculateAndGrantReward } from "@/lib/reward-engine";
 
-// POST: ส่งรายงานกิจกรรม + ตอบ KPI + งบที่ใช้
+// POST: ส่งรายงานกิจกรรม + ตอบ KPI + งบที่ใช้ + reward
 export async function POST(req: NextRequest) {
   const supabase = getSupabase();
   if (!supabase) {
@@ -16,13 +17,27 @@ export async function POST(req: NextRequest) {
     evidence_url,
     submitted_by,
     activity_status,
-    activity_progress,
     budget_spent,
     kpi_contributions,
+    token_code,
   } = body;
 
   if (!project_id || !activity_id || !submitted_by) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  // ตรวจ token ถ้ามี
+  if (token_code) {
+    const { data: token } = await supabase
+      .from("project_tokens")
+      .select("project_id")
+      .eq("token_code", token_code)
+      .eq("is_active", true)
+      .single();
+
+    if (!token || token.project_id !== project_id) {
+      return NextResponse.json({ error: "Token ไม่ถูกต้องสำหรับโครงการนี้" }, { status: 401 });
+    }
   }
 
   // 1. Insert activity report
@@ -108,7 +123,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, report_id: report.id });
+  // 5. คำนวณ + ให้ reward (ถ้ามี token)
+  let rewardResult = null;
+  if (token_code) {
+    rewardResult = await calculateAndGrantReward(
+      report.id,
+      project_id,
+      token_code,
+      activity_id,
+      kpi_contributions || []
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    report_id: report.id,
+    reward: rewardResult,
+  });
 }
 
 // GET: ดึงประวัติรายงานของโครงการ

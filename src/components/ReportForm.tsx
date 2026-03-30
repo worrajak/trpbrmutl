@@ -17,10 +17,16 @@ interface Activity {
   activity_name: string;
 }
 
+interface RewardInfo {
+  totalRpf: number;
+  rewards: Array<{ type: string; amount: number; reason: string }>;
+}
+
 interface Props {
   projectId: string;
   activity: Activity;
   kpis: KpiTarget[];
+  tokenCode?: string;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -29,6 +35,7 @@ export default function ReportForm({
   projectId,
   activity,
   kpis,
+  tokenCode,
   onClose,
   onSaved,
 }: Props) {
@@ -39,6 +46,8 @@ export default function ReportForm({
   const [budgetSpent, setBudgetSpent] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [rewardResult, setRewardResult] = useState<RewardInfo | null>(null);
+  const [saved, setSaved] = useState(false);
 
   // KPI contributions state
   const quantKpis = kpis.filter((k) => k.kpi_type === "quantitative");
@@ -97,6 +106,7 @@ export default function ReportForm({
           activity_status: status,
           budget_spent: budgetSpent ? Number(budgetSpent) : 0,
           kpi_contributions: kpiContributions,
+          token_code: tokenCode || null,
         }),
       });
 
@@ -105,12 +115,50 @@ export default function ReportForm({
         throw new Error(data.error || "เกิดข้อผิดพลาด");
       }
 
-      onSaved();
+      const result = await res.json();
+      if (result.reward && result.reward.totalRpf > 0) {
+        setRewardResult(result.reward);
+        setSaved(true);
+      } else {
+        onSaved();
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
     } finally {
       setSaving(false);
     }
+  }
+
+  // Reward success screen
+  if (saved && rewardResult) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-xl">
+          <div className="mb-4 text-5xl">&#127881;</div>
+          <h3 className="text-lg font-bold text-gray-800">บันทึกสำเร็จ!</h3>
+          <p className="mt-2 text-3xl font-bold text-royal-700">
+            +{rewardResult.totalRpf.toLocaleString()} RPF
+          </p>
+          <div className="mt-4 space-y-2 text-left">
+            {rewardResult.rewards.map((r, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded bg-green-50 px-3 py-2 text-sm"
+              >
+                <span className="text-gray-700">{r.reason}</span>
+                <span className="font-bold text-green-700">+{r.amount}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={onSaved}
+            className="mt-6 w-full rounded bg-royal-700 py-2 text-white hover:bg-royal-800"
+          >
+            ปิด
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

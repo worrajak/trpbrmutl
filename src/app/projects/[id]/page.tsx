@@ -9,6 +9,7 @@ import type {
 } from "@/lib/supabase-data";
 import SCurveChart from "@/components/SCurveChart";
 import ReportForm from "@/components/ReportForm";
+import TokenLogin from "@/components/TokenLogin";
 
 interface ReportData {
   id: string;
@@ -125,6 +126,9 @@ export default function ProjectDetailPage() {
   const [kpis, setKpis] = useState<DBKpiTarget[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
   const [reportActivity, setReportActivity] = useState<DBActivity | null>(null);
+  const [tokenCode, setTokenCode] = useState<string | null>(null);
+  const [tokenInfo, setTokenInfo] = useState<{ responsible_name: string; tron_wallet: string | null } | null>(null);
+  const [rpfBalance, setRpfBalance] = useState<{ total_rpf: number; report_count: number; streak_count: number } | null>(null);
 
   async function loadData() {
     try {
@@ -203,6 +207,49 @@ export default function ProjectDetailPage() {
         {" / "}
         <span className="text-gray-700">{project.id}</span>
       </nav>
+
+      {/* Token Auth + RPF Balance */}
+      {!tokenCode ? (
+        <TokenLogin
+          projectId={id}
+          onAuthenticated={(code, info) => {
+            setTokenCode(code);
+            setTokenInfo(info);
+            // Fetch balance
+            fetch("/api/supabase/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token_code: code }),
+            })
+              .then((r) => r.json())
+              .then((d) => setRpfBalance(d.balance))
+              .catch(() => {});
+          }}
+        />
+      ) : (
+        <div className="flex items-center justify-between rounded-lg bg-gradient-to-r from-royal-700 to-blue-600 px-5 py-3 text-white shadow">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">&#128176;</span>
+            <div>
+              <p className="text-sm font-medium">
+                {tokenInfo?.responsible_name || "หัวหน้าโครงการ"}
+              </p>
+              <p className="text-xs text-white/70">
+                Token: {tokenCode}
+                {tokenInfo?.tron_wallet && ` | Wallet: ${tokenInfo.tron_wallet.slice(0, 8)}...`}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold">
+              {(rpfBalance?.total_rpf || 0).toLocaleString()} RPF
+            </p>
+            <p className="text-xs text-white/70">
+              {rpfBalance?.report_count || 0} รายงาน | streak {rpfBalance?.streak_count || 0}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Project header */}
       <div className="rounded-lg bg-white p-6 shadow">
@@ -391,13 +438,19 @@ export default function ProjectDetailPage() {
                         </span>
                       </td>
                       <td className="px-2 py-2 text-center">
-                        <button
-                          onClick={() => setReportActivity(act)}
-                          className="rounded bg-royal-700 px-2 py-1 text-xs text-white hover:bg-royal-800"
-                          title="รายงานความก้าวหน้า"
-                        >
-                          +
-                        </button>
+                        {tokenCode ? (
+                          <button
+                            onClick={() => setReportActivity(act)}
+                            className="rounded bg-royal-700 px-2 py-1 text-xs text-white hover:bg-royal-800"
+                            title="รายงานความก้าวหน้า"
+                          >
+                            +
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-300" title="ใส่ Token เพื่อรายงาน">
+                            &#128274;
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -696,10 +749,22 @@ export default function ProjectDetailPage() {
             activity_name: reportActivity.activity_name,
           }}
           kpis={kpis}
+          tokenCode={tokenCode || undefined}
           onClose={() => setReportActivity(null)}
           onSaved={() => {
             setReportActivity(null);
             loadData();
+            // Refresh RPF balance
+            if (tokenCode) {
+              fetch("/api/supabase/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token_code: tokenCode }),
+              })
+                .then((r) => r.json())
+                .then((d) => setRpfBalance(d.balance))
+                .catch(() => {});
+            }
           }}
         />
       )}
