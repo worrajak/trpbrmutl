@@ -124,6 +124,7 @@ function excelToText(buffer: Buffer): string {
     if (!erpRaw) continue;
     const erpCode = String(erpRaw).replace(/\.0$/, "").trim();
     if (!ERP_REGEX.test(erpCode)) continue;
+    if (erpCode.endsWith("0000")) continue; // ข้าม parent/summary row
 
     const name = String(row[0] ?? "").replace(/\n/g, " ").trim();
     const budgetTotal = toNumber(row[4]);

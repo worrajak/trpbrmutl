@@ -93,6 +93,7 @@ function parseExcel(buffer: Buffer): ExcelProject[] {
     // ERP code เป็นตัวเลข 18-20 หลัก
     const erpCode = String(erpRaw).replace(/\.0$/, "").trim();
     if (!ERP_REGEX.test(erpCode)) continue;
+    if (erpCode.endsWith("0000")) continue; // ข้าม parent/summary row
 
     const projectName = String(row[0] ?? "").trim();
     const budgetTotal = toNumber(row[4]);
