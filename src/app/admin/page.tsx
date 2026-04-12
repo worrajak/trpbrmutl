@@ -296,6 +296,16 @@ function SyncExcelPanel() {
     setResult(data); setStep("done");
   }
 
+  async function handleCleanupParents() {
+    if (!confirm("ลบ project rows ที่ erp_code ลงท้าย 0000 (summary rows) ออกจาก DB?")) return;
+    setLoading(true); setError("");
+    const res = await fetch("/api/supabase/cleanup-parents", { method: "DELETE" });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error || "เกิดข้อผิดพลาด"); return; }
+    alert(`ลบแล้ว ${data.deleted} rows ✓`);
+  }
+
   return (
     <div className="space-y-4">
       {/* Mode tabs */}
@@ -417,6 +427,14 @@ function SyncExcelPanel() {
           {loading ? "⏳ กำลังประมวลผล..."
             : mode === "ai" ? "✨ ให้ AI อ่าน → Preview ก่อน Sync"
             : "🔄 Sync งบประมาณ → Supabase"}
+        </button>
+      )}
+
+      {/* Cleanup button */}
+      {step !== "preview" && (
+        <button onClick={handleCleanupParents} disabled={loading}
+          className="w-full rounded-lg border border-red-200 py-2 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50">
+          🗑 ลบ parent rows (erp_code ลงท้าย 0000) ออกจาก DB
         </button>
       )}
 
