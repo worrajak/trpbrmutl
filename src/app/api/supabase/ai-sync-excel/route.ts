@@ -5,7 +5,6 @@ import {
   EXCEL_BUDGET_SYSTEM_PROMPT,
   EXCEL_BUDGET_USER_PROMPT,
   extractJSONArray,
-  excelRowsToText,
 } from "@/lib/excel-budget-prompt";
 
 // POST: รับ Excel (base64) + AI provider + API key → AI parse → sync Supabase
@@ -101,6 +100,12 @@ export async function POST(req: NextRequest) {
 }
 
 // ===== Excel → text =====
+function toNumber(val: unknown): number {
+  if (val === null || val === undefined || val === "") return 0;
+  const n = Number(String(val).replace(/,/g, "").trim());
+  return isNaN(n) ? 0 : n;
+}
+
 function excelToText(buffer: Buffer): string {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
   const sheetName = workbook.SheetNames[0];
@@ -110,7 +115,25 @@ function excelToText(buffer: Buffer): string {
     defval: null,
   }) as unknown[][];
 
-  return excelRowsToText(rows);
+  const ERP_REGEX = /^\d{18,20}$/;
+  const header = "ชื่อโครงการ | erp_code | budget_total | budget_used | budget_remaining";
+  const lines = [header];
+
+  for (const row of rows) {
+    const erpRaw = row[1];
+    if (!erpRaw) continue;
+    const erpCode = String(erpRaw).replace(/\.0$/, "").trim();
+    if (!ERP_REGEX.test(erpCode)) continue;
+
+    const name = String(row[0] ?? "").replace(/\n/g, " ").trim();
+    const budgetTotal = toNumber(row[4]);
+    const budgetUsed = toNumber(row[9]);
+    const budgetRemaining = toNumber(row[12]);
+
+    lines.push(`${name} | ${erpCode} | ${budgetTotal} | ${budgetUsed} | ${budgetRemaining}`);
+  }
+
+  return lines.join("\n");
 }
 
 // ===== AI Providers =====
