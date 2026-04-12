@@ -68,7 +68,10 @@ export async function fetchProjects(): Promise<DBProject[]> {
     console.error("fetchProjects error:", error.message);
     return [];
   }
-  return data || [];
+  // กรอง parent/summary rows (erp_code ลงท้าย 0000) ออก เพื่อป้องกันนับซ้ำ
+  return (data || []).filter(
+    (p) => !p.erp_code || !p.erp_code.endsWith("0000")
+  );
 }
 
 export async function fetchProjectById(
