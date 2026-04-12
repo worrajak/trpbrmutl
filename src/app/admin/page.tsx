@@ -28,7 +28,7 @@ interface AnalyticsData {
 interface SyncResult {
   total_parsed: number;
   updated: number;
-  not_found: string[];
+  created: number;
   errors: string[];
 }
 interface PreviewRow {
@@ -474,7 +474,7 @@ function SyncExcelPanel() {
             {[
               { label: "พบใน Excel", value: result.total_parsed, c: "text-blue-700" },
               { label: "อัปเดตแล้ว", value: result.updated, c: "text-green-700" },
-              { label: "ไม่พบใน DB", value: result.not_found.length, c: "text-yellow-700" },
+              { label: "สร้างใหม่", value: result.created ?? 0, c: "text-purple-700" },
             ].map(({ label, value, c }) => (
               <div key={label} className="bg-white rounded-lg p-2">
                 <p className={`text-xl font-bold ${c}`}>{value}</p>
@@ -482,14 +482,6 @@ function SyncExcelPanel() {
               </div>
             ))}
           </div>
-          {result.not_found.length > 0 && (
-            <details className="mt-3">
-              <summary className="text-xs text-yellow-700 cursor-pointer">ERP ที่ไม่พบ ({result.not_found.length})</summary>
-              <div className="mt-1 font-mono text-xs text-gray-600 max-h-24 overflow-y-auto">
-                {result.not_found.map((c) => <p key={c}>{c}</p>)}
-              </div>
-            </details>
-          )}
         </div>
       )}
     </div>

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       success: true,
       total_parsed: projects.length,
       updated: result.updated,
-      not_found: result.notFound,
+      created: result.created,
       errors: result.errors,
     });
   } catch (err: unknown) {
@@ -128,7 +128,7 @@ async function syncToSupabase(
   if (!supabase) throw new Error("Supabase not configured");
 
   let updated = 0;
-  const notFound: string[] = [];
+  let created = 0;
   const errors: string[] = [];
 
   for (const proj of projects) {
@@ -145,11 +145,26 @@ async function syncToSupabase(
     }
 
     if (!existing) {
-      notFound.push(proj.erp_code);
+      // INSERT โครงการใหม่
+      const { error: insertErr } = await supabase.from("projects").insert({
+        id: proj.erp_code,
+        erp_code: proj.erp_code,
+        project_name: proj.project_name || `โครงการ ${proj.erp_code}`,
+        main_program: "ใต้ร่มพระบารมี",
+        organization: "",
+        budget_total: proj.budget_total,
+        budget_used: proj.budget_used,
+        budget_remaining: proj.budget_remaining,
+      });
+      if (insertErr) {
+        errors.push(`${proj.erp_code} (insert): ${insertErr.message}`);
+      } else {
+        created++;
+      }
       continue;
     }
 
-    // Update เฉพาะ budget fields
+    // UPDATE budget fields
     const { error: updateErr } = await supabase
       .from("projects")
       .update({
@@ -166,5 +181,5 @@ async function syncToSupabase(
     }
   }
 
-  return { updated, notFound, errors };
+  return { updated, created, errors };
 }

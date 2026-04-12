@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       success: true,
       total_parsed: aiResult.length,
       updated: result.updated,
-      not_found: result.notFound,
+      created: result.created,
       errors: result.errors,
     });
   } catch (err: unknown) {
@@ -273,6 +273,7 @@ async function parseWithLocal(
 // ===== Sync to Supabase =====
 interface BudgetRow {
   erp_code: string;
+  project_name?: string;
   budget_total: number;
   budget_used: number;
   budget_remaining: number;
@@ -285,7 +286,7 @@ async function syncToSupabase(
   if (!supabase) throw new Error("Supabase not configured");
 
   let updated = 0;
-  const notFound: string[] = [];
+  let created = 0;
   const errors: string[] = [];
 
   for (const row of rows) {
@@ -293,6 +294,9 @@ async function syncToSupabase(
     if (!proj.erp_code) continue;
 
     const erpCode = String(proj.erp_code).trim();
+    const budgetTotal = Number(proj.budget_total) || 0;
+    const budgetUsed = Number(proj.budget_used) || 0;
+    const budgetRemaining = Number(proj.budget_remaining) || 0;
 
     const { data: existing, error: fetchErr } = await supabase
       .from("projects")
@@ -306,17 +310,27 @@ async function syncToSupabase(
     }
 
     if (!existing) {
-      notFound.push(erpCode);
+      const { error: insertErr } = await supabase.from("projects").insert({
+        id: erpCode,
+        erp_code: erpCode,
+        project_name: proj.project_name || `โครงการ ${erpCode}`,
+        main_program: "ใต้ร่มพระบารมี",
+        organization: "",
+        budget_total: budgetTotal,
+        budget_used: budgetUsed,
+        budget_remaining: budgetRemaining,
+      });
+      if (insertErr) {
+        errors.push(`${erpCode} (insert): ${insertErr.message}`);
+      } else {
+        created++;
+      }
       continue;
     }
 
     const { error: updateErr } = await supabase
       .from("projects")
-      .update({
-        budget_total: Number(proj.budget_total) || 0,
-        budget_used: Number(proj.budget_used) || 0,
-        budget_remaining: Number(proj.budget_remaining) || 0,
-      })
+      .update({ budget_total: budgetTotal, budget_used: budgetUsed, budget_remaining: budgetRemaining })
       .eq("erp_code", erpCode);
 
     if (updateErr) {
@@ -326,5 +340,5 @@ async function syncToSupabase(
     }
   }
 
-  return { updated, notFound, errors };
+  return { updated, created, errors };
 }
