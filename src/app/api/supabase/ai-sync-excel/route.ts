@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { file_base64, ai_provider, api_key, preview_only, local_base_url, local_model } = body;
+  const { file_base64, ai_provider, api_key, preview_only, local_base_url, local_model, model } = body;
 
   // local AI ไม่ต้องการ api_key
   const isLocal = ai_provider === "local";
@@ -49,19 +49,19 @@ export async function POST(req: NextRequest) {
     let rawText = "";
 
     if (ai_provider === "claude") {
-      const r = await parseWithClaude(tableText, api_key);
+      const r = await parseWithClaude(tableText, api_key, model);
       rawText = r.rawText;
       aiResult = r.data;
     } else if (ai_provider === "gemini") {
-      const r = await parseWithGemini(tableText, api_key);
+      const r = await parseWithGemini(tableText, api_key, model);
       rawText = r.rawText;
       aiResult = r.data;
     } else if (ai_provider === "openai") {
-      const r = await parseWithOpenAI(tableText, api_key);
+      const r = await parseWithOpenAI(tableText, api_key, model);
       rawText = r.rawText;
       aiResult = r.data;
     } else if (ai_provider === "local") {
-      const r = await parseWithLocal(tableText, local_base_url, local_model || "llama3");
+      const r = await parseWithLocal(tableText, local_base_url, model || local_model || "llama3");
       rawText = r.rawText;
       aiResult = r.data;
     } else {
@@ -116,7 +116,7 @@ function excelToText(buffer: Buffer): string {
 // ===== AI Providers =====
 type ParseResult = { data: Record<string, unknown>[] | null; rawText: string };
 
-async function parseWithClaude(tableText: string, apiKey: string): Promise<ParseResult> {
+async function parseWithClaude(tableText: string, apiKey: string, model?: string): Promise<ParseResult> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -125,7 +125,7 @@ async function parseWithClaude(tableText: string, apiKey: string): Promise<Parse
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: model || "claude-haiku-4-5-20251001",
       max_tokens: 4096,
       system: EXCEL_BUDGET_SYSTEM_PROMPT,
       messages: [
@@ -147,9 +147,10 @@ async function parseWithClaude(tableText: string, apiKey: string): Promise<Parse
   return { data: extractJSONArray(text), rawText: text };
 }
 
-async function parseWithGemini(tableText: string, apiKey: string): Promise<ParseResult> {
+async function parseWithGemini(tableText: string, apiKey: string, model?: string): Promise<ParseResult> {
+  const geminiModel = model || "gemini-2.0-flash";
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -187,7 +188,7 @@ async function parseWithGemini(tableText: string, apiKey: string): Promise<Parse
   return { data: extractJSONArray(text), rawText: text };
 }
 
-async function parseWithOpenAI(tableText: string, apiKey: string): Promise<ParseResult> {
+async function parseWithOpenAI(tableText: string, apiKey: string, model?: string): Promise<ParseResult> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -195,7 +196,7 @@ async function parseWithOpenAI(tableText: string, apiKey: string): Promise<Parse
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: model || "gpt-4o-mini",
       max_tokens: 4096,
       messages: [
         { role: "system", content: EXCEL_BUDGET_SYSTEM_PROMPT },

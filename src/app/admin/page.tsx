@@ -185,6 +185,9 @@ function SyncExcelPanel() {
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({ gemini: "", claude: "", openai: "" });
   const [localBaseUrl, setLocalBaseUrl] = useState("http://localhost:11434");
   const [localModel, setLocalModel] = useState("llama3");
+  const [availableModels, setAvailableModels] = useState<Record<string, string[]>>({});
+  const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
+  const [fetchingModels, setFetchingModels] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"idle" | "preview" | "done">("idle");
   const [preview, setPreview] = useState<PreviewRow[]>([]);
@@ -201,15 +204,39 @@ function SyncExcelPanel() {
     if (s.keys) setApiKeys(s.keys);
     if (s.localBaseUrl) setLocalBaseUrl(s.localBaseUrl);
     if (s.localModel) setLocalModel(s.localModel);
+    if (s.selectedModels) setSelectedModels(s.selectedModels);
   }, []);
 
   function handleSaveSettings() {
-    saveAiSettings({ provider: aiProvider, keys: apiKeys, localBaseUrl, localModel });
+    saveAiSettings({ provider: aiProvider, keys: apiKeys, localBaseUrl, localModel, selectedModels });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
 
+  async function handleFetchModels() {
+    const key = apiKeys[aiProvider] || "";
+    if (aiProvider !== "local" && !key) { setError("กรุณาใส่ API Key ก่อน"); return; }
+    setFetchingModels(true);
+    setError("");
+    const params = new URLSearchParams({
+      provider: aiProvider,
+      api_key: key,
+      local_base_url: localBaseUrl,
+    });
+    const res = await fetch(`/api/ai-models?${params}`);
+    const data = await res.json();
+    setFetchingModels(false);
+    if (!res.ok) { setError(data.error || "ดึง models ไม่ได้"); return; }
+    setAvailableModels((prev) => ({ ...prev, [aiProvider]: data.models }));
+    // ตั้ง default model ถ้ายังไม่ได้เลือก
+    if (!selectedModels[aiProvider] && data.models.length > 0) {
+      setSelectedModels((prev) => ({ ...prev, [aiProvider]: data.models[0] }));
+    }
+  }
+
   const apiKey = apiKeys[aiProvider] || "";
+  const currentModels = availableModels[aiProvider] || [];
+  const selectedModel = selectedModels[aiProvider] || "";
 
   async function getBase64(): Promise<string | null> {
     if (!file) return null;
@@ -230,7 +257,7 @@ function SyncExcelPanel() {
     const res = await fetch("/api/supabase/ai-sync-excel", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-        local_base_url: localBaseUrl, local_model: localModel, preview_only: true }),
+        local_base_url: localBaseUrl, local_model: localModel, model: selectedModel, preview_only: true }),
     });
     const data = await res.json();
     setLoading(false);
@@ -245,7 +272,7 @@ function SyncExcelPanel() {
     const res = await fetch("/api/supabase/ai-sync-excel", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-        local_base_url: localBaseUrl, local_model: localModel }),
+        local_base_url: localBaseUrl, local_model: localModel, model: selectedModel }),
     });
     const data = await res.json();
     setLoading(false);
@@ -315,30 +342,67 @@ function SyncExcelPanel() {
           </div>
 
           {aiProvider === "local" ? (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Base URL</p>
-                <input type="text" className="w-full rounded border px-3 py-1.5 text-sm"
-                  value={localBaseUrl} onChange={(e) => setLocalBaseUrl(e.target.value)}
-                  placeholder="http://localhost:11434" />
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Base URL</p>
+                  <input type="text" className="w-full rounded border px-3 py-1.5 text-sm"
+                    value={localBaseUrl} onChange={(e) => setLocalBaseUrl(e.target.value)}
+                    placeholder="http://localhost:11434" />
+                </div>
+                <div className="flex items-end">
+                  <button onClick={handleFetchModels} disabled={fetchingModels}
+                    className="w-full rounded border bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                    {fetchingModels ? "⏳..." : "🔍 ดึง Models"}
+                  </button>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Model</p>
-                <input type="text" className="w-full rounded border px-3 py-1.5 text-sm"
-                  value={localModel} onChange={(e) => setLocalModel(e.target.value)}
-                  placeholder="llama3, typhoon2..." />
-              </div>
+              {currentModels.length > 0 ? (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">เลือก Model ({currentModels.length} ตัว)</p>
+                  <select className="w-full rounded border px-3 py-1.5 text-sm"
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModels((prev) => ({ ...prev, [aiProvider]: e.target.value }))}>
+                    {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">หรือพิมพ์ชื่อ Model</p>
+                  <input type="text" className="w-full rounded border px-3 py-1.5 text-sm"
+                    value={selectedModel} placeholder="llama3, typhoon2..."
+                    onChange={(e) => setSelectedModels((prev) => ({ ...prev, [aiProvider]: e.target.value }))} />
+                </div>
+              )}
             </div>
           ) : (
-            <div>
-              <p className="text-xs text-gray-500 mb-1">
-                API Key สำหรับ {AI_PROVIDERS.find(p => p.value === aiProvider)?.label}
-              </p>
-              <input type="password" className="w-full rounded border px-3 py-1.5 text-sm"
-                placeholder="sk-... หรือ AIza..."
-                value={apiKeys[aiProvider] || ""}
-                onChange={(e) => setApiKeys((prev) => ({ ...prev, [aiProvider]: e.target.value }))} />
-              <p className="text-xs text-gray-400 mt-1">🔒 เก็บไว้ใน browser ของคุณเท่านั้น ไม่ส่งออกนอก</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">
+                  API Key — {AI_PROVIDERS.find(p => p.value === aiProvider)?.label}
+                </p>
+                <div className="flex gap-2">
+                  <input type="password" className="flex-1 rounded border px-3 py-1.5 text-sm"
+                    placeholder="sk-... หรือ AIza..."
+                    value={apiKeys[aiProvider] || ""}
+                    onChange={(e) => setApiKeys((prev) => ({ ...prev, [aiProvider]: e.target.value }))} />
+                  <button onClick={handleFetchModels} disabled={fetchingModels || !apiKey}
+                    className="rounded border bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap">
+                    {fetchingModels ? "⏳..." : "🔍 ดึง Models"}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">🔒 เก็บใน browser เท่านั้น</p>
+              </div>
+              {currentModels.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">เลือก Model ({currentModels.length} ตัว)</p>
+                  <select className="w-full rounded border px-3 py-1.5 text-sm"
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModels((prev) => ({ ...prev, [aiProvider]: e.target.value }))}>
+                    {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>
