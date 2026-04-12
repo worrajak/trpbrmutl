@@ -168,11 +168,21 @@ export default function AdminPage() {
 
 // ─── Sync Excel Panel ─────────────────────────────────────────────────────────
 
+const AI_KEY_STORAGE = "rpf_ai_settings";
+
+function loadAiSettings() {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(localStorage.getItem(AI_KEY_STORAGE) || "null"); } catch { return null; }
+}
+function saveAiSettings(settings: Record<string, unknown>) {
+  localStorage.setItem(AI_KEY_STORAGE, JSON.stringify(settings));
+}
+
 function SyncExcelPanel() {
   const [mode, setMode] = useState<"ai" | "manual">("ai");
   const [file, setFile] = useState<File | null>(null);
   const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
-  const [apiKey, setApiKey] = useState("");
+  const [apiKeys, setApiKeys] = useState<Record<string, string>>({ gemini: "", claude: "", openai: "" });
   const [localBaseUrl, setLocalBaseUrl] = useState("http://localhost:11434");
   const [localModel, setLocalModel] = useState("llama3");
   const [loading, setLoading] = useState(false);
@@ -180,7 +190,26 @@ function SyncExcelPanel() {
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // โหลด settings จาก localStorage ตอน mount
+  useEffect(() => {
+    const s = loadAiSettings();
+    if (!s) return;
+    if (s.provider) setAiProvider(s.provider);
+    if (s.keys) setApiKeys(s.keys);
+    if (s.localBaseUrl) setLocalBaseUrl(s.localBaseUrl);
+    if (s.localModel) setLocalModel(s.localModel);
+  }, []);
+
+  function handleSaveSettings() {
+    saveAiSettings({ provider: aiProvider, keys: apiKeys, localBaseUrl, localModel });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  const apiKey = apiKeys[aiProvider] || "";
 
   async function getBase64(): Promise<string | null> {
     if (!file) return null;
@@ -264,16 +293,27 @@ function SyncExcelPanel() {
       {/* AI settings */}
       {mode === "ai" && (
         <div className="space-y-3 rounded-lg bg-gray-50 p-4">
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">AI Provider</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">AI Provider & API Keys</p>
+            <button onClick={handleSaveSettings}
+              className={`rounded px-3 py-1 text-xs font-medium transition ${saved ? "bg-green-100 text-green-700" : "bg-white border text-gray-600 hover:bg-gray-100"}`}>
+              {saved ? "✓ บันทึกแล้ว" : "💾 บันทึก Keys"}
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {AI_PROVIDERS.map((p) => (
               <button key={p.value} onClick={() => setAiProvider(p.value)}
                 className={`rounded-lg border p-2 text-left text-xs transition ${aiProvider === p.value ? "border-yellow-500 bg-yellow-50" : "border-gray-200 bg-white hover:border-gray-300"}`}>
                 <p className="font-medium">{p.label}</p>
                 <p className="text-gray-400 mt-0.5">{p.hint}</p>
+                {p.value !== "local" && apiKeys[p.value] && (
+                  <p className="text-green-500 mt-0.5">✓ มี key</p>
+                )}
               </button>
             ))}
           </div>
+
           {aiProvider === "local" ? (
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -290,8 +330,16 @@ function SyncExcelPanel() {
               </div>
             </div>
           ) : (
-            <input type="password" className="w-full rounded border px-3 py-1.5 text-sm"
-              placeholder="API Key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+            <div>
+              <p className="text-xs text-gray-500 mb-1">
+                API Key สำหรับ {AI_PROVIDERS.find(p => p.value === aiProvider)?.label}
+              </p>
+              <input type="password" className="w-full rounded border px-3 py-1.5 text-sm"
+                placeholder="sk-... หรือ AIza..."
+                value={apiKeys[aiProvider] || ""}
+                onChange={(e) => setApiKeys((prev) => ({ ...prev, [aiProvider]: e.target.value }))} />
+              <p className="text-xs text-gray-400 mt-1">🔒 เก็บไว้ใน browser ของคุณเท่านั้น ไม่ส่งออกนอก</p>
+            </div>
           )}
         </div>
       )}
