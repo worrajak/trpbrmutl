@@ -4,6 +4,7 @@ import {
   computeActivityAlerts,
   getMonthName,
 } from "@/lib/supabase-data";
+import TelegramButton from "./TelegramButton";
 
 export const revalidate = 60;
 
@@ -28,12 +29,15 @@ export default async function AlertsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">🔔</span>
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">การแจ้งเตือนกิจกรรม</h1>
-          <p className="text-sm text-gray-500">ทั้งหมด {alerts.length} รายการ</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🔔</span>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">การแจ้งเตือนกิจกรรม</h1>
+            <p className="text-sm text-gray-500">ทั้งหมด {alerts.length} รายการ</p>
+          </div>
         </div>
+        <TelegramButton />
       </div>
 
       {alerts.length === 0 && (
