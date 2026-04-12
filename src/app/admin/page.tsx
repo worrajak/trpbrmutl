@@ -193,6 +193,7 @@ function SyncExcelPanel() {
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState("");
+  const [rawAiText, setRawAiText] = useState("");
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -261,7 +262,8 @@ function SyncExcelPanel() {
     });
     const data = await res.json();
     setLoading(false);
-    if (!res.ok) { setError(data.error || "เกิดข้อผิดพลาด"); return; }
+    if (!res.ok) { setError(data.error || "เกิดข้อผิดพลาด"); setRawAiText(data.raw_text || ""); return; }
+    setRawAiText("");
     setPreview(data.preview || []); setStep("preview");
   }
 
@@ -457,6 +459,12 @@ function SyncExcelPanel() {
       )}
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">❌ {error}</p>}
+      {rawAiText && (
+        <details className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+          <summary className="cursor-pointer text-xs font-medium text-orange-700">🔍 AI Response (debug) — คลิกเพื่อดู</summary>
+          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs text-gray-700">{rawAiText}</pre>
+        </details>
+      )}
 
       {/* Result */}
       {step === "done" && result && (
