@@ -4,10 +4,7 @@ import {
   fetchKpiTargets,
   computeProgramSummaries,
   computeKpiOverview,
-  computeActivityAlerts,
-  getMonthName,
 } from "@/lib/supabase-data";
-import { indicators } from "@/lib/data";
 import NewsSection from "@/components/NewsSection";
 
 export const revalidate = 60; // revalidate ทุก 1 นาที
@@ -34,7 +31,6 @@ export default async function Home() {
   // Summaries
   const programSummaries = computeProgramSummaries(projects);
   const kpiOverview = computeKpiOverview(kpis);
-  const alerts = computeActivityAlerts(projects, activities);
 
   // Overall totals
   const totalBudget = projects.reduce((s, p) => s + Number(p.budget_total), 0);
@@ -43,9 +39,6 @@ export default async function Home() {
   const usagePercent =
     totalBudget > 0 ? Math.round((totalUsed / totalBudget) * 100) : 0;
   const totalActivities = activities.length;
-  const completedActivities = activities.filter(
-    (a) => a.status === "completed"
-  ).length;
 
   return (
     <div className="space-y-8">
@@ -127,63 +120,6 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Activity Alerts */}
-      {alerts.length > 0 && (
-        <section className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-orange-800">
-            <span>&#128276;</span>
-            แจ้งเตือนกิจกรรม ({alerts.length} รายการ)
-          </h2>
-          <div className="space-y-2">
-            {alerts.slice(0, 5).map((alert, i) => (
-              <a
-                key={i}
-                href={`/projects/${alert.projectId}`}
-                className="flex items-start gap-3 rounded-md bg-white p-3 shadow-sm transition hover:shadow-md"
-              >
-                <span
-                  className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${
-                    alert.alertType === "overdue"
-                      ? "bg-red-500"
-                      : alert.alertType === "due_this_month"
-                      ? "bg-yellow-500"
-                      : "bg-green-500"
-                  }`}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-800">
-                    {alert.projectName}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {alert.activityName} | แผน: {getMonthName(alert.plannedMonth)}
-                    {alert.responsible && ` | ${alert.responsible}`}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${
-                    alert.alertType === "overdue"
-                      ? "bg-red-100 text-red-700"
-                      : alert.alertType === "due_this_month"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-green-100 text-green-700"
-                  }`}
-                >
-                  {alert.alertType === "overdue"
-                    ? "เลยกำหนด"
-                    : alert.alertType === "due_this_month"
-                    ? "ถึงกำหนด"
-                    : "เร็วๆ นี้"}
-                </span>
-              </a>
-            ))}
-            {alerts.length > 5 && (
-              <p className="text-center text-xs text-gray-500">
-                และอีก {alerts.length - 5} รายการ...
-              </p>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* Program Cards with Budget Progress */}
       <section>
@@ -256,223 +192,21 @@ export default async function Home() {
       {/* ข่าวล่าสุด */}
       <NewsSection />
 
-      {/* KPI Summary from Supabase */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">
-          สรุปตัวชี้วัดจากโครงการ ({kpis.length} ตัวชี้วัด)
-        </h2>
-
-        {/* KPI Overview Cards */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg bg-green-50 p-3 text-center">
-            <p className="text-2xl font-bold text-green-700">
-              {kpiOverview.verified}
-            </p>
-            <p className="text-xs text-green-600">บรรลุเป้า</p>
-          </div>
-          <div className="rounded-lg bg-blue-50 p-3 text-center">
-            <p className="text-2xl font-bold text-blue-700">
-              {kpiOverview.exceeded}
-            </p>
-            <p className="text-xs text-blue-600">เกินเป้า</p>
-          </div>
-          <div className="rounded-lg bg-yellow-50 p-3 text-center">
-            <p className="text-2xl font-bold text-yellow-700">
-              {kpiOverview.inProgress}
-            </p>
-            <p className="text-xs text-yellow-600">กำลังดำเนินการ</p>
-          </div>
-          <div className="rounded-lg bg-red-50 p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">
-              {kpiOverview.notStarted}
-            </p>
-            <p className="text-xs text-red-600">ยังไม่เริ่ม</p>
-          </div>
-        </div>
-
-        {/* KPI Table grouped by project */}
-        <div className="overflow-x-auto rounded-lg bg-white shadow">
-          <table className="w-full text-sm">
-            <thead className="bg-royal-gradient text-white">
-              <tr>
-                <th className="px-4 py-2 text-left">โครงการ</th>
-                <th className="px-4 py-2 text-left">ตัวชี้วัด</th>
-                <th className="px-4 py-2 text-right">เป้าหมาย</th>
-                <th className="px-4 py-2 text-right">ผลสะสม</th>
-                <th className="px-4 py-2 text-right">%</th>
-                <th className="px-4 py-2 text-center">สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.slice(0, 10).map((proj) => {
-                const projKpis = kpis.filter(
-                  (k) =>
-                    k.project_id === proj.id && k.kpi_type === "quantitative"
-                );
-                if (projKpis.length === 0) return null;
-
-                return projKpis.map((k, ki) => {
-                  const pct =
-                    Number(k.target_value) > 0
-                      ? Math.round(
-                          (Number(k.actual_value) / Number(k.target_value)) *
-                            100
-                        )
-                      : 0;
-                  return (
-                    <tr key={k.id} className="border-t hover:bg-gray-50">
-                      {ki === 0 && (
-                        <td
-                          className="px-4 py-2"
-                          rowSpan={projKpis.length}
-                        >
-                          <a
-                            href={`/projects/${proj.id}`}
-                            className="text-royal-600 hover:underline"
-                          >
-                            {proj.project_name.length > 40
-                              ? proj.project_name.substring(0, 40) + "..."
-                              : proj.project_name}
-                          </a>
-                        </td>
-                      )}
-                      <td className="px-4 py-2 text-xs">{k.kpi_name}</td>
-                      <td className="px-4 py-2 text-right">
-                        {Number(k.target_value)} {k.unit}
-                      </td>
-                      <td className="px-4 py-2 text-right font-medium">
-                        {Number(k.actual_value)} {k.unit}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        <span
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${
-                            pct > 100
-                              ? "bg-blue-100 text-blue-700"
-                              : pct >= 80
-                              ? "bg-green-100 text-green-700"
-                              : pct >= 1
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {pct}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {k.verified ? (
-                          <span className="text-green-600">&#10003;</span>
-                        ) : pct > 0 ? (
-                          <span className="text-yellow-600">&#9679;</span>
-                        ) : (
-                          <span className="text-gray-300">&#9675;</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                });
-              })}
-            </tbody>
-          </table>
-          {projects.length > 10 && (
-            <div className="border-t p-3 text-center">
-              <a
-                href="/indicators"
-                className="text-sm text-royal-600 hover:underline"
-              >
-                ดูตัวชี้วัดทั้งหมด {kpis.length} ตัว จาก {projects.length}{" "}
-                โครงการ &rarr;
-              </a>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Budget Overview - Top 10 by usage */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">
-          สถานะการเบิกจ่ายงบประมาณ (ERP)
-        </h2>
-        <div className="overflow-x-auto rounded-lg bg-white shadow">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 text-left">โครงการ</th>
-                <th className="px-4 py-2 text-left">รหัส ERP</th>
-                <th className="px-4 py-2 text-right">งบประมาณ</th>
-                <th className="px-4 py-2 text-right">เบิกจ่าย</th>
-                <th className="px-4 py-2 text-right">คงเหลือ</th>
-                <th className="px-4 py-2 text-center" style={{ minWidth: 120 }}>
-                  สัดส่วน
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...projects]
-                .sort(
-                  (a, b) => Number(b.budget_used) - Number(a.budget_used)
-                )
-                .slice(0, 15)
-                .map((p) => {
-                  const pct =
-                    Number(p.budget_total) > 0
-                      ? Math.round(
-                          (Number(p.budget_used) / Number(p.budget_total)) *
-                            100
-                        )
-                      : 0;
-                  return (
-                    <tr key={p.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-2">
-                        <a
-                          href={`/projects/${p.id}`}
-                          className="text-royal-600 hover:underline"
-                        >
-                          {p.project_name.length > 35
-                            ? p.project_name.substring(0, 35) + "..."
-                            : p.project_name}
-                        </a>
-                      </td>
-                      <td className="px-4 py-2 font-mono text-xs text-gray-500">
-                        {p.erp_code || "-"}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        {formatBudget(Number(p.budget_total))}
-                      </td>
-                      <td className="px-4 py-2 text-right font-medium">
-                        {formatBudget(Number(p.budget_used))}
-                      </td>
-                      <td className="px-4 py-2 text-right text-gray-500">
-                        {formatBudget(Number(p.budget_remaining))}
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 flex-1 rounded-full bg-gray-200">
-                            <div
-                              className={`h-2 rounded-full ${
-                                pct >= 80
-                                  ? "bg-green-500"
-                                  : pct >= 40
-                                  ? "bg-blue-500"
-                                  : pct > 0
-                                  ? "bg-orange-400"
-                                  : "bg-gray-300"
-                              }`}
-                              style={{
-                                width: `${Math.min(pct, 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="w-10 text-right text-xs text-gray-500">
-                            {pct}%
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
+      {/* Quick links */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { href: "/projects", label: "รายการโครงการ", icon: "📋", desc: `${projects.length} โครงการ` },
+          { href: "/indicators", label: "ตัวชี้วัด", icon: "📊", desc: `${kpis.length} ตัวชี้วัด · บรรลุ ${kpiOverview.verified}` },
+          { href: "/map", label: "แผนที่", icon: "🗺️", desc: "พื้นที่โครงการ" },
+          { href: "/staff", label: "บุคลากร", icon: "👥", desc: "นักวิจัยและทีมงาน" },
+        ].map((item) => (
+          <a key={item.href} href={item.href}
+            className="flex flex-col items-center gap-1 rounded-lg bg-white p-4 shadow text-center transition hover:shadow-md hover:bg-royal-50">
+            <span className="text-2xl">{item.icon}</span>
+            <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+            <p className="text-xs text-gray-400">{item.desc}</p>
+          </a>
+        ))}
       </section>
     </div>
   );

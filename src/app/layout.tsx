@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import PageTracker from "@/components/PageTracker";
+import Navbar from "@/components/Navbar";
 import Logo from "@/components/Logo";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
@@ -38,30 +39,7 @@ export default function RootLayout({
         )}
         <PageTracker />
 
-        {/* Navbar */}
-        <nav className="bg-royal-gradient shadow-lg">
-          <div className="h-1 bg-gradient-to-r from-gold-500 via-gold-300 to-gold-500" />
-          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6">
-            <div className="flex items-center justify-between">
-              <a href="/" className="flex items-center gap-3">
-                <Logo className="h-12 w-auto" />
-                <div>
-                  <p className="text-lg font-bold text-white leading-tight">ใต้ร่มพระบารมี</p>
-                  <p className="text-[10px] text-gold-300">ระบบติดตามโครงการ | มทร.ล้านนา</p>
-                </div>
-              </a>
-              <div className="flex flex-wrap gap-1 text-sm sm:gap-3">
-                <a href="/" className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white">ภาพรวม</a>
-                <a href="/projects" className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white">โครงการ</a>
-                <a href="/indicators" className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white">ตัวชี้วัด</a>
-                <a href="/map" className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white">แผนที่</a>
-                <a href="/staff" className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white">บุคลากร</a>
-                <a href="/regulations" className="rounded px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white">ระเบียบ</a>
-                <a href="/admin" className="rounded border border-gold-400/50 px-2 py-1 text-gold-300 transition hover:bg-gold-500/20 hover:text-gold-200">Admin</a>
-              </div>
-            </div>
-          </div>
-        </nav>
+        <Navbar />
 
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
 
