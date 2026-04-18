@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 
-type Mode = "upload" | "gdrive" | "ai";
+type Mode = "upload" | "gdrive" | "sheets" | "ai";
 type AiProvider = "gemini" | "claude" | "openai" | "local";
 
 interface SyncResult {
@@ -34,6 +34,7 @@ export default function SyncExcelPage() {
 
   const [mode, setMode] = useState<Mode>("ai");
   const [gdriveId, setGdriveId] = useState("");
+  const [sheetsUrl, setSheetsUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
   const [apiKey, setApiKey] = useState("");
@@ -69,17 +70,24 @@ export default function SyncExcelPage() {
     setPreview([]);
     setStep("idle");
 
-    const base64 = await getFileBase64();
-    if (!base64) { setError("กรุณาเลือกไฟล์ Excel"); setLoading(false); return; }
-    if (!apiKey) { setError("กรุณาใส่ API Key"); setLoading(false); return; }
+    if (aiProvider !== "local" && !apiKey) { setError("กรุณาใส่ API Key"); setLoading(false); return; }
+
+    let body: Record<string, unknown>;
+    if (mode === "sheets") {
+      if (!sheetsUrl) { setError("กรุณาใส่ Google Sheets URL"); setLoading(false); return; }
+      body = { sheets_url: sheetsUrl, ai_provider: aiProvider, api_key: apiKey,
+               local_base_url: localBaseUrl, local_model: localModel, preview_only: true };
+    } else {
+      const base64 = await getFileBase64();
+      if (!base64) { setError("กรุณาเลือกไฟล์ Excel"); setLoading(false); return; }
+      body = { file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
+               local_base_url: localBaseUrl, local_model: localModel, preview_only: true };
+    }
 
     const res = await fetch("/api/supabase/ai-sync-excel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-        local_base_url: localBaseUrl, local_model: localModel, preview_only: true,
-      }),
+      body: JSON.stringify(body),
     });
 
     const data = await res.json();
@@ -95,16 +103,21 @@ export default function SyncExcelPage() {
     setLoading(true);
     setError("");
 
-    const base64 = await getFileBase64();
-    if (!base64) { setError("ไฟล์หายไป กรุณาเลือกใหม่"); setLoading(false); return; }
+    let body: Record<string, unknown>;
+    if (mode === "sheets") {
+      body = { sheets_url: sheetsUrl, ai_provider: aiProvider, api_key: apiKey,
+               local_base_url: localBaseUrl, local_model: localModel };
+    } else {
+      const base64 = await getFileBase64();
+      if (!base64) { setError("ไฟล์หายไป กรุณาเลือกใหม่"); setLoading(false); return; }
+      body = { file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
+               local_base_url: localBaseUrl, local_model: localModel };
+    }
 
     const res = await fetch("/api/supabase/ai-sync-excel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-        local_base_url: localBaseUrl, local_model: localModel,
-      }),
+      body: JSON.stringify(body),
     });
 
     const data = await res.json();
@@ -128,6 +141,9 @@ export default function SyncExcelPage() {
       const fileId = extractGdriveId(gdriveId);
       if (!fileId) { setError("Google Drive ID ไม่ถูกต้อง"); setLoading(false); return; }
       body = { gdrive_file_id: fileId };
+    } else if (mode === "sheets") {
+      if (!sheetsUrl) { setError("กรุณาใส่ Google Sheets URL"); setLoading(false); return; }
+      body = { sheets_url: sheetsUrl };
     } else {
       const base64 = await getFileBase64();
       if (!base64) { setError("กรุณาเลือกไฟล์ Excel"); setLoading(false); return; }
@@ -179,7 +195,8 @@ export default function SyncExcelPage() {
       {/* Mode tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {[
-          { key: "ai", label: "✨ AI อ่านอัตโนมัติ" },
+          { key: "ai", label: "✨ AI + Upload" },
+          { key: "sheets", label: "📊 Google Sheets" },
           { key: "upload", label: "📁 Upload (manual)" },
           { key: "gdrive", label: "☁️ Google Drive" },
         ].map(({ key, label }) => (
@@ -196,6 +213,17 @@ export default function SyncExcelPage() {
       </div>
 
       <div className="bg-white border rounded-xl p-6 mb-4 space-y-4">
+
+        {/* Google Sheets URL */}
+        {mode === "sheets" && (
+          <div>
+            <label className="block text-sm font-medium mb-2">Google Sheets URL</label>
+            <input type="text" className="w-full border rounded-lg px-3 py-2 text-sm"
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              value={sheetsUrl} onChange={(e) => setSheetsUrl(e.target.value)} />
+            <p className="text-xs text-gray-400 mt-1">⚠️ ต้อง Share เป็น &quot;Anyone with the link&quot;</p>
+          </div>
+        )}
 
         {/* File picker (ใช้ทั้ง ai และ upload) */}
         {(mode === "ai" || mode === "upload") && (
@@ -224,7 +252,7 @@ export default function SyncExcelPage() {
         )}
 
         {/* AI Provider settings */}
-        {mode === "ai" && (
+        {(mode === "ai" || mode === "sheets") && (
           <div className="border-t pt-4 space-y-3">
             <p className="text-sm font-medium text-purple-700">⚙️ ตั้งค่า AI</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -266,7 +294,7 @@ export default function SyncExcelPage() {
       </div>
 
       {/* Action buttons */}
-      {mode === "ai" ? (
+      {(mode === "ai" || mode === "sheets") ? (
         <div className="space-y-3">
           {step !== "preview" && (
             <button onClick={handleAiPreview} disabled={loading}

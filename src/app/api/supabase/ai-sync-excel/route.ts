@@ -15,13 +15,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { file_base64, ai_provider, api_key, preview_only, local_base_url, local_model, model } = body;
+  const { file_base64, sheets_url, ai_provider, api_key, preview_only, local_base_url, local_model, model } = body;
 
   // local AI ไม่ต้องการ api_key
   const isLocal = ai_provider === "local";
-  if (!file_base64 || !ai_provider) {
+  if (!file_base64 && !sheets_url) {
     return NextResponse.json(
-      { error: "ต้องระบุ file_base64, ai_provider" },
+      { error: "ต้องระบุ file_base64 หรือ sheets_url" },
+      { status: 400 }
+    );
+  }
+  if (!ai_provider) {
+    return NextResponse.json(
+      { error: "ต้องระบุ ai_provider" },
       { status: 400 }
     );
   }
@@ -40,7 +46,20 @@ export async function POST(req: NextRequest) {
 
   try {
     // 1. Parse Excel → text table
-    const buffer = Buffer.from(file_base64, "base64");
+    let buffer: Buffer;
+    if (sheets_url) {
+      const exportUrl = buildSheetsExportUrl(sheets_url);
+      if (!exportUrl) {
+        return NextResponse.json({ error: "sheets_url ไม่ถูกต้อง" }, { status: 400 });
+      }
+      const res = await fetch(exportUrl, { redirect: "follow" });
+      if (!res.ok) {
+        return NextResponse.json({ error: `ดาวน์โหลด Google Sheets ไม่ได้: ${res.statusText}` }, { status: 400 });
+      }
+      buffer = Buffer.from(await res.arrayBuffer());
+    } else {
+      buffer = Buffer.from(file_base64, "base64");
+    }
     const tableText = excelToText(buffer);
 
     // 2. ส่งให้ AI อ่าน
@@ -342,4 +361,18 @@ async function syncToSupabase(
   }
 
   return { updated, created, errors };
+}
+
+// ===== Google Sheets URL → Export URL =====
+function buildSheetsExportUrl(url: string): string | null {
+  try {
+    const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (!match) return null;
+    const id = match[1];
+    const gidMatch = url.match(/[?&#]gid=(\d+)/);
+    const gid = gidMatch ? gidMatch[1] : "0";
+    return `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx&gid=${gid}`;
+  } catch {
+    return null;
+  }
 }

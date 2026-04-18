@@ -11,11 +11,11 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { gdrive_file_id, file_base64 } = body;
+  const { gdrive_file_id, file_base64, sheets_url } = body;
 
-  if (!gdrive_file_id && !file_base64) {
+  if (!gdrive_file_id && !file_base64 && !sheets_url) {
     return NextResponse.json(
-      { error: "ต้องระบุ gdrive_file_id หรือ file_base64" },
+      { error: "ต้องระบุ gdrive_file_id, file_base64 หรือ sheets_url" },
       { status: 400 }
     );
   }
@@ -26,6 +26,24 @@ export async function POST(req: NextRequest) {
     if (file_base64) {
       // รับไฟล์ base64 จาก client (upload โดยตรง)
       buffer = Buffer.from(file_base64, "base64");
+    } else if (sheets_url) {
+      // รับ Google Sheets URL เช่น https://docs.google.com/spreadsheets/d/ID/edit?gid=GID
+      const exportUrl = buildSheetsExportUrl(sheets_url);
+      if (!exportUrl) {
+        return NextResponse.json(
+          { error: "sheets_url ไม่ถูกต้อง ต้องเป็น Google Sheets URL" },
+          { status: 400 }
+        );
+      }
+      const res = await fetch(exportUrl, { redirect: "follow" });
+      if (!res.ok) {
+        return NextResponse.json(
+          { error: `ไม่สามารถดาวน์โหลดจาก Google Sheets: ${res.statusText}` },
+          { status: 400 }
+        );
+      }
+      const arrayBuffer = await res.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
     } else {
       // ดาวน์โหลดจาก Google Drive (ต้องเป็นไฟล์ที่แชร์แบบ public)
       const url = `https://drive.google.com/uc?export=download&id=${gdrive_file_id}&confirm=t`;
@@ -183,4 +201,22 @@ async function syncToSupabase(
   }
 
   return { updated, created, errors };
+}
+
+// ===== Google Sheets URL → Export URL =====
+function buildSheetsExportUrl(url: string): string | null {
+  try {
+    // รองรับ format: https://docs.google.com/spreadsheets/d/ID/edit?gid=GID
+    const match = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (!match) return null;
+    const id = match[1];
+
+    // ดึง gid ถ้ามี
+    const gidMatch = url.match(/[?&#]gid=(\d+)/);
+    const gid = gidMatch ? gidMatch[1] : "0";
+
+    return `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx&gid=${gid}`;
+  } catch {
+    return null;
+  }
 }
