@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import KpiReportPanel from "./KpiReportPanel";
+import { SDG_GOALS } from "@/lib/sdgs";
 
 interface KpiTarget {
   id: string;
@@ -50,6 +51,30 @@ export default function ReportForm({
   const [error, setError] = useState("");
   const [rewardResult, setRewardResult] = useState<RewardInfo | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // SDG tags
+  const [selectedSdgs, setSelectedSdgs] = useState<number[]>([]);
+  function toggleSdg(id: number) {
+    setSelectedSdgs((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  // Evidence files (หลักฐานแนบ)
+  const [evidenceFiles, setEvidenceFiles] = useState<
+    Array<{ name: string; url: string; type: string }>
+  >([]);
+  function addEvidenceFile() {
+    setEvidenceFiles((prev) => [...prev, { name: "", url: "", type: "link" }]);
+  }
+  function removeEvidenceFile(i: number) {
+    setEvidenceFiles((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function updateEvidenceFile(i: number, field: string, value: string) {
+    setEvidenceFiles((prev) =>
+      prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f))
+    );
+  }
 
   // ตัวชี้วัดใหม่ที่ หน.โครงการ เพิ่มเอง
   const [newKpis, setNewKpis] = useState<Array<{
@@ -133,6 +158,8 @@ export default function ReportForm({
             actual_value: Number(k.actual_value) || 0,
           })),
           token_code: tokenCode || null,
+          sdg_tags: selectedSdgs,
+          evidence_files: evidenceFiles.filter((f) => f.url.trim()),
         }),
       });
 
@@ -353,6 +380,103 @@ export default function ReportForm({
               <button type="button" onClick={addNewKpi}
                 className="w-full rounded-lg border border-teal-300 py-2 text-sm text-teal-700 hover:bg-teal-100 transition">
                 + เพิ่มตัวชี้วัดใหม่
+              </button>
+            </div>
+
+            {/* SDG Tags */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-medium text-blue-900 mb-1">🌐 SDGs ที่เกี่ยวข้อง</p>
+              <p className="text-xs text-blue-600 mb-3">เลือก SDG ที่ผลงานครั้งนี้สนับสนุน</p>
+              <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6">
+                {SDG_GOALS.map((g) => {
+                  const active = selectedSdgs.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => toggleSdg(g.id)}
+                      title={`SDG ${g.id}: ${g.name_th}`}
+                      className="flex flex-col items-center rounded-lg p-1.5 text-center transition"
+                      style={{
+                        backgroundColor: active ? g.color : g.bg,
+                        border: `2px solid ${active ? g.color : "transparent"}`,
+                        color: active ? "#fff" : g.color,
+                      }}
+                    >
+                      <span className="text-lg leading-none">{g.icon}</span>
+                      <span className="text-[10px] font-bold mt-0.5">{g.id}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedSdgs.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {selectedSdgs.sort((a, b) => a - b).map((id) => {
+                    const g = SDG_GOALS.find((x) => x.id === id)!;
+                    return (
+                      <span
+                        key={id}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-white font-medium"
+                        style={{ backgroundColor: g.color }}
+                      >
+                        {g.icon} SDG {id}: {g.name_th}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* หลักฐานแนบ (evidence_files) */}
+            <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-medium text-purple-900">📎 แนบหลักฐาน</p>
+                  <p className="text-xs text-purple-600">รูปถ่าย, PDF, หรือลิงก์ที่แสดงผลการดำเนินงาน</p>
+                </div>
+              </div>
+
+              {evidenceFiles.map((f, i) => (
+                <div key={i} className="mb-2 rounded-lg bg-white border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={f.type}
+                      onChange={(e) => updateEvidenceFile(i, "type", e.target.value)}
+                      className="rounded border px-2 py-1.5 text-xs text-gray-600 w-24 shrink-0"
+                    >
+                      <option value="image">🖼️ รูปภาพ</option>
+                      <option value="pdf">📄 PDF</option>
+                      <option value="link">🔗 ลิงก์</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="ชื่อไฟล์ / คำอธิบาย"
+                      value={f.name}
+                      onChange={(e) => updateEvidenceFile(i, "name", e.target.value)}
+                      className="flex-1 rounded border px-2 py-1.5 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeEvidenceFile(i)}
+                      className="text-red-400 hover:text-red-600 text-lg leading-none"
+                    >×</button>
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/... หรือ URL รูปภาพ"
+                    value={f.url}
+                    onChange={(e) => updateEvidenceFile(i, "url", e.target.value)}
+                    className="w-full rounded border px-2 py-1.5 text-sm"
+                  />
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addEvidenceFile}
+                className="w-full rounded-lg border border-purple-300 py-2 text-sm text-purple-700 hover:bg-purple-100 transition"
+              >
+                + เพิ่มหลักฐาน
               </button>
             </div>
 

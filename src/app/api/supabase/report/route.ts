@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
     kpi_contributions,
     new_kpis,       // ตัวชี้วัดใหม่ที่ หน.โครงการ เพิ่มเอง
     token_code,
+    sdg_tags,       // SDG goals ที่เกี่ยวข้อง (array ของ 1-17)
+    evidence_files, // หลักฐานแนบ [{name, url, type}]
   } = body;
 
   if (!project_id || !activity_id || !submitted_by) {
@@ -42,6 +44,10 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. Insert activity report
+  const validEvidenceFiles = (evidence_files || []).filter(
+    (f: { url: string }) => f.url?.trim()
+  );
+
   const { data: report, error: reportErr } = await supabase
     .from("activity_reports")
     .insert({
@@ -51,6 +57,8 @@ export async function POST(req: NextRequest) {
       evidence_url: evidence_url || null,
       submitted_by,
       approval_status: "approved", // auto-approve for now
+      sdg_tags: sdg_tags && sdg_tags.length > 0 ? sdg_tags : null,
+      evidence_files: validEvidenceFiles.length > 0 ? validEvidenceFiles : null,
     })
     .select()
     .single();
@@ -65,6 +73,24 @@ export async function POST(req: NextRequest) {
       .from("activities")
       .update({ status: activity_status })
       .eq("id", activity_id);
+  }
+
+  // 2b. Merge SDG tags into project (union of existing + new tags from this report)
+  if (sdg_tags && sdg_tags.length > 0) {
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("sdg_tags")
+      .eq("id", project_id)
+      .single();
+
+    if (proj) {
+      const existing: number[] = proj.sdg_tags || [];
+      const merged = [...new Set([...existing, ...sdg_tags])].sort((a, b) => a - b);
+      await supabase
+        .from("projects")
+        .update({ sdg_tags: merged })
+        .eq("id", project_id);
+    }
   }
 
   // 3. Insert KPI contributions + evidence + participants

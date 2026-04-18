@@ -7,6 +7,7 @@ const navLinks = [
   { href: "/", label: "ภาพรวม" },
   { href: "/projects", label: "โครงการ" },
   { href: "/indicators", label: "ตัวชี้วัด" },
+  { href: "/sdgs", label: "🌐 SDGs" },
   { href: "/alerts", label: "🔔 แจ้งเตือน" },
   { href: "/map", label: "แผนที่" },
   { href: "/staff", label: "บุคลากร" },

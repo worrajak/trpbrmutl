@@ -11,6 +11,7 @@ import SCurveChart from "@/components/SCurveChart";
 import ReportForm from "@/components/ReportForm";
 import TokenLogin from "@/components/TokenLogin";
 import TronWalletConnect from "@/components/TronWalletConnect";
+import { sdgTagsToGoals } from "@/lib/sdgs";
 
 interface ReportData {
   id: string;
@@ -18,6 +19,8 @@ interface ReportData {
   evidence_url: string | null;
   submitted_by: string;
   submitted_at: string;
+  sdg_tags: number[] | null;
+  evidence_files: Array<{ name: string; url: string; type: string }> | null;
   activities: { activity_order: number; activity_name: string } | null;
   kpi_contributions: Array<{
     contribution_value: number;
@@ -352,6 +355,22 @@ export default function ProjectDetailPage() {
             <p className="text-sm font-medium">{project.site || "-"}</p>
           </div>
         </div>
+
+        {/* SDG Tags */}
+        {(project.sdg_tags || []).length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {sdgTagsToGoals(project.sdg_tags || []).map((g) => (
+              <a
+                key={g.id}
+                href={`/sdgs/${g.id}`}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-white transition hover:opacity-80"
+                style={{ backgroundColor: g.color }}
+              >
+                {g.icon} SDG {g.id}: {g.name_th}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Gantt Chart */}
@@ -676,6 +695,30 @@ export default function ProjectDetailPage() {
                       &#128206; หลักฐาน
                     </a>
                   )}
+                  {(r.evidence_files || []).map((f, fi) => (
+                    <a
+                      key={fi}
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded bg-purple-50 px-1.5 py-0.5 text-purple-700 hover:underline"
+                    >
+                      {f.type === "pdf" ? "📄" : f.type === "image" ? "🖼️" : "🔗"}
+                      {f.name || "หลักฐาน"}
+                    </a>
+                  ))}
+                  {(r.sdg_tags || []).length > 0 &&
+                    sdgTagsToGoals(r.sdg_tags || []).map((g) => (
+                      <a
+                        key={g.id}
+                        href={`/sdgs/${g.id}`}
+                        className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+                        style={{ backgroundColor: g.color }}
+                      >
+                        {g.icon} {g.id}
+                      </a>
+                    ))
+                  }
                   {r.kpi_contributions.length > 0 && (
                     <>
                       {r.kpi_contributions.map((kc, i) => (
