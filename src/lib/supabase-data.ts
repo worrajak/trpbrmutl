@@ -20,6 +20,7 @@ export interface DBProject {
   project_period: string | null;
   site: string | null;
   status: string;
+  sdg_tags: number[] | null;
 }
 
 /** คำนวณ budget reconciliation สำหรับโครงการเดียว */
