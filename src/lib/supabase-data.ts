@@ -55,6 +55,25 @@ export interface DBNotification {
   created_at: string;
 }
 
+// ===== Helpers =====
+
+/**
+ * ป้องกันชื่อสถาบัน/หน่วยงานถูกแสดงเป็น "ผู้รับผิดชอบ"
+ * ถ้า responsible ว่าง หรือเหมือนกับ organization → คืน null
+ */
+function sanitizeResponsible(
+  responsible: string | null,
+  organization: string | null
+): string | null {
+  if (!responsible || responsible.trim() === "") return null;
+  // ถ้าชื่อเหมือนกับชื่อสถาบัน/หน่วยงาน → ไม่ใช่ชื่อคน
+  if (organization && responsible.trim() === organization.trim()) return null;
+  // ถ้าชื่อมีคำบ่งบอกว่าเป็นหน่วยงาน → ไม่ใช่ชื่อคน
+  const orgKeywords = ["สถาบัน", "วิทยาลัย", "มหาวิทยาลัย", "ศูนย์", "สำนัก", "กอง", "ฝ่าย", "กลุ่ม", "สำนักงาน"];
+  if (orgKeywords.some((kw) => responsible.trim().startsWith(kw))) return null;
+  return responsible;
+}
+
 // ===== Data fetching functions =====
 
 export async function fetchProjects(): Promise<DBProject[]> {
@@ -69,9 +88,12 @@ export async function fetchProjects(): Promise<DBProject[]> {
     return [];
   }
   // กรอง parent/summary rows (erp_code ลงท้าย 0000) ออก เพื่อป้องกันนับซ้ำ
-  return (data || []).filter(
-    (p) => !p.erp_code || !p.erp_code.endsWith("0000")
-  );
+  return (data || [])
+    .filter((p) => !p.erp_code || !p.erp_code.endsWith("0000"))
+    .map((p) => ({
+      ...p,
+      responsible: sanitizeResponsible(p.responsible, p.organization),
+    }));
 }
 
 export async function fetchProjectById(

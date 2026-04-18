@@ -1,0 +1,56 @@
+name: Daily Backup
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # ทุกวัน 08:00 น. ไทย (01:00 UTC)
+  workflow_dispatch:     # กด run manually ได้ด้วย
+
+jobs:
+  backup-database:
+    name: Backup Supabase DB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Dump database
+        run: |
+          pg_dump "${{ secrets.DATABASE_URL }}" \
+            --no-owner --no-privileges \
+            --format=custom \
+            --file=rpf-backup-$(date +%Y%m%d).dump
+        env:
+          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: Upload DB dump as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}-$(date +%Y%m%d)
+          path: rpf-backup-*.dump
+          retention-days: 30
+
+  backup-json:
+    name: Backup Data as JSON
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export projects JSON
+        run: |
+          mkdir -p backups
+          curl -sf \
+            -H "Authorization: Bearer ${{ secrets.BACKUP_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/backup" \
+            -o backups/projects-$(date +%Y%m%d).json
+          echo "Exported $(cat backups/projects-$(date +%Y%m%d).json | wc -c) bytes"
+
+      - name: Commit backup to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          git diff --staged --quiet || git commit -m "chore: daily backup $(date +%Y-%m-%d)"
+          git push
