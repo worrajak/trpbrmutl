@@ -39,7 +39,7 @@ interface PreviewRow {
 }
 
 type AiProvider = "gemini" | "claude" | "openai" | "local";
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "seed" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -128,6 +128,14 @@ export default function AdminPage() {
       color: "border-green-300 bg-green-50",
       activeColor: "border-green-400",
     },
+    {
+      key: "seed" as OpenSection,
+      icon: "🌱",
+      title: "เตรียมข้อมูลโครงการ",
+      desc: "สร้างกิจกรรม 5 ขั้น + ตัวชี้วัด + Token สำหรับโครงการที่ยังว่าง",
+      color: "border-teal-300 bg-teal-50",
+      activeColor: "border-teal-400",
+    },
   ];
 
   return (
@@ -158,6 +166,7 @@ export default function AdminPage() {
               {card.key === "ngor9" && <Ngor9Panel />}
               {card.key === "tokens" && <TokensPanel />}
               {card.key === "analytics" && <AnalyticsPanel />}
+              {card.key === "seed" && <SeedActivitiesPanel />}
             </div>
           )}
         </div>
@@ -727,6 +736,92 @@ function AnalyticsPanel() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Seed Activities Panel ────────────────────────────────────────────────────
+
+function SeedActivitiesPanel() {
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<{
+    seeded: number; errors: number;
+    results: { project_id: string; activities: number; kpis: number; token: string | null; error?: string }[];
+  } | null>(null);
+  const [error, setError] = useState("");
+
+  async function handleSeedAll() {
+    if (!confirm("สร้างกิจกรรม + ตัวชี้วัด + Token ให้โครงการใต้ร่มพระบารมีทั้งหมดที่ยังว่าง?")) return;
+    setLoading(true); setError(""); setResults(null);
+    const res = await fetch("/api/admin/seed-activities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all_empty: true }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) setError(data.error || "เกิดข้อผิดพลาด");
+    else setResults(data);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg bg-teal-50 border border-teal-200 p-4 text-sm text-teal-800">
+        <p className="font-semibold mb-1">สิ่งที่จะถูกสร้างสำหรับโครงการที่ยังไม่มีข้อมูล:</p>
+        <ul className="list-disc list-inside space-y-0.5 text-teal-700">
+          <li>กิจกรรม 5 ขั้น (วางแผน → สำรวจ → ลงพื้นที่ → ติดตาม → รายงาน)</li>
+          <li>ตัวชี้วัด 5 รายการ (ผู้ได้รับประโยชน์, พื้นที่, ความพึงพอใจ, องค์ความรู้, รายงาน)</li>
+          <li>Token 6 หลักสำหรับหัวหน้าโครงการ (ถ้ายังไม่มี)</li>
+        </ul>
+        <p className="mt-2 text-xs text-teal-600">⚠️ โครงการที่มีกิจกรรมอยู่แล้วจะไม่ถูกแตะ</p>
+      </div>
+
+      <button onClick={handleSeedAll} disabled={loading}
+        className="w-full rounded-xl bg-teal-600 py-3 text-white font-medium hover:bg-teal-700 disabled:opacity-50">
+        {loading ? "⏳ กำลังสร้างข้อมูล..." : "🌱 สร้างข้อมูลให้โครงการที่ว่างทั้งหมด"}
+      </button>
+
+      {error && <p className="text-red-600 text-sm">❌ {error}</p>}
+
+      {results && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-green-50 p-3 text-center">
+              <p className="text-2xl font-bold text-green-700">{results.seeded}</p>
+              <p className="text-xs text-gray-500">โครงการที่สร้างสำเร็จ</p>
+            </div>
+            <div className="rounded-lg bg-red-50 p-3 text-center">
+              <p className="text-2xl font-bold text-red-700">{results.errors}</p>
+              <p className="text-xs text-gray-500">มีข้อผิดพลาด</p>
+            </div>
+          </div>
+
+          <div className="max-h-64 overflow-y-auto rounded-lg border">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="p-2 text-left text-gray-600">Project ID</th>
+                  <th className="p-2 text-center text-gray-600">กิจกรรม</th>
+                  <th className="p-2 text-center text-gray-600">KPI</th>
+                  <th className="p-2 text-center text-gray-600">Token</th>
+                  <th className="p-2 text-left text-gray-600">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.results.map((r) => (
+                  <tr key={r.project_id} className={`border-t ${r.error ? "bg-red-50" : ""}`}>
+                    <td className="p-2 font-mono text-gray-600 max-w-[120px] truncate">{r.project_id}</td>
+                    <td className="p-2 text-center">{r.activities}</td>
+                    <td className="p-2 text-center">{r.kpis}</td>
+                    <td className="p-2 text-center font-mono font-bold text-teal-700">{r.token || "-"}</td>
+                    <td className="p-2">{r.error ? <span className="text-red-600">{r.error}</span> : <span className="text-green-600">✅</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
