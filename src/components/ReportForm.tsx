@@ -51,6 +51,25 @@ export default function ReportForm({
   const [rewardResult, setRewardResult] = useState<RewardInfo | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // ตัวชี้วัดใหม่ที่ หน.โครงการ เพิ่มเอง
+  const [newKpis, setNewKpis] = useState<Array<{
+    kpi_name: string; kpi_type: string;
+    target_value: string; actual_value: string; unit: string;
+  }>>([]);
+
+  function addNewKpi() {
+    setNewKpis((prev) => [
+      ...prev,
+      { kpi_name: "", kpi_type: "quantitative", target_value: "1", actual_value: "0", unit: "รายการ" },
+    ]);
+  }
+  function removeNewKpi(i: number) {
+    setNewKpis((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function updateNewKpi(i: number, field: string, value: string) {
+    setNewKpis((prev) => prev.map((k, idx) => idx === i ? { ...k, [field]: value } : k));
+  }
+
   // KPI contributions from KpiReportPanel
   const [kpiEntries, setKpiEntries] = useState<
     Array<{
@@ -94,6 +113,8 @@ export default function ReportForm({
       }));
 
     try {
+      const validNewKpis = newKpis.filter((k) => k.kpi_name.trim());
+
       const res = await fetch("/api/supabase/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,6 +127,11 @@ export default function ReportForm({
           activity_status: status,
           budget_spent: budgetSpent ? Number(budgetSpent) : 0,
           kpi_contributions: kpiContributions,
+          new_kpis: validNewKpis.map((k) => ({
+            ...k,
+            target_value: Number(k.target_value) || 1,
+            actual_value: Number(k.actual_value) || 0,
+          })),
           token_code: tokenCode || null,
         }),
       });
@@ -265,6 +291,70 @@ export default function ReportForm({
               onSubmit={(entries) => setKpiEntries(entries)}
               onChange={(entries) => setKpiEntries(entries)}
             />
+
+            {/* ตัวชี้วัดเพิ่มเติม (หน.โครงการเพิ่มเอง) */}
+            <div className="rounded-lg border border-dashed border-teal-300 bg-teal-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-teal-800">➕ ตัวชี้วัดเพิ่มเติม</p>
+                  <p className="text-xs text-teal-600">ผลที่เกิดขึ้นจริงนอกเหนือจากที่กำหนดไว้ตั้งแต่ต้น</p>
+                </div>
+                {tokenCode && (
+                  <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">
+                    +{600}/ตัวชี้วัด RPF
+                  </span>
+                )}
+              </div>
+
+              {newKpis.map((kpi, i) => (
+                <div key={i} className="mb-3 rounded-lg bg-white border p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder="ชื่อตัวชี้วัด เช่น จำนวนผู้เข้าร่วมกิจกรรม"
+                        value={kpi.kpi_name}
+                        onChange={(e) => updateNewKpi(i, "kpi_name", e.target.value)}
+                        className="w-full rounded border px-2 py-1.5 text-sm"
+                      />
+                    </div>
+                    <button type="button" onClick={() => removeNewKpi(i)}
+                      className="text-red-400 hover:text-red-600 text-lg leading-none mt-1">×</button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-0.5 block">เป้าหมาย</label>
+                      <input type="number" min="0" value={kpi.target_value}
+                        onChange={(e) => updateNewKpi(i, "target_value", e.target.value)}
+                        className="w-full rounded border px-2 py-1.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-0.5 block">ทำได้แล้ว</label>
+                      <input type="number" min="0" value={kpi.actual_value}
+                        onChange={(e) => updateNewKpi(i, "actual_value", e.target.value)}
+                        className="w-full rounded border px-2 py-1.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-0.5 block">หน่วย</label>
+                      <input type="text" value={kpi.unit} placeholder="คน/ชิ้น/ครั้ง"
+                        onChange={(e) => updateNewKpi(i, "unit", e.target.value)}
+                        className="w-full rounded border px-2 py-1.5 text-sm" />
+                    </div>
+                  </div>
+                  <select value={kpi.kpi_type}
+                    onChange={(e) => updateNewKpi(i, "kpi_type", e.target.value)}
+                    className="w-full rounded border px-2 py-1.5 text-xs text-gray-600">
+                    <option value="quantitative">เชิงปริมาณ (นับได้)</option>
+                    <option value="qualitative">เชิงคุณภาพ (ประเมิน)</option>
+                  </select>
+                </div>
+              ))}
+
+              <button type="button" onClick={addNewKpi}
+                className="w-full rounded-lg border border-teal-300 py-2 text-sm text-teal-700 hover:bg-teal-100 transition">
+                + เพิ่มตัวชี้วัดใหม่
+              </button>
+            </div>
 
             {/* Error */}
             {error && (

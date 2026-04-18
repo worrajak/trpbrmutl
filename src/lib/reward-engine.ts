@@ -11,6 +11,8 @@ const REWARD_CONFIG = {
   kpiPartial: 1200,         // KPI 80-99%
   kpiExceeded: 500,         // KPI เกินเป้า (bonus เพิ่ม)
   streakThreshold: 3,       // ส่งติดต่อกัน 3 ครั้ง = ได้ consistency bonus
+  newKpiAdded: 600,         // เพิ่มตัวชี้วัดใหม่ที่ไม่ได้กำหนดตั้งแต่แรก (ต่อ 1 ตัว)
+  newKpiVerified: 1500,     // ตัวชี้วัดใหม่ที่บรรลุเป้าทันที
 };
 
 // ===== ตรวจสอบว่าส่งตรงเวลา/เร็ว =====
@@ -48,7 +50,8 @@ export async function calculateAndGrantReward(
   projectId: string,
   tokenCode: string,
   activityId: string,
-  kpiContributions: Array<{ kpi_target_id: string; value: number }>
+  kpiContributions: Array<{ kpi_target_id: string; value: number }>,
+  newKpisAdded: Array<{ kpi_name: string; verified: boolean }> = []
 ): Promise<{ totalRpf: number; rewards: Array<{ type: string; amount: number; reason: string }> }> {
   try {
   const supabase = getSupabase();
@@ -150,7 +153,23 @@ export async function calculateAndGrantReward(
     }
   }
 
-  // 4. บันทึก reward_log
+  // 4. Reward สำหรับ KPI ใหม่ที่เพิ่มระหว่างโครงการ
+  for (const newKpi of newKpisAdded) {
+    rewards.push({
+      type: "new_kpi_added",
+      amount: REWARD_CONFIG.newKpiAdded,
+      reason: `เพิ่มตัวชี้วัดใหม่: ${newKpi.kpi_name}`,
+    });
+    if (newKpi.verified) {
+      rewards.push({
+        type: "new_kpi_verified",
+        amount: REWARD_CONFIG.newKpiVerified,
+        reason: `ตัวชี้วัดใหม่บรรลุเป้าทันที: ${newKpi.kpi_name}`,
+      });
+    }
+  }
+
+  // 5. บันทึก reward_log
   const totalRpf = rewards.reduce((s, r) => s + r.amount, 0);
 
   for (const r of rewards) {
