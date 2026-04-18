@@ -182,7 +182,7 @@ export default function ProjectsPage() {
                     </p>
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-600">
-                    {p.organization}
+                    {p.organization || (p.main_program === "ใต้ร่มพระบารมี" ? "กลุ่มแผนงานใต้ร่มพระบารมี" : "-")}
                   </td>
                   <td className="px-3 py-2 text-xs">
                     {p.responsible || "-"}
