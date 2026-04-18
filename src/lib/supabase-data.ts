@@ -12,12 +12,46 @@ export interface DBProject {
   responsible_title: string | null;
   phone: string | null;
   budget_total: number;
-  budget_used: number;
+  budget_used: number;      // จาก ERP/Excel sync เท่านั้น
+  budget_reported: number;  // สะสมจากรายงานของ หน.โครงการ
+  budget_advance: number;   // หน.ออกเองก่อน (reported > erp)
   budget_remaining: number;
   fiscal_year: number;
   project_period: string | null;
   site: string | null;
   status: string;
+}
+
+/** คำนวณ budget reconciliation สำหรับโครงการเดียว */
+export function computeBudgetReconciliation(p: DBProject) {
+  const erp      = Number(p.budget_used     || 0);
+  const reported = Number(p.budget_reported || 0);
+  const total    = Number(p.budget_total    || 0);
+
+  const effectiveUsed     = Math.max(erp, reported);
+  const pendingClearance  = Math.max(0, erp - reported);  // เบิก ERP แล้ว ยังไม่มีรายงาน
+  const advancePayment    = Math.max(0, reported - erp);  // รายงานแล้ว ยังไม่ผ่าน ERP
+  const remaining         = Math.max(0, total - effectiveUsed);
+
+  return { erp, reported, effectiveUsed, pendingClearance, advancePayment, remaining };
+}
+
+/** สรุป budget รวมทุกโครงการ */
+export function computeBudgetSummary(projects: DBProject[]) {
+  return projects.reduce(
+    (acc, p) => {
+      const r = computeBudgetReconciliation(p);
+      acc.total           += Number(p.budget_total || 0);
+      acc.erp             += r.erp;
+      acc.reported        += r.reported;
+      acc.effectiveUsed   += r.effectiveUsed;
+      acc.pendingClearance+= r.pendingClearance;
+      acc.advancePayment  += r.advancePayment;
+      acc.remaining       += r.remaining;
+      return acc;
+    },
+    { total: 0, erp: 0, reported: 0, effectiveUsed: 0, pendingClearance: 0, advancePayment: 0, remaining: 0 }
+  );
 }
 
 export interface DBActivity {

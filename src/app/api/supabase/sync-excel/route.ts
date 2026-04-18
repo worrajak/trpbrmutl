@@ -183,13 +183,27 @@ async function syncToSupabase(
       continue;
     }
 
-    // UPDATE budget fields
+    // ดึง budget_reported ของโครงการเพื่อคำนวณ effective remaining
+    const { data: current } = await supabase
+      .from("projects")
+      .select("budget_reported")
+      .eq("erp_code", proj.erp_code)
+      .maybeSingle();
+
+    const reported      = Number(current?.budget_reported || 0);
+    const erp           = proj.budget_used;
+    const effectiveUsed = Math.max(erp, reported);
+    const advance       = Math.max(0, reported - erp);
+    const remaining     = Math.max(0, proj.budget_total - effectiveUsed);
+
+    // UPDATE budget fields — ไม่แตะ budget_reported (เป็นของรายงาน)
     const { error: updateErr } = await supabase
       .from("projects")
       .update({
-        budget_total: proj.budget_total,
-        budget_used: proj.budget_used,
-        budget_remaining: proj.budget_remaining,
+        budget_total:     proj.budget_total,
+        budget_used:      proj.budget_used,
+        budget_advance:   advance,
+        budget_remaining: remaining,
       })
       .eq("erp_code", proj.erp_code);
 

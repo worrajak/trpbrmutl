@@ -4,6 +4,7 @@ import {
   fetchKpiTargets,
   computeProgramSummaries,
   computeKpiOverview,
+  computeBudgetSummary,
 } from "@/lib/supabase-data";
 import NewsSection from "@/components/NewsSection";
 
@@ -31,14 +32,9 @@ export default async function Home() {
   // Summaries
   const programSummaries = computeProgramSummaries(projects);
   const kpiOverview = computeKpiOverview(kpis);
-
-  // Overall totals
-  const totalBudget = projects.reduce((s, p) => s + Number(p.budget_total), 0);
-  const totalUsed = projects.reduce((s, p) => s + Number(p.budget_used), 0);
-  const totalRemaining = totalBudget - totalUsed;
-  const usagePercent =
-    totalBudget > 0 ? Math.round((totalUsed / totalBudget) * 100) : 0;
+  const budget = computeBudgetSummary(projects);
   const totalActivities = activities.length;
+  const usagePercent = budget.total > 0 ? Math.round((budget.effectiveUsed / budget.total) * 100) : 0;
 
   return (
     <div className="space-y-8">
@@ -70,54 +66,72 @@ export default async function Home() {
         )}
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards — row 1 */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-lg bg-white p-4 shadow">
           <p className="text-xs text-gray-500">โครงการทั้งหมด</p>
-          <p className="text-3xl font-bold text-royal-700">
-            {projects.length}
-          </p>
-          <p className="text-xs text-gray-400">
-            กิจกรรม {totalActivities} รายการ
-          </p>
+          <p className="text-3xl font-bold text-royal-700">{projects.length}</p>
+          <p className="text-xs text-gray-400">กิจกรรม {totalActivities} รายการ</p>
         </div>
         <div className="rounded-lg bg-white p-4 shadow">
           <p className="text-xs text-gray-500">งบประมาณรวม</p>
-          <p className="text-2xl font-bold text-royal-700">
-            {formatBudget(totalBudget)}
-          </p>
+          <p className="text-2xl font-bold text-royal-700">{formatBudget(budget.total)}</p>
           <p className="text-xs text-gray-400">บาท</p>
         </div>
         <div className="rounded-lg bg-white p-4 shadow">
-          <p className="text-xs text-gray-500">เบิกจ่ายแล้ว</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {formatBudget(totalUsed)}
-          </p>
+          <p className="text-xs text-gray-500">ใช้จ่ายจริง (effective)</p>
+          <p className="text-2xl font-bold text-blue-600">{formatBudget(budget.effectiveUsed)}</p>
           <div className="mt-1">
             <div className="flex justify-between text-xs text-gray-400">
-              <span>บาท</span>
-              <span>{usagePercent}%</span>
+              <span>บาท</span><span>{usagePercent}%</span>
             </div>
             <div className="mt-0.5 h-1.5 rounded-full bg-gray-200">
-              <div
-                className="h-1.5 rounded-full bg-blue-500 transition-all"
-                style={{ width: `${Math.min(usagePercent, 100)}%` }}
-              />
+              <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${Math.min(usagePercent, 100)}%` }} />
             </div>
           </div>
         </div>
         <div className="rounded-lg bg-white p-4 shadow">
           <p className="text-xs text-gray-500">ตัวชี้วัดที่บรรลุเป้า</p>
           <p className="text-3xl font-bold text-green-600">
-            {kpiOverview.verified}
-            <span className="text-lg text-gray-400">
-              /{kpiOverview.total}
-            </span>
+            {kpiOverview.verified}<span className="text-lg text-gray-400">/{kpiOverview.total}</span>
           </p>
-          <p className="text-xs text-gray-400">
-            เกินเป้า {kpiOverview.exceeded} ตัว
-          </p>
+          <p className="text-xs text-gray-400">เกินเป้า {kpiOverview.exceeded} ตัว</p>
         </div>
+      </div>
+
+      {/* Budget Reconciliation Panel */}
+      <div className="rounded-xl bg-white shadow p-5">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">📊 สถานะงบประมาณโดยรวม</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "งปม.รวมทั้งหมด", value: budget.total, color: "text-gray-700", bg: "bg-gray-50" },
+            { label: "เบิกจริงจาก ERP", value: budget.erp, color: "text-blue-700", bg: "bg-blue-50" },
+            { label: "รายงานค่าใช้จ่าย", value: budget.reported, color: "text-purple-700", bg: "bg-purple-50" },
+            { label: "รอเคลียบิล", value: budget.pendingClearance, color: "text-orange-700", bg: "bg-orange-50" },
+            { label: "หน.ออกเองก่อน", value: budget.advancePayment, color: "text-yellow-700", bg: "bg-yellow-50" },
+            { label: "คงเหลือสุทธิ", value: budget.remaining, color: "text-green-700", bg: "bg-green-50" },
+          ].map(({ label, value, color, bg }) => (
+            <div key={label} className={`rounded-lg p-3 ${bg}`}>
+              <p className="text-xs text-gray-500 mb-1">{label}</p>
+              <p className={`text-lg font-bold ${color}`}>{formatBudget(value)}</p>
+              <p className="text-xs text-gray-400">บาท</p>
+            </div>
+          ))}
+        </div>
+        {(budget.pendingClearance > 0 || budget.advancePayment > 0) && (
+          <div className="mt-4 space-y-2">
+            {budget.pendingClearance > 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-sm text-orange-700">
+                ⚠️ มีการเบิกจาก ERP แล้ว <strong>{formatBudget(budget.pendingClearance)} บาท</strong> ยังไม่มีรายงานค่าใช้จ่ายตรงกัน — กรุณาส่งเอกสารหลักฐาน
+              </div>
+            )}
+            {budget.advancePayment > 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-700">
+                💡 หัวหน้าโครงการออกเงินเองก่อน <strong>{formatBudget(budget.advancePayment)} บาท</strong> — รอเบิกคืนจาก ERP
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
 

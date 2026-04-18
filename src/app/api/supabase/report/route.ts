@@ -134,24 +134,39 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 4. Update self-reported budget on project
+  // 4. บันทึก budget_spent ใน activity_reports และอัปเดต budget_reported บน project
   if (budget_spent && Number(budget_spent) > 0) {
+    // บันทึกยอดที่รายงานไว้กับ report record
+    await supabase
+      .from("activity_reports")
+      .update({ budget_spent: Number(budget_spent) })
+      .eq("id", report.id);
+
+    // ดึงข้อมูล project
     const { data: proj } = await supabase
       .from("projects")
-      .select("budget_used, budget_total")
+      .select("budget_total, budget_used, budget_reported")
       .eq("id", project_id)
       .single();
 
     if (proj) {
-      // budget_used ใช้สำหรับ self-report (ผู้ดำเนินงาน)
-      // ส่วน ERP จะ sync แยกจาก Google Sheets
-      const newUsed = Number(proj.budget_used) + Number(budget_spent);
+      const erp      = Number(proj.budget_used     || 0); // จาก Excel sync — ไม่แตะ
+      const reported = Number(proj.budget_reported  || 0) + Number(budget_spent); // สะสมจากรายงาน
+      const total    = Number(proj.budget_total     || 0);
+
+      // effective_used = ใช้ค่าสูงสุดระหว่าง ERP กับรายงาน
+      const effectiveUsed = Math.max(erp, reported);
+
+      // advance = หน.ออกเองก่อน (reported > erp)
+      const advance = Math.max(0, reported - erp);
+
       await supabase
         .from("projects")
         .update({
-          budget_used: newUsed,
-          budget_remaining: Number(proj.budget_total) - newUsed,
-          updated_at: new Date().toISOString(),
+          budget_reported:  reported,
+          budget_advance:   advance,
+          budget_remaining: Math.max(0, total - effectiveUsed),
+          updated_at:       new Date().toISOString(),
         })
         .eq("id", project_id);
     }
