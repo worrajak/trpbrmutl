@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       total_reports_with_evidence: (reports || []).filter(
         (r) => (r.evidence_files || []).length > 0
       ).length,
-      sdg_goals_covered: [...new Set((projects || []).flatMap((p) => p.sdg_tags || []))].sort((a, b) => a - b),
+      sdg_goals_covered: Array.from(new Set((projects || []).flatMap((p) => p.sdg_tags || []))).sort((a, b) => a - b),
     },
     projects: enrichedProjects,
     reports_with_evidence: (reports || []).filter(
