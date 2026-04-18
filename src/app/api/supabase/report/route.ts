@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (proj) {
       const existing: number[] = proj.sdg_tags || [];
-      const merged = [...new Set([...existing, ...sdg_tags])].sort((a, b) => a - b);
+      const merged = Array.from(new Set([...existing, ...sdg_tags])).sort((a, b) => a - b);
       await supabase
         .from("projects")
         .update({ sdg_tags: merged })
