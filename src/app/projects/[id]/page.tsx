@@ -20,6 +20,7 @@ interface ReportData {
   evidence_url: string | null;
   submitted_by: string;
   submitted_at: string;
+  budget_spent: number | null;
   sdg_tags: number[] | null;
   evidence_files: Array<{ name: string; url: string; type: string }> | null;
   activities: { activity_order: number; activity_name: string } | null;
@@ -652,6 +653,12 @@ export default function ProjectDetailPage() {
                   <span className="text-gray-500">
                     &#128100; {r.submitted_by}
                   </span>
+                  <ReportBudgetEditor
+                    reportId={r.id}
+                    currentAmount={Number(r.budget_spent || 0)}
+                    tokenCode={tokenCode}
+                    onSaved={loadData}
+                  />
                   {r.evidence_url && (
                     <a
                       href={r.evidence_url}
@@ -790,5 +797,95 @@ export default function ProjectDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+// ─── Inline budget editor (หน.โครงการแก้ยอดเงินในรายงานตัวเอง) ─────────────
+function ReportBudgetEditor({
+  reportId,
+  currentAmount,
+  tokenCode,
+  onSaved,
+}: {
+  reportId: string;
+  currentAmount: number;
+  tokenCode: string | null;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(String(currentAmount || ""));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // ไม่ได้ login token → แสดงแค่ยอด (ถ้ามี)
+  if (!tokenCode) {
+    if (currentAmount > 0) {
+      return (
+        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700">
+          💰 {formatBudget(currentAmount)} บาท
+        </span>
+      );
+    }
+    return null;
+  }
+
+  // Authed → แสดงยอด + edit icon / หรือฟอร์มแก้
+  if (!editing) {
+    return (
+      <button
+        onClick={() => { setEditing(true); setValue(String(currentAmount || "")); setError(""); }}
+        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 ${currentAmount > 0 ? "bg-amber-50 text-amber-700 hover:bg-amber-100" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+        title="คลิกเพื่อแก้ยอดเงิน"
+      >
+        💰 {currentAmount > 0 ? `${formatBudget(currentAmount)} บาท` : "เพิ่มยอด"}
+        <span className="text-[10px] opacity-60">✏️</span>
+      </button>
+    );
+  }
+
+  async function save() {
+    const n = Number(value);
+    if (!isFinite(n) || n < 0) { setError("ยอดไม่ถูกต้อง"); return; }
+    setSaving(true); setError("");
+    const res = await fetch(`/api/supabase/report/${reportId}/budget`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token_code: tokenCode, budget_spent: n }),
+    });
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok) { setError(data.error || "บันทึกไม่สำเร็จ"); return; }
+    setEditing(false);
+    onSaved();
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5">
+      <span>💰</span>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+        className="w-24 rounded border px-1 py-0.5 text-xs"
+        autoFocus
+        min={0}
+      />
+      <span className="text-gray-500">บาท</span>
+      <button
+        onClick={save}
+        disabled={saving}
+        className="rounded bg-green-600 px-2 py-0.5 text-white hover:bg-green-700 disabled:opacity-50"
+      >
+        {saving ? "..." : "บันทึก"}
+      </button>
+      <button
+        onClick={() => setEditing(false)}
+        className="rounded bg-gray-200 px-2 py-0.5 text-gray-700 hover:bg-gray-300"
+      >
+        ยกเลิก
+      </button>
+      {error && <span className="text-red-600 ml-1">{error}</span>}
+    </span>
   );
 }
