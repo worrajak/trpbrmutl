@@ -661,6 +661,35 @@ export default function ProjectDetailPage() {
                     )}
                   </div>
                 </div>
+                {/* Image gallery (แสดงรูปประกอบแบบ thumbnail) */}
+                {(r.evidence_files || []).filter((f) => f.type === "image" && f.url).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(r.evidence_files || [])
+                      .filter((f) => f.type === "image" && f.url)
+                      .map((f, fi) => (
+                        <a
+                          key={fi}
+                          href={f.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={f.name || "รูปประกอบ"}
+                          className="group relative overflow-hidden rounded-lg ring-1 ring-gray-200 transition hover:ring-royal-500"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={f.url}
+                            alt={f.name || ""}
+                            loading="lazy"
+                            className="h-32 w-32 object-cover sm:h-40 sm:w-40"
+                          />
+                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100">
+                            🔍 เปิดรูปต้นฉบับ
+                          </span>
+                        </a>
+                      ))}
+                  </div>
+                )}
+
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="text-gray-500">
                     &#128100; {r.submitted_by}
@@ -681,18 +710,21 @@ export default function ProjectDetailPage() {
                       &#128206; หลักฐาน
                     </a>
                   )}
-                  {(r.evidence_files || []).map((f, fi) => (
-                    <a
-                      key={fi}
-                      href={f.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded bg-purple-50 px-1.5 py-0.5 text-purple-700 hover:underline"
-                    >
-                      {f.type === "pdf" ? "📄" : f.type === "image" ? "🖼️" : "🔗"}
-                      {f.name || "หลักฐาน"}
-                    </a>
-                  ))}
+                  {/* non-image evidence as chips */}
+                  {(r.evidence_files || [])
+                    .filter((f) => f.type !== "image")
+                    .map((f, fi) => (
+                      <a
+                        key={fi}
+                        href={f.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded bg-purple-50 px-1.5 py-0.5 text-purple-700 hover:underline"
+                      >
+                        {f.type === "pdf" ? "📄" : "🔗"}
+                        {f.name || "หลักฐาน"}
+                      </a>
+                    ))}
                   {(r.sdg_tags || []).length > 0 &&
                     sdgTagsToGoals(r.sdg_tags || []).map((g) => (
                       <a

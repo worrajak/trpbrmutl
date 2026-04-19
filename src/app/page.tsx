@@ -7,6 +7,7 @@ import {
   computeBudgetSummary,
 } from "@/lib/supabase-data";
 import NewsSection from "@/components/NewsSection";
+import LatestReportsFeed from "@/components/LatestReportsFeed";
 
 export const revalidate = 60; // revalidate ทุก 1 นาที
 
@@ -202,6 +203,9 @@ export default async function Home() {
           })}
         </div>
       </section>
+
+      {/* รายงานล่าสุด (พร้อมรูป) */}
+      <LatestReportsFeed limit={8} />
 
       {/* ข่าวล่าสุด */}
       <NewsSection />

@@ -3,8 +3,31 @@
 import { useState, useEffect } from "react";
 import type { DBProject } from "@/lib/supabase-data";
 
+interface ProjectWithReport extends DBProject {
+  last_report: {
+    submitted_at: string;
+    submitted_by: string;
+    description: string | null;
+    image_url: string | null;
+    report_count: number;
+  } | null;
+}
+
 function formatBudget(n: number): string {
   return Number(n).toLocaleString("th-TH");
+}
+
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffH = diffMs / 1000 / 3600;
+  if (diffH < 1) return "เมื่อครู่";
+  if (diffH < 24) return `${Math.floor(diffH)} ชม.ที่แล้ว`;
+  const diffD = diffH / 24;
+  if (diffD < 7) return `${Math.floor(diffD)} วันที่แล้ว`;
+  if (diffD < 30) return `${Math.floor(diffD / 7)} สัปดาห์ก่อน`;
+  return d.toLocaleDateString("th-TH", { day: "numeric", month: "short" });
 }
 
 const statusLabel: Record<string, { text: string; cls: string }> = {
@@ -29,7 +52,7 @@ const programColor: Record<string, string> = {
 };
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<DBProject[]>([]);
+  const [projects, setProjects] = useState<ProjectWithReport[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filterMain, setFilterMain] = useState<string>("all");
@@ -51,19 +74,30 @@ export default function ProjectsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = projects.filter((p) => {
-    if (filterMain !== "all" && p.main_program !== filterMain) return false;
-    if (
-      search &&
-      !p.project_name.includes(search) &&
-      !(p.responsible || "").includes(search) &&
-      !(p.site || "").includes(search) &&
-      !(p.organization || "").includes(search) &&
-      !(p.erp_code || "").includes(search)
-    )
-      return false;
-    return true;
-  });
+  const filtered = projects
+    .filter((p) => {
+      if (filterMain !== "all" && p.main_program !== filterMain) return false;
+      if (
+        search &&
+        !p.project_name.includes(search) &&
+        !(p.responsible || "").includes(search) &&
+        !(p.site || "").includes(search) &&
+        !(p.organization || "").includes(search) &&
+        !(p.erp_code || "").includes(search)
+      )
+        return false;
+      return true;
+    })
+    .sort((a, b) => {
+      // เรียงตามวันรายงานล่าสุด (ใหม่อยู่บน) — โครงการที่ยังไม่รายงานลงล่างสุด
+      const aTime = a.last_report
+        ? new Date(a.last_report.submitted_at).getTime()
+        : 0;
+      const bTime = b.last_report
+        ? new Date(b.last_report.submitted_at).getTime()
+        : 0;
+      return bTime - aTime;
+    });
 
   const totalBudget = filtered.reduce((s, p) => s + Number(p.budget_total), 0);
   const totalUsed = filtered.reduce((s, p) => s + Number(p.budget_used), 0);
@@ -149,6 +183,7 @@ export default function ProjectsPage() {
         <table className="w-full text-sm">
           <thead className="bg-royal-700 text-white">
             <tr>
+              <th className="px-2 py-2 text-center" style={{ width: 72 }}>รายงาน</th>
               <th className="px-3 py-2 text-left">โครงการ</th>
               <th className="px-3 py-2 text-left">หน่วยงาน</th>
               <th className="px-3 py-2 text-left">ผู้รับผิดชอบ</th>
@@ -166,6 +201,39 @@ export default function ProjectsPage() {
               const pc = programColor[p.main_program] || "bg-gray-100 text-gray-600";
               return (
                 <tr key={p.id} className="border-t hover:bg-gray-50">
+                  <td className="px-2 py-2 text-center">
+                    {p.last_report ? (
+                      <a
+                        href={`/projects/${p.id}`}
+                        className="inline-flex flex-col items-center gap-0.5"
+                        title={`${p.last_report.report_count} รายงาน · ล่าสุด ${formatRelativeTime(p.last_report.submitted_at)}`}
+                      >
+                        {p.last_report.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.last_report.image_url}
+                            alt=""
+                            loading="lazy"
+                            className="h-12 w-12 rounded object-cover ring-1 ring-gray-200"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded bg-blue-50 text-blue-400 ring-1 ring-blue-100">
+                            📝
+                          </div>
+                        )}
+                        <span className="text-[10px] text-gray-500">
+                          {formatRelativeTime(p.last_report.submitted_at)}
+                        </span>
+                      </a>
+                    ) : (
+                      <span className="inline-flex flex-col items-center gap-0.5 text-gray-300">
+                        <div className="flex h-12 w-12 items-center justify-center rounded bg-gray-50 ring-1 ring-gray-100">
+                          <span className="text-lg">—</span>
+                        </div>
+                        <span className="text-[10px]">ยังไม่รายงาน</span>
+                      </span>
+                    )}
+                  </td>
                   <td className="max-w-xs px-3 py-2">
                     <a
                       href={`/projects/${p.id}`}

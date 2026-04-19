@@ -3,6 +3,7 @@
 import { useState } from "react";
 import KpiReportPanel from "./KpiReportPanel";
 import { SDG_GOALS } from "@/lib/sdgs";
+import { uploadReportImage } from "@/lib/image-upload";
 
 interface KpiTarget {
   id: string;
@@ -60,7 +61,49 @@ export default function ReportForm({
     );
   }
 
-  // Evidence files (หลักฐานแนบ)
+  // Uploaded report images (สูงสุด 2 รูป — resize + upload ตรงไป Supabase)
+  const MAX_IMAGES = 2;
+  const [reportImages, setReportImages] = useState<
+    Array<{ url: string; size: number } | null>
+  >([null, null]);
+  const [uploading, setUploading] = useState<Record<number, boolean>>({});
+  const [uploadError, setUploadError] = useState<Record<number, string>>({});
+
+  async function handleImageSelect(
+    e: React.ChangeEvent<HTMLInputElement>,
+    slotIndex: number
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError((prev) => ({ ...prev, [slotIndex]: "" }));
+    setUploading((prev) => ({ ...prev, [slotIndex]: true }));
+    try {
+      const res = await uploadReportImage(file, projectId, slotIndex);
+      setReportImages((prev) => {
+        const next = [...prev];
+        next[slotIndex] = { url: res.url, size: res.size };
+        return next;
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "อัปโหลดล้มเหลว";
+      setUploadError((prev) => ({ ...prev, [slotIndex]: msg }));
+    } finally {
+      setUploading((prev) => ({ ...prev, [slotIndex]: false }));
+      // reset input so same file can be re-selected
+      e.target.value = "";
+    }
+  }
+
+  function removeImage(slotIndex: number) {
+    setReportImages((prev) => {
+      const next = [...prev];
+      next[slotIndex] = null;
+      return next;
+    });
+    setUploadError((prev) => ({ ...prev, [slotIndex]: "" }));
+  }
+
+  // Evidence files (หลักฐานแนบ - link เท่านั้น)
   const [evidenceFiles, setEvidenceFiles] = useState<
     Array<{ name: string; url: string; type: string }>
   >([]);
@@ -140,6 +183,20 @@ export default function ReportForm({
     try {
       const validNewKpis = newKpis.filter((k) => k.kpi_name.trim());
 
+      // รวมรูปที่อัปโหลดกับหลักฐานแบบลิงก์
+      const uploadedImages = reportImages
+        .map((img, idx) =>
+          img
+            ? { name: `รูปรายงาน ${idx + 1}`, url: img.url, type: "image" }
+            : null
+        )
+        .filter((x): x is { name: string; url: string; type: string } => x !== null);
+
+      const mergedEvidence = [
+        ...uploadedImages,
+        ...evidenceFiles.filter((f) => f.url.trim()),
+      ];
+
       const res = await fetch("/api/supabase/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -159,7 +216,7 @@ export default function ReportForm({
           })),
           token_code: tokenCode || null,
           sdg_tags: selectedSdgs,
-          evidence_files: evidenceFiles.filter((f) => f.url.trim()),
+          evidence_files: mergedEvidence,
         }),
       });
 
@@ -427,12 +484,86 @@ export default function ReportForm({
               )}
             </div>
 
+            {/* 📸 อัปโหลดรูปรายงาน (สูงสุด 2 รูป — ระบบจะย่อขนาดอัตโนมัติ) */}
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <div className="mb-3">
+                <p className="text-sm font-medium text-orange-900">📸 รูปประกอบรายงาน</p>
+                <p className="text-xs text-orange-600">
+                  สูงสุด 2 รูป · ระบบย่อขนาดให้อัตโนมัติ (1280px, JPEG ~300 KB)
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: MAX_IMAGES }).map((_, i) => {
+                  const img = reportImages[i];
+                  const isUploading = uploading[i];
+                  const errMsg = uploadError[i];
+                  return (
+                    <div
+                      key={i}
+                      className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-orange-300 bg-white"
+                    >
+                      {img ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.url}
+                            alt={`รูปรายงาน ${i + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(i)}
+                            className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-red-600"
+                          >
+                            ลบ
+                          </button>
+                          <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                            {(img.size / 1024).toFixed(0)} KB
+                          </span>
+                        </>
+                      ) : (
+                        <label className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-1 text-center text-orange-600 hover:bg-orange-100">
+                          {isUploading ? (
+                            <>
+                              <span className="text-2xl">⏳</span>
+                              <span className="text-xs">กำลังอัปโหลด...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-3xl">📷</span>
+                              <span className="text-xs">แตะเพื่อเลือกรูป</span>
+                              <span className="text-[10px] text-orange-400">
+                                รูปที่ {i + 1}
+                              </span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handleImageSelect(e, i)}
+                            disabled={isUploading}
+                          />
+                        </label>
+                      )}
+                      {errMsg && (
+                        <div className="absolute inset-x-0 bottom-0 bg-red-50 px-2 py-1 text-[10px] text-red-700">
+                          {errMsg}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* หลักฐานแนบ (evidence_files) */}
             <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-sm font-medium text-purple-900">📎 แนบหลักฐาน</p>
-                  <p className="text-xs text-purple-600">รูปถ่าย, PDF, หรือลิงก์ที่แสดงผลการดำเนินงาน</p>
+                  <p className="text-sm font-medium text-purple-900">📎 แนบลิงก์หลักฐานเพิ่ม</p>
+                  <p className="text-xs text-purple-600">Google Drive, PDF, วิดีโอ (สำหรับไฟล์ใหญ่/เอกสาร)</p>
                 </div>
               </div>
 
