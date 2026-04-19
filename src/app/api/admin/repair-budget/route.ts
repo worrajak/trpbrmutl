@@ -20,13 +20,26 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { dry_run = true, project_id } = body;
 
-  // 1. ดึงโครงการ
-  let projQuery = supabase.from("projects").select("id, project_name, budget_total, budget_used, budget_reported");
-  if (project_id) projQuery = projQuery.eq("id", project_id);
+  // 1. ดึงโครงการ — รองรับทั้ง id (slug) และ erp_code
+  let projQuery = supabase.from("projects").select("id, erp_code, project_name, budget_total, budget_used, budget_reported");
+  if (project_id) {
+    const key = String(project_id).trim();
+    projQuery = projQuery.or(`id.eq.${key},erp_code.eq.${key}`);
+  }
 
   const { data: projects, error: projErr } = await projQuery;
   if (projErr) return NextResponse.json({ error: projErr.message }, { status: 500 });
-  if (!projects) return NextResponse.json({ projects: [] });
+  if (!projects || projects.length === 0) {
+    return NextResponse.json({
+      dry_run,
+      total_projects: 0,
+      needs_fix: 0,
+      corrupt: 0,
+      mismatch_only: 0,
+      analysis: [],
+      hint: project_id ? `ไม่พบโครงการที่ id หรือ erp_code = "${project_id}"` : undefined,
+    });
+  }
 
   // 2. ดึง sum ของ budget_spent จาก activity_reports สำหรับทุกโครงการ
   const { data: reports } = await supabase
@@ -47,15 +60,32 @@ export async function POST(req: NextRequest) {
     const total         = Number(p.budget_total    || 0);
     const erpStored     = Number(p.budget_used     || 0);
     const reportedStored= Number(p.budget_reported || 0);
-    const actualReported= reportedSum.get(p.id) || 0;
+    // activity_reports.project_id อาจเก็บเป็น id (slug) หรือ erp_code — ลองทั้งสอง
+    const actualReported= (reportedSum.get(p.id) || 0) + (p.erp_code && p.erp_code !== p.id ? (reportedSum.get(p.erp_code) || 0) : 0);
 
-    // ตรวจ: ถ้า erp > total อย่างผิดปกติ และใกล้เคียง erp - reported_actual → corrupt
-    const suspectedErp  = Math.max(0, erpStored - actualReported);
-    const isCorrupt     = erpStored > total && Math.abs(erpStored - (suspectedErp + actualReported)) < 1;
+    // ตรวจความ corrupt:
+    // (A) ถ้า erp > total → ผิดแน่ (ERP ไม่น่าเกินงบรวม) — reset = erp - reported_actual
+    // (B) ถ้า erp ใกล้เคียง (erp - reported) + reported → ชัดเจนว่าเป็น bug บวกซ้ำ
+    const suspectedErp     = Math.max(0, erpStored - actualReported);
+    const overBudget       = erpStored > total + 0.5;
+    const matchesAddBug    = actualReported > 0 && Math.abs(erpStored - (suspectedErp + actualReported)) < 1;
+    const isCorrupt        = overBudget || matchesAddBug;
     const reportedMismatch = Math.abs(reportedStored - actualReported) > 0.5;
 
+    // ถ้า corrupt → ใช้ suspectedErp (ถอยกลับก่อนถูกบวก)
+    //   แต่ถ้า actualReported = 0 และยัง over budget → clamp ที่ total
+    let proposedUsed = erpStored;
+    if (isCorrupt) {
+      if (actualReported > 0) {
+        proposedUsed = suspectedErp;
+      } else if (overBudget) {
+        // ไม่มีรายงาน แต่ erp เกิน total → clamp ที่ total (ข้อมูลเดิมหายหมดแล้ว)
+        proposedUsed = total;
+      }
+    }
+
     const proposed = {
-      budget_used:     isCorrupt ? suspectedErp : erpStored,
+      budget_used:     proposedUsed,
       budget_reported: actualReported,
     };
 

@@ -875,6 +875,7 @@ interface RepairResult {
   corrupt: number;
   mismatch_only: number;
   analysis: RepairAnalysisRow[];
+  hint?: string;
 }
 
 function fmtTh(n: number): string {
@@ -945,21 +946,26 @@ function RepairBudgetPanel() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-        <input
-          type="text"
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          placeholder="ระบุ project_id (ERP code) เพื่อซ่อมโครงการเดียว — เว้นว่าง = ทุกโครงการ"
-          className="flex-1 rounded-lg border px-3 py-2 text-sm font-mono"
-        />
-        <button
-          onClick={runScan}
-          disabled={!!loading}
-          className="rounded-lg bg-rose-600 py-2 px-4 text-white font-medium hover:bg-rose-700 disabled:opacity-50 text-sm whitespace-nowrap"
-        >
-          {loading === "scan" ? "⏳ กำลังตรวจ..." : "🔍 ตรวจ (dry-run)"}
-        </button>
+      <div className="space-y-2">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <input
+            type="text"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            placeholder="เว้นว่าง = สแกนทุกโครงการ / หรือใส่ id slug / erp_code / เพื่อซ่อมโครงการเดียว"
+            className="flex-1 rounded-lg border px-3 py-2 text-sm font-mono"
+          />
+          <button
+            onClick={runScan}
+            disabled={!!loading}
+            className="rounded-lg bg-rose-600 py-2 px-4 text-white font-medium hover:bg-rose-700 disabled:opacity-50 text-sm whitespace-nowrap"
+          >
+            {loading === "scan" ? "⏳ กำลังตรวจ..." : "🔍 ตรวจ (dry-run)"}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">
+          💡 แนะนำ: กด <b>ตรวจ</b> โดยเว้นช่องว่างไว้ก่อน เพื่อสแกนทุกโครงการในฐานข้อมูล
+        </p>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">❌ {error}</p>}
@@ -1040,8 +1046,12 @@ function RepairBudgetPanel() {
               </button>
             </>
           ) : (
-            <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
-              <p className="text-sm font-semibold text-green-700">✅ ไม่พบข้อมูล corrupt — ทุกโครงการปกติ</p>
+            <div className={`rounded-lg border p-4 text-center ${scan.hint ? "bg-yellow-50 border-yellow-200" : "bg-green-50 border-green-200"}`}>
+              {scan.hint ? (
+                <p className="text-sm font-semibold text-yellow-700">⚠️ {scan.hint}</p>
+              ) : (
+                <p className="text-sm font-semibold text-green-700">✅ ไม่พบข้อมูล corrupt — ทุกโครงการปกติ</p>
+              )}
             </div>
           )}
         </div>
