@@ -743,23 +743,23 @@ function AnalyticsPanel() {
 // ─── Seed Activities Panel ────────────────────────────────────────────────────
 
 function SeedActivitiesPanel() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"" | "all" | "tokens">("");
   const [results, setResults] = useState<{
     seeded: number; errors: number;
-    results: { project_id: string; activities: number; kpis: number; token: string | null; error?: string }[];
+    results: { project_id: string; activities: number; kpis: number; token: string | null; responsible_name: string; error?: string }[];
   } | null>(null);
   const [error, setError] = useState("");
 
-  async function handleSeedAll() {
-    if (!confirm("สร้างกิจกรรม + ตัวชี้วัด + Token ให้โครงการใต้ร่มพระบารมีทั้งหมดที่ยังว่าง?")) return;
-    setLoading(true); setError(""); setResults(null);
+  async function callApi(body: object) {
+    setLoading(body && "tokens_only" in body ? "tokens" : "all");
+    setError(""); setResults(null);
     const res = await fetch("/api/admin/seed-activities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all_empty: true }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
-    setLoading(false);
+    setLoading("");
     if (!res.ok) setError(data.error || "เกิดข้อผิดพลาด");
     else setResults(data);
   }
@@ -771,15 +771,33 @@ function SeedActivitiesPanel() {
         <ul className="list-disc list-inside space-y-0.5 text-teal-700">
           <li>กิจกรรม 5 ขั้น (วางแผน → สำรวจ → ลงพื้นที่ → ติดตาม → รายงาน)</li>
           <li>ตัวชี้วัด 5 รายการ (ผู้ได้รับประโยชน์, พื้นที่, ความพึงพอใจ, องค์ความรู้, รายงาน)</li>
-          <li>Token 6 หลักสำหรับหัวหน้าโครงการ (ถ้ายังไม่มี)</li>
+          <li>Token 6 หลักสำหรับหัวหน้าโครงการ (ถ้ายังไม่มี) — แยกชื่อจากวงเล็บท้ายชื่อโครงการ</li>
         </ul>
-        <p className="mt-2 text-xs text-teal-600">⚠️ โครงการที่มีกิจกรรมอยู่แล้วจะไม่ถูกแตะ</p>
+        <p className="mt-2 text-xs text-teal-600">⚠️ โครงการที่มีกิจกรรมอยู่แล้วจะไม่ถูกแตะ (ใช้ปุ่มที่ 2 สำหรับ token เท่านั้น)</p>
       </div>
 
-      <button onClick={handleSeedAll} disabled={loading}
-        className="w-full rounded-xl bg-teal-600 py-3 text-white font-medium hover:bg-teal-700 disabled:opacity-50">
-        {loading ? "⏳ กำลังสร้างข้อมูล..." : "🌱 สร้างข้อมูลให้โครงการที่ว่างทั้งหมด"}
-      </button>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <button
+          onClick={() => {
+            if (!confirm("สร้างกิจกรรม + ตัวชี้วัด + Token ให้โครงการใต้ร่มพระบารมีทั้งหมดที่ยังว่าง?")) return;
+            callApi({ all_empty: true });
+          }}
+          disabled={!!loading}
+          className="rounded-xl bg-teal-600 py-3 text-white font-medium hover:bg-teal-700 disabled:opacity-50 text-sm"
+        >
+          {loading === "all" ? "⏳ กำลังสร้าง..." : "🌱 สร้างข้อมูลให้โครงการที่ว่าง"}
+        </button>
+        <button
+          onClick={() => {
+            if (!confirm("สร้าง Token เฉพาะโครงการที่ยังไม่มี Token (ไม่แตะกิจกรรม/KPI)?")) return;
+            callApi({ tokens_only: true });
+          }}
+          disabled={!!loading}
+          className="rounded-xl bg-amber-500 py-3 text-white font-medium hover:bg-amber-600 disabled:opacity-50 text-sm"
+        >
+          {loading === "tokens" ? "⏳ กำลังสร้าง Token..." : "🔑 สร้าง Token ที่หายไป"}
+        </button>
+      </div>
 
       {error && <p className="text-red-600 text-sm">❌ {error}</p>}
 
@@ -796,12 +814,13 @@ function SeedActivitiesPanel() {
             </div>
           </div>
 
-          <div className="max-h-64 overflow-y-auto rounded-lg border">
+          <div className="max-h-72 overflow-y-auto rounded-lg border">
             <table className="w-full text-xs">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
                   <th className="p-2 text-left text-gray-600">Project ID</th>
-                  <th className="p-2 text-center text-gray-600">กิจกรรม</th>
+                  <th className="p-2 text-left text-gray-600">ผู้รับผิดชอบ</th>
+                  <th className="p-2 text-center text-gray-600">กจ.</th>
                   <th className="p-2 text-center text-gray-600">KPI</th>
                   <th className="p-2 text-center text-gray-600">Token</th>
                   <th className="p-2 text-left text-gray-600">สถานะ</th>
@@ -810,9 +829,10 @@ function SeedActivitiesPanel() {
               <tbody>
                 {results.results.map((r) => (
                   <tr key={r.project_id} className={`border-t ${r.error ? "bg-red-50" : ""}`}>
-                    <td className="p-2 font-mono text-gray-600 max-w-[120px] truncate">{r.project_id}</td>
-                    <td className="p-2 text-center">{r.activities}</td>
-                    <td className="p-2 text-center">{r.kpis}</td>
+                    <td className="p-2 font-mono text-gray-600 max-w-[100px] truncate">{r.project_id}</td>
+                    <td className="p-2 text-gray-700 max-w-[120px] truncate">{r.responsible_name || "-"}</td>
+                    <td className="p-2 text-center">{r.activities || "-"}</td>
+                    <td className="p-2 text-center">{r.kpis || "-"}</td>
                     <td className="p-2 text-center font-mono font-bold text-teal-700">{r.token || "-"}</td>
                     <td className="p-2">{r.error ? <span className="text-red-600">{r.error}</span> : <span className="text-green-600">✅</span>}</td>
                   </tr>

@@ -59,75 +59,92 @@ export async function POST(req: NextRequest) {
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
 
   const body = await req.json();
-  const { project_id, all_empty } = body; // seed โครงการเดียว หรือทุกโครงการที่ว่าง
+  const { project_id, all_empty, tokens_only } = body;
+
+  // ดึงโครงการใต้ร่มพระบารมีทั้งหมด
+  const { data: allProjects } = await supabase
+    .from("projects")
+    .select("id, responsible, project_name, budget_total")
+    .eq("main_program", "ใต้ร่มพระบารมี");
+
+  if (!allProjects) return NextResponse.json({ error: "ดึงโครงการไม่ได้" }, { status: 500 });
+
+  const allIds = allProjects.map((p: { id: string }) => p.id);
 
   // รายชื่อ project ที่จะ seed
   let projectIds: string[] = [];
 
-  if (all_empty) {
-    // ดึงโครงการใต้ร่มพระบารมีทั้งหมด
-    const { data: projects } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("main_program", "ใต้ร่มพระบารมี");
-
-    if (!projects) return NextResponse.json({ error: "ดึงโครงการไม่ได้" }, { status: 500 });
-
-    // กรองเฉพาะที่ยังไม่มีกิจกรรม
-    const allIds = projects.map((p: { id: string }) => p.id);
+  if (tokens_only) {
+    // สร้าง token เฉพาะโครงการที่ยังไม่มี (ไม่ว่าจะมีกิจกรรมหรือไม่ก็ตาม)
+    const { data: existingTokens } = await supabase
+      .from("project_tokens")
+      .select("project_id")
+      .in("project_id", allIds);
+    const hasToken = new Set((existingTokens || []).map((t: { project_id: string }) => t.project_id));
+    projectIds = allIds.filter((id: string) => !hasToken.has(id));
+  } else if (all_empty) {
+    // สร้างกิจกรรม + KPI + token เฉพาะโครงการที่ยังไม่มีกิจกรรม
     const { data: existingActs } = await supabase
       .from("activities")
       .select("project_id")
       .in("project_id", allIds);
-
     const hasActivity = new Set((existingActs || []).map((a: { project_id: string }) => a.project_id));
     projectIds = allIds.filter((id: string) => !hasActivity.has(id));
   } else if (project_id) {
     projectIds = [project_id];
   } else {
-    return NextResponse.json({ error: "ต้องระบุ project_id หรือ all_empty: true" }, { status: 400 });
+    return NextResponse.json({ error: "ต้องระบุ project_id, all_empty, หรือ tokens_only" }, { status: 400 });
   }
 
-  const results: { project_id: string; activities: number; kpis: number; token: string | null; error?: string }[] = [];
+  // helper: extract responsible name
+  function extractResponsible(p: { responsible?: string | null; project_name?: string | null }): string {
+    if (p.responsible?.trim()) return p.responsible.trim();
+    const match = (p.project_name || "").match(/\(([^)]+)\)\s*$/);
+    return match ? match[1].trim() : "หัวหน้าโครงการ";
+  }
+
+  const projectMap = new Map(allProjects.map((p) => [p.id, p]));
+
+  const results: { project_id: string; activities: number; kpis: number; token: string | null; responsible_name: string; error?: string }[] = [];
 
   for (const pid of projectIds) {
     try {
-      // ดึงงบโครงการ
-      const { data: proj } = await supabase
-        .from("projects")
-        .select("budget_total")
-        .eq("id", pid)
-        .single();
-
+      const proj = projectMap.get(pid);
       const total = Number(proj?.budget_total || 0);
+      const responsibleName = extractResponsible(proj || {});
 
-      // 1. Seed activities
-      const actRows = DEFAULT_ACTIVITIES.map((a) => ({
-        project_id: pid,
-        activity_order: a.order,
-        activity_name: a.name,
-        expected_output: a.desc,
-        budget: Math.round(total * a.budget_pct),
-        planned_months: a.months,
-        status: "not_started",
-      }));
+      let actCount = 0;
+      let kpiCount = 0;
 
-      const { error: actErr } = await supabase.from("activities").insert(actRows);
-      if (actErr) throw new Error(`activities: ${actErr.message}`);
+      if (!tokens_only) {
+        // 1. Seed activities
+        const actRows = DEFAULT_ACTIVITIES.map((a) => ({
+          project_id: pid,
+          activity_order: a.order,
+          activity_name: a.name,
+          expected_output: a.desc,
+          budget: Math.round(total * a.budget_pct),
+          planned_months: a.months,
+          status: "not_started",
+        }));
+        const { error: actErr } = await supabase.from("activities").insert(actRows);
+        if (actErr) throw new Error(`activities: ${actErr.message}`);
+        actCount = actRows.length;
 
-      // 2. Seed KPI targets
-      const kpiRows = DEFAULT_KPIS.map((k) => ({
-        project_id: pid,
-        kpi_name: k.name,
-        kpi_type: k.type,
-        target_value: k.target,
-        actual_value: 0,
-        unit: k.unit,
-        verified: false,
-      }));
-
-      const { error: kpiErr } = await supabase.from("kpi_targets").insert(kpiRows);
-      if (kpiErr) throw new Error(`kpi_targets: ${kpiErr.message}`);
+        // 2. Seed KPI targets
+        const kpiRows = DEFAULT_KPIS.map((k) => ({
+          project_id: pid,
+          kpi_name: k.name,
+          kpi_type: k.type,
+          target_value: k.target,
+          actual_value: 0,
+          unit: k.unit,
+          verified: false,
+        }));
+        const { error: kpiErr } = await supabase.from("kpi_targets").insert(kpiRows);
+        if (kpiErr) throw new Error(`kpi_targets: ${kpiErr.message}`);
+        kpiCount = kpiRows.length;
+      }
 
       // 3. สร้าง Token ถ้ายังไม่มี
       const { data: existingToken } = await supabase
@@ -153,6 +170,7 @@ export async function POST(req: NextRequest) {
             const { error: tokErr } = await supabase.from("project_tokens").insert({
               project_id: pid,
               token_code: candidate,
+              responsible_name: responsibleName || "หัวหน้าโครงการ",
               is_active: true,
               created_at: new Date().toISOString(),
             });
@@ -162,9 +180,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      results.push({ project_id: pid, activities: actRows.length, kpis: kpiRows.length, token: tokenCode });
+      results.push({ project_id: pid, activities: actCount, kpis: kpiCount, token: tokenCode, responsible_name: responsibleName });
     } catch (e) {
-      results.push({ project_id: pid, activities: 0, kpis: 0, token: null, error: String(e) });
+      results.push({ project_id: pid, activities: 0, kpis: 0, token: null, responsible_name: "", error: String(e) });
     }
   }
 
