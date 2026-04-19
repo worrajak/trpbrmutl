@@ -11,6 +11,7 @@ import SCurveChart from "@/components/SCurveChart";
 import ReportForm from "@/components/ReportForm";
 import TokenLogin from "@/components/TokenLogin";
 import TronWalletConnect from "@/components/TronWalletConnect";
+import BudgetReconciliation from "@/components/BudgetReconciliation";
 import { sdgTagsToGoals } from "@/lib/sdgs";
 
 interface ReportData {
@@ -189,12 +190,6 @@ export default function ProjectDetailPage() {
   const budgetTotal    = Number(project.budget_total)    || 0;
   const budgetUsed     = Number(project.budget_used)     || 0;
   const budgetReported = Number(project.budget_reported) || 0;
-  // effective = ค่าสูงสุดระหว่าง ERP กับรายงาน, clamp ≤ total
-  const effectiveUsed  = Math.min(Math.max(budgetUsed, budgetReported), budgetTotal * 2); // allow up to 200% for overspend display
-  const budgetRemaining = Math.max(0, budgetTotal - Math.max(budgetUsed, budgetReported));
-  const budgetUsedPct  = budgetTotal > 0
-    ? Math.round((budgetUsed / budgetTotal) * 100)
-    : 0;
   const currentFiscalMonth = getCurrentFiscalMonth();
   const plannedCurve = computePlannedCurve(activities);
   const actualCurve = computeActualCurve(activities);
@@ -291,68 +286,25 @@ export default function ProjectDetailPage() {
           {project.project_name}
         </h1>
 
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-gray-500">งบประมาณ</p>
-            <p className="text-lg font-bold text-royal-700">
-              {formatBudget(project.budget_total)}{" "}
-              <span className="text-xs font-normal">บาท</span>
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">เบิกจ่ายแล้ว (ERP)</p>
-            <p className={`text-lg font-bold ${budgetUsedPct > 100 ? "text-red-600" : "text-blue-600"}`}>
-              {formatBudget(budgetUsed)}{" "}
-              <span className="text-xs font-normal">บาท ({budgetUsedPct}%)</span>
-            </p>
-            {budgetReported > 0 && budgetReported !== budgetUsed && (
-              <p className="text-xs text-amber-600 mt-0.5">
-                รายงานสะสม: {formatBudget(budgetReported)} บาท
-              </p>
-            )}
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">คงเหลือ</p>
-            <p className={`text-lg font-bold ${budgetRemaining === 0 ? "text-red-500" : "text-gray-600"}`}>
-              {formatBudget(budgetRemaining)}{" "}
-              <span className="text-xs font-normal">บาท</span>
-            </p>
-            {budgetUsedPct > 100 && (
-              <p className="text-xs text-red-500 mt-0.5">⚠️ เกินงบ {budgetUsedPct - 100}%</p>
-            )}
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">ผู้รับผิดชอบ</p>
-            <p className="font-medium">{project.responsible || "-"}</p>
-            {project.responsible_title && (
-              <p className="text-xs text-gray-400">{project.responsible_title}</p>
-            )}
-            {project.phone && (
-              <p className="text-xs text-gray-400">{project.phone}</p>
-            )}
-          </div>
+        {/* ผู้รับผิดชอบ */}
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+          <span className="text-gray-500">ผู้รับผิดชอบ:</span>
+          <span className="font-medium">{project.responsible || "-"}</span>
+          {project.responsible_title && (
+            <span className="text-xs text-gray-400">({project.responsible_title})</span>
+          )}
+          {project.phone && (
+            <span className="text-xs text-gray-400">☎ {project.phone}</span>
+          )}
         </div>
 
-        {/* Budget progress bar */}
+        {/* 💰 Budget Reconciliation — แสดง 3 ยอด + แจ้งเตือน discrepancy */}
         <div className="mt-4">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>การใช้งบประมาณ (ERP)</span>
-            <span className={budgetUsedPct > 100 ? "text-red-600 font-bold" : ""}>{budgetUsedPct}%</span>
-          </div>
-          <div className="mt-1 h-2 rounded-full bg-gray-200 overflow-hidden">
-            <div
-              className={`h-2 rounded-full transition-all ${
-                budgetUsedPct > 100
-                  ? "bg-red-500"
-                  : budgetUsedPct >= 80
-                  ? "bg-green-500"
-                  : budgetUsedPct >= 40
-                  ? "bg-blue-500"
-                  : "bg-orange-400"
-              }`}
-              style={{ width: `${Math.min(budgetUsedPct, 100)}%` }}
-            />
-          </div>
+          <BudgetReconciliation
+            budgetTotal={budgetTotal}
+            budgetUsedErp={budgetUsed}
+            budgetReported={budgetReported}
+          />
         </div>
 
         {/* Info row */}
@@ -660,7 +612,7 @@ export default function ProjectDetailPage() {
               <p className="text-xs text-gray-500">ตัวชี้วัดเชิงค่าใช้จ่าย</p>
               <p className="mt-1 text-sm font-medium">{budgetKpi.kpi_name}</p>
               <p className="mt-2 text-2xl font-bold text-royal-700">
-                {budgetUsedPct}%
+                {budgetTotal > 0 ? Math.round((Math.max(budgetUsed, budgetReported) / budgetTotal) * 100) : 0}%
                 <span className="text-sm text-gray-400"> / ≤{Number(budgetKpi.target_value)}%</span>
               </p>
             </div>

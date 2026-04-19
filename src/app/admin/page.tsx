@@ -39,7 +39,7 @@ interface PreviewRow {
 }
 
 type AiProvider = "gemini" | "claude" | "openai" | "local";
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "seed" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -136,6 +136,14 @@ export default function AdminPage() {
       color: "border-teal-300 bg-teal-50",
       activeColor: "border-teal-400",
     },
+    {
+      key: "repair" as OpenSection,
+      icon: "🛠️",
+      title: "ซ่อมข้อมูลงบประมาณ",
+      desc: "ตรวจสอบและแก้ไข budget_used ที่ corrupt จากโค้ดเวอร์ชันเก่า (dry-run ก่อนแก้จริง)",
+      color: "border-rose-300 bg-rose-50",
+      activeColor: "border-rose-400",
+    },
   ];
 
   return (
@@ -167,6 +175,7 @@ export default function AdminPage() {
               {card.key === "tokens" && <TokensPanel />}
               {card.key === "analytics" && <AnalyticsPanel />}
               {card.key === "seed" && <SeedActivitiesPanel />}
+              {card.key === "repair" && <RepairBudgetPanel />}
             </div>
           )}
         </div>
@@ -840,6 +849,225 @@ function SeedActivitiesPanel() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Repair Budget Panel ──────────────────────────────────────────────────────
+
+interface RepairAnalysisRow {
+  project_id: string;
+  project_name: string;
+  before: { total: number; budget_used: number; budget_reported: number };
+  actual_reported_sum: number;
+  after: { budget_used: number; budget_reported: number };
+  is_corrupt: boolean;
+  reported_mismatch: boolean;
+  needs_fix: boolean;
+}
+
+interface RepairResult {
+  dry_run: boolean;
+  total_projects: number;
+  needs_fix: number;
+  corrupt: number;
+  mismatch_only: number;
+  analysis: RepairAnalysisRow[];
+}
+
+function fmtTh(n: number): string {
+  return Math.round(n).toLocaleString("th-TH");
+}
+
+function RepairBudgetPanel() {
+  const [loading, setLoading] = useState<"" | "scan" | "fix">("");
+  const [scan, setScan] = useState<RepairResult | null>(null);
+  const [fixResult, setFixResult] = useState<RepairResult | null>(null);
+  const [projectId, setProjectId] = useState("");
+  const [error, setError] = useState("");
+
+  async function runScan() {
+    setLoading("scan");
+    setError("");
+    setFixResult(null);
+    const body: Record<string, unknown> = { dry_run: true };
+    if (projectId.trim()) body.project_id = projectId.trim();
+    const res = await fetch("/api/admin/repair-budget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    setLoading("");
+    if (!res.ok) {
+      setError(data.error || "เกิดข้อผิดพลาด");
+      return;
+    }
+    setScan(data);
+  }
+
+  async function runFix() {
+    if (!scan || scan.needs_fix === 0) return;
+    if (!confirm(`ยืนยันการแก้ไขข้อมูล ${scan.needs_fix} โครงการ? (การกระทำนี้จะอัปเดตตาราง projects โดยตรง)`)) return;
+    setLoading("fix");
+    setError("");
+    const body: Record<string, unknown> = { dry_run: false };
+    if (projectId.trim()) body.project_id = projectId.trim();
+    const res = await fetch("/api/admin/repair-budget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    setLoading("");
+    if (!res.ok) {
+      setError(data.error || "เกิดข้อผิดพลาด");
+      return;
+    }
+    setFixResult(data);
+    setScan(null);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-800">
+        <p className="font-semibold mb-1">เครื่องมือซ่อมข้อมูลงบประมาณ (สำหรับ corrupt จากโค้ดเก่า)</p>
+        <ul className="list-disc list-inside space-y-0.5 text-rose-700 text-xs">
+          <li><code className="bg-white px-1 rounded">budget_used</code> = เบิกจ่ายจริงจาก ERP/Excel (source of truth)</li>
+          <li><code className="bg-white px-1 rounded">budget_reported</code> = SUM ของรายงาน (กิจกรรม)</li>
+          <li>โค้ดเก่ามี bug บวก <code className="bg-white px-1 rounded">budget_spent</code> เข้าไปใน <code className="bg-white px-1 rounded">budget_used</code> ซ้ำ ทำให้ยอดสูงผิดปกติ</li>
+          <li>ระบบจะตรวจ: ถ้า <b>budget_used &gt; budget_total</b> และใกล้เคียง <code>erp − reported_actual</code> → ถือว่า corrupt</li>
+        </ul>
+        <p className="mt-2 text-xs text-rose-600">
+          ⚠️ ทำ <b>dry-run</b> (ตรวจ) ก่อนเสมอ — ดูรายการ → ค่อยยืนยันแก้จริง
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+        <input
+          type="text"
+          value={projectId}
+          onChange={(e) => setProjectId(e.target.value)}
+          placeholder="ระบุ project_id (ERP code) เพื่อซ่อมโครงการเดียว — เว้นว่าง = ทุกโครงการ"
+          className="flex-1 rounded-lg border px-3 py-2 text-sm font-mono"
+        />
+        <button
+          onClick={runScan}
+          disabled={!!loading}
+          className="rounded-lg bg-rose-600 py-2 px-4 text-white font-medium hover:bg-rose-700 disabled:opacity-50 text-sm whitespace-nowrap"
+        >
+          {loading === "scan" ? "⏳ กำลังตรวจ..." : "🔍 ตรวจ (dry-run)"}
+        </button>
+      </div>
+
+      {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">❌ {error}</p>}
+
+      {/* Scan summary */}
+      {scan && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-lg bg-white border p-3 text-center">
+              <p className="text-xl font-bold text-gray-700">{scan.total_projects}</p>
+              <p className="text-xs text-gray-500">โครงการทั้งหมด</p>
+            </div>
+            <div className="rounded-lg bg-white border p-3 text-center">
+              <p className="text-xl font-bold text-rose-700">{scan.needs_fix}</p>
+              <p className="text-xs text-gray-500">ต้องแก้ไข</p>
+            </div>
+            <div className="rounded-lg bg-white border p-3 text-center">
+              <p className="text-xl font-bold text-red-700">{scan.corrupt}</p>
+              <p className="text-xs text-gray-500">corrupt (บวกซ้ำ)</p>
+            </div>
+            <div className="rounded-lg bg-white border p-3 text-center">
+              <p className="text-xl font-bold text-amber-700">{scan.mismatch_only}</p>
+              <p className="text-xs text-gray-500">รายงานไม่ sync</p>
+            </div>
+          </div>
+
+          {scan.needs_fix > 0 ? (
+            <>
+              <div className="overflow-x-auto rounded-lg border bg-white max-h-96 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-2 text-left font-medium text-gray-600">Project</th>
+                      <th className="p-2 text-right font-medium text-gray-600">งบรวม</th>
+                      <th className="p-2 text-right font-medium text-gray-600">ERP (ก่อน)</th>
+                      <th className="p-2 text-right font-medium text-gray-600">ERP (หลัง)</th>
+                      <th className="p-2 text-right font-medium text-gray-600">รายงาน (ก่อน)</th>
+                      <th className="p-2 text-right font-medium text-gray-600">รายงานจริง</th>
+                      <th className="p-2 text-center font-medium text-gray-600">ประเภท</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scan.analysis.map((a) => (
+                      <tr key={a.project_id} className="border-t hover:bg-gray-50">
+                        <td className="p-2 max-w-[200px]">
+                          <p className="font-mono text-gray-500 text-[10px]">{a.project_id}</p>
+                          <p className="truncate text-gray-700">{a.project_name}</p>
+                        </td>
+                        <td className="p-2 text-right font-medium">{fmtTh(a.before.total)}</td>
+                        <td className={`p-2 text-right ${a.is_corrupt ? "text-red-600 line-through" : "text-gray-700"}`}>
+                          {fmtTh(a.before.budget_used)}
+                        </td>
+                        <td className="p-2 text-right text-blue-700 font-bold">{fmtTh(a.after.budget_used)}</td>
+                        <td className={`p-2 text-right ${a.reported_mismatch ? "text-amber-600 line-through" : "text-gray-700"}`}>
+                          {fmtTh(a.before.budget_reported)}
+                        </td>
+                        <td className="p-2 text-right text-amber-700 font-bold">{fmtTh(a.actual_reported_sum)}</td>
+                        <td className="p-2 text-center">
+                          {a.is_corrupt && (
+                            <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] text-red-700">corrupt</span>
+                          )}
+                          {!a.is_corrupt && a.reported_mismatch && (
+                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">mismatch</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                onClick={runFix}
+                disabled={!!loading}
+                className="w-full rounded-lg bg-red-600 py-3 text-white font-semibold hover:bg-red-700 disabled:opacity-50 text-sm"
+              >
+                {loading === "fix" ? "⏳ กำลังแก้ไข..." : `⚠️ ยืนยันการแก้ไข ${scan.needs_fix} โครงการ → เขียนลง DB จริง`}
+              </button>
+            </>
+          ) : (
+            <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
+              <p className="text-sm font-semibold text-green-700">✅ ไม่พบข้อมูล corrupt — ทุกโครงการปกติ</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Fix result */}
+      {fixResult && (
+        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+          <p className="font-semibold text-green-700 mb-2">✅ แก้ไขข้อมูลสำเร็จ</p>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-white rounded-lg p-2">
+              <p className="text-xl font-bold text-green-700">{fixResult.needs_fix}</p>
+              <p className="text-xs text-gray-500">โครงการที่แก้ไข</p>
+            </div>
+            <div className="bg-white rounded-lg p-2">
+              <p className="text-xl font-bold text-red-700">{fixResult.corrupt}</p>
+              <p className="text-xs text-gray-500">corrupt ที่ reset</p>
+            </div>
+            <div className="bg-white rounded-lg p-2">
+              <p className="text-xl font-bold text-amber-700">{fixResult.mismatch_only}</p>
+              <p className="text-xs text-gray-500">sync ใหม่</p>
+            </div>
+          </div>
+          <p className="text-xs text-green-600 mt-3">
+            แนะนำ: รัน <b>Sync Excel</b> อีกครั้งเพื่อรีเฟรชยอด ERP → ตรวจหน้าโครงการว่าแสดงผลถูกต้อง
+          </p>
         </div>
       )}
     </div>
