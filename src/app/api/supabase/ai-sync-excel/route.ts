@@ -316,11 +316,12 @@ async function syncToSupabase(
     const erpCode = String(proj.erp_code).trim();
     const budgetTotal = Number(proj.budget_total) || 0;
     const budgetUsed = Number(proj.budget_used) || 0;
-    const budgetRemaining = Number(proj.budget_remaining) || 0;
+    // clamp ≥ 0 — ERP อาจมีติดลบแต่ระบบเราไม่แสดง
+    const budgetRemaining = Math.max(0, Number(proj.budget_remaining) || Math.max(0, budgetTotal - budgetUsed));
 
     const { data: existing, error: fetchErr } = await supabase
       .from("projects")
-      .select("id")
+      .select("id, budget_reported")
       .eq("erp_code", erpCode)
       .maybeSingle();
 
@@ -348,9 +349,14 @@ async function syncToSupabase(
       continue;
     }
 
+    // คำนวณ effective remaining โดยรวม budget_reported ด้วย
+    const reported = Number((existing as { budget_reported?: number }).budget_reported || 0);
+    const effectiveUsed = Math.max(budgetUsed, reported);
+    const effectiveRemaining = Math.max(0, budgetTotal - effectiveUsed);
+
     const { error: updateErr } = await supabase
       .from("projects")
-      .update({ budget_total: budgetTotal, budget_used: budgetUsed, budget_remaining: budgetRemaining })
+      .update({ budget_total: budgetTotal, budget_used: budgetUsed, budget_remaining: effectiveRemaining })
       .eq("erp_code", erpCode);
 
     if (updateErr) {

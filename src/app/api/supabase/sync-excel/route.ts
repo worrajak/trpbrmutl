@@ -118,15 +118,16 @@ function parseExcel(buffer: Buffer): ExcelProject[] {
     const budgetUsed = toNumber(row[9]);   // เบิกจ่ายสะสม
     const budgetRemaining = toNumber(row[12]); // คงเหลือ
 
-    // คำนวณ remaining ถ้าไม่มีค่า
-    const remaining = budgetRemaining ?? (budgetTotal - (budgetUsed ?? 0));
+    // คำนวณ remaining — ใช้ค่าจาก Excel ถ้ามี แต่ clamp ≥ 0 เสมอ (ERP อาจติดลบได้ แต่ระบบเราไม่แสดงลบ)
+    const rawRemaining = budgetRemaining ?? ((budgetTotal ?? 0) - (budgetUsed ?? 0));
+    const remaining = Math.max(0, rawRemaining ?? 0);
 
     projects.push({
       erp_code: erpCode,
       project_name: projectName,
       budget_total: budgetTotal ?? 0,
       budget_used: budgetUsed ?? 0,
-      budget_remaining: remaining ?? 0,
+      budget_remaining: remaining,
     });
   }
 

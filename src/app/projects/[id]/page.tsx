@@ -186,10 +186,15 @@ export default function ProjectDetailPage() {
 
   const st = statusLabel[project.status] || statusLabel.approved;
   const pc = programColor[project.main_program] || "bg-gray-100 text-gray-700";
-  const budgetUsedPct =
-    Number(project.budget_total) > 0
-      ? Math.round((Number(project.budget_used) / Number(project.budget_total)) * 100)
-      : 0;
+  const budgetTotal    = Number(project.budget_total)    || 0;
+  const budgetUsed     = Number(project.budget_used)     || 0;
+  const budgetReported = Number(project.budget_reported) || 0;
+  // effective = ค่าสูงสุดระหว่าง ERP กับรายงาน, clamp ≤ total
+  const effectiveUsed  = Math.min(Math.max(budgetUsed, budgetReported), budgetTotal * 2); // allow up to 200% for overspend display
+  const budgetRemaining = Math.max(0, budgetTotal - Math.max(budgetUsed, budgetReported));
+  const budgetUsedPct  = budgetTotal > 0
+    ? Math.round((budgetUsed / budgetTotal) * 100)
+    : 0;
   const currentFiscalMonth = getCurrentFiscalMonth();
   const plannedCurve = computePlannedCurve(activities);
   const actualCurve = computeActualCurve(activities);
@@ -295,18 +300,26 @@ export default function ProjectDetailPage() {
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">เบิกจ่ายแล้ว</p>
-            <p className="text-lg font-bold text-blue-600">
-              {formatBudget(project.budget_used)}{" "}
+            <p className="text-xs text-gray-500">เบิกจ่ายแล้ว (ERP)</p>
+            <p className={`text-lg font-bold ${budgetUsedPct > 100 ? "text-red-600" : "text-blue-600"}`}>
+              {formatBudget(budgetUsed)}{" "}
               <span className="text-xs font-normal">บาท ({budgetUsedPct}%)</span>
             </p>
+            {budgetReported > 0 && budgetReported !== budgetUsed && (
+              <p className="text-xs text-amber-600 mt-0.5">
+                รายงานสะสม: {formatBudget(budgetReported)} บาท
+              </p>
+            )}
           </div>
           <div>
             <p className="text-xs text-gray-500">คงเหลือ</p>
-            <p className="text-lg font-bold text-gray-600">
-              {formatBudget(project.budget_remaining)}{" "}
+            <p className={`text-lg font-bold ${budgetRemaining === 0 ? "text-red-500" : "text-gray-600"}`}>
+              {formatBudget(budgetRemaining)}{" "}
               <span className="text-xs font-normal">บาท</span>
             </p>
+            {budgetUsedPct > 100 && (
+              <p className="text-xs text-red-500 mt-0.5">⚠️ เกินงบ {budgetUsedPct - 100}%</p>
+            )}
           </div>
           <div>
             <p className="text-xs text-gray-500">ผู้รับผิดชอบ</p>
@@ -323,13 +336,15 @@ export default function ProjectDetailPage() {
         {/* Budget progress bar */}
         <div className="mt-4">
           <div className="flex justify-between text-xs text-gray-500">
-            <span>การใช้งบประมาณ</span>
-            <span>{budgetUsedPct}%</span>
+            <span>การใช้งบประมาณ (ERP)</span>
+            <span className={budgetUsedPct > 100 ? "text-red-600 font-bold" : ""}>{budgetUsedPct}%</span>
           </div>
-          <div className="mt-1 h-2 rounded-full bg-gray-200">
+          <div className="mt-1 h-2 rounded-full bg-gray-200 overflow-hidden">
             <div
               className={`h-2 rounded-full transition-all ${
-                budgetUsedPct >= 80
+                budgetUsedPct > 100
+                  ? "bg-red-500"
+                  : budgetUsedPct >= 80
                   ? "bg-green-500"
                   : budgetUsedPct >= 40
                   ? "bg-blue-500"
