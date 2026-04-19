@@ -132,6 +132,7 @@ export default function ProjectDetailPage() {
   const [kpis, setKpis] = useState<DBKpiTarget[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
   const [reportActivity, setReportActivity] = useState<DBActivity | null>(null);
+  const [editingReport, setEditingReport] = useState<ReportData | null>(null);
   const [tokenCode, setTokenCode] = useState<string | null>(null);
   const [tokenInfo, setTokenInfo] = useState<{ responsible_name: string; tron_wallet: string | null } | null>(null);
   const [rpfBalance, setRpfBalance] = useState<{ total_rpf: number; report_count: number; streak_count: number } | null>(null);
@@ -630,24 +631,35 @@ export default function ProjectDetailPage() {
           <div className="space-y-3">
             {reports.map((r) => (
               <div key={r.id} className="rounded border-l-4 border-l-royal-500 bg-gray-50 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">
                       {r.activities
                         ? `${r.activities.activity_order}. ${r.activities.activity_name}`
                         : "กิจกรรม"}
                     </p>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">
                       {r.report_description}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-gray-400">
-                    {new Date(r.submitted_at).toLocaleDateString("th-TH", {
-                      day: "numeric",
-                      month: "short",
-                      year: "2-digit",
-                    })}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="text-xs text-gray-400">
+                      {new Date(r.submitted_at).toLocaleDateString("th-TH", {
+                        day: "numeric",
+                        month: "short",
+                        year: "2-digit",
+                      })}
+                    </span>
+                    {tokenCode && (
+                      <button
+                        onClick={() => setEditingReport(r)}
+                        className="rounded bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 hover:bg-blue-100"
+                        title="แก้ไขรายงานนี้"
+                      >
+                        ✏️ แก้ไข
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="text-gray-500">
@@ -796,6 +808,19 @@ export default function ProjectDetailPage() {
           }}
         />
       )}
+
+      {/* Edit Report Modal — หน.โครงการแก้ข้อความ/รูป/ยอดเงิน */}
+      {editingReport && tokenCode && (
+        <EditReportModal
+          report={editingReport}
+          tokenCode={tokenCode}
+          onClose={() => setEditingReport(null)}
+          onSaved={() => {
+            setEditingReport(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -847,7 +872,7 @@ function ReportBudgetEditor({
     const n = Number(value);
     if (!isFinite(n) || n < 0) { setError("ยอดไม่ถูกต้อง"); return; }
     setSaving(true); setError("");
-    const res = await fetch(`/api/supabase/report/${reportId}/budget`, {
+    const res = await fetch(`/api/supabase/report/${reportId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token_code: tokenCode, budget_spent: n }),
@@ -887,5 +912,213 @@ function ReportBudgetEditor({
       </button>
       {error && <span className="text-red-600 ml-1">{error}</span>}
     </span>
+  );
+}
+
+// ─── Edit Report Modal (แก้ข้อความ + รูป/หลักฐาน + ยอดเงิน) ───────────────
+type EvidenceFile = { name: string; url: string; type: string };
+
+function EditReportModal({
+  report,
+  tokenCode,
+  onClose,
+  onSaved,
+}: {
+  report: ReportData;
+  tokenCode: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [description, setDescription] = useState(report.report_description || "");
+  const [evidenceUrl, setEvidenceUrl] = useState(report.evidence_url || "");
+  const [files, setFiles] = useState<EvidenceFile[]>(
+    (report.evidence_files || []).map((f) => ({ name: f.name || "", url: f.url || "", type: f.type || "link" }))
+  );
+  const [budgetSpent, setBudgetSpent] = useState(String(report.budget_spent || 0));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function addFile() {
+    setFiles([...files, { name: "", url: "", type: "link" }]);
+  }
+  function removeFile(i: number) {
+    setFiles(files.filter((_, idx) => idx !== i));
+  }
+  function updateFile(i: number, patch: Partial<EvidenceFile>) {
+    setFiles(files.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+
+  async function save() {
+    setSaving(true);
+    setError("");
+
+    const cleanFiles = files
+      .map((f) => ({ ...f, url: f.url.trim(), name: f.name.trim() }))
+      .filter((f) => f.url);
+
+    const budget = Number(budgetSpent);
+    if (!isFinite(budget) || budget < 0) {
+      setError("ยอดเงินไม่ถูกต้อง");
+      setSaving(false);
+      return;
+    }
+
+    const res = await fetch(`/api/supabase/report/${report.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token_code: tokenCode,
+        report_description: description,
+        evidence_url: evidenceUrl.trim() || null,
+        evidence_files: cleanFiles,
+        budget_spent: budget,
+      }),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok) {
+      setError(data.error || "บันทึกไม่สำเร็จ");
+      return;
+    }
+    onSaved();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
+        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-3">
+          <h2 className="text-base font-semibold text-gray-800">✏️ แก้ไขรายงาน</h2>
+          <button onClick={onClose} className="text-xl text-gray-400 hover:text-gray-600">
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-4 p-5">
+          {/* Activity label */}
+          {report.activities && (
+            <p className="text-xs text-gray-500">
+              กิจกรรม: <b>{report.activities.activity_order}. {report.activities.activity_name}</b>
+            </p>
+          )}
+
+          {/* Description */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">ข้อความรายงาน</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              className="w-full rounded-lg border px-3 py-2 text-sm"
+              placeholder="เล่าสิ่งที่ทำ ผลที่ได้ บทเรียน..."
+            />
+          </div>
+
+          {/* Budget spent */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">💰 ยอดเงินที่ใช้ในกิจกรรมนี้ (บาท)</label>
+            <input
+              type="number"
+              value={budgetSpent}
+              onChange={(e) => setBudgetSpent(e.target.value)}
+              min={0}
+              className="w-40 rounded-lg border px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-gray-500">
+              ระบบจะคำนวณ budget_reported ของโครงการใหม่จากยอดรวมทุกรายงาน
+            </p>
+          </div>
+
+          {/* Primary evidence URL */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">🔗 ลิงก์หลักฐานหลัก (ถ้ามี)</label>
+            <input
+              type="url"
+              value={evidenceUrl}
+              onChange={(e) => setEvidenceUrl(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2 text-sm"
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* Evidence files */}
+          <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-semibold text-purple-800">📎 หลักฐาน/รูปภาพ ({files.length} รายการ)</label>
+              <button
+                onClick={addFile}
+                className="rounded bg-purple-600 px-2 py-0.5 text-xs text-white hover:bg-purple-700"
+              >
+                + เพิ่ม
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {files.length === 0 && (
+                <p className="text-center text-xs text-purple-500">ยังไม่มีหลักฐาน — กด &ldquo;+ เพิ่ม&rdquo; เพื่อแนบรูป/เอกสาร</p>
+              )}
+
+              {files.map((f, i) => (
+                <div key={i} className="flex flex-col gap-1 rounded bg-white p-2 sm:flex-row sm:items-center">
+                  <select
+                    value={f.type}
+                    onChange={(e) => updateFile(i, { type: e.target.value })}
+                    className="rounded border px-2 py-1 text-xs"
+                  >
+                    <option value="image">🖼️ รูป</option>
+                    <option value="pdf">📄 PDF</option>
+                    <option value="link">🔗 Link</option>
+                    <option value="video">🎥 วิดีโอ</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={f.name}
+                    onChange={(e) => updateFile(i, { name: e.target.value })}
+                    placeholder="ชื่อ (เช่น รูปลงพื้นที่)"
+                    className="flex-1 rounded border px-2 py-1 text-xs"
+                  />
+                  <input
+                    type="url"
+                    value={f.url}
+                    onChange={(e) => updateFile(i, { url: e.target.value })}
+                    placeholder="URL (https://...)"
+                    className="flex-[2] rounded border px-2 py-1 text-xs"
+                  />
+                  <button
+                    onClick={() => removeFile(i)}
+                    className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
+                    title="ลบรายการนี้"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-2 text-[10px] text-purple-600">
+              💡 อัปโหลดรูปไปยัง Google Drive / Imgur / Dropbox แล้วใส่ลิงก์แบบ public ที่นี่
+            </p>
+          </div>
+
+          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">❌ {error}</p>}
+        </div>
+
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-white px-5 py-3">
+          <button
+            onClick={onClose}
+            className="rounded-lg border px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            ยกเลิก
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="rounded-lg bg-royal-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-royal-800 disabled:opacity-50"
+          >
+            {saving ? "⏳ กำลังบันทึก..." : "💾 บันทึก"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
