@@ -80,7 +80,11 @@ export default function AdminProjectsPage() {
   async function loadProjects() {
     setLoading(true);
     try {
-      const res = await fetch("/api/supabase/projects");
+      // cache: "no-store" + cache-buster query → กัน browser/CDN cache
+      // (เคสที่เจอ: ลบแล้วโครงการยังโผล่ในตารางเพราะ GET โดน cache)
+      const res = await fetch(`/api/supabase/projects?t=${Date.now()}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       setRows(data.projects || []);
     } finally {
@@ -135,9 +139,14 @@ export default function AdminProjectsPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        cache: "no-store",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
+      // Optimistic update: merge ฟิลด์ที่แก้กลับเข้า rows ทันที
+      setRows((prev) =>
+        prev.map((r) => (r.id === editing.id ? { ...r, ...payload } : r))
+      );
       setLastResult(`✓ บันทึก "${editing.project_name}" สำเร็จ`);
       setEditing(null);
       await loadProjects();
@@ -152,17 +161,23 @@ export default function AdminProjectsPage() {
   async function handleConfirmDelete() {
     if (!deleting) return;
     setDeleteBusy(true);
+    const deletedId = deleting.id;
+    const deletedName = deleting.project_name;
     try {
-      const res = await fetch(`/api/supabase/projects/${encodeURIComponent(deleting.id)}`, {
+      const res = await fetch(`/api/supabase/projects/${encodeURIComponent(deletedId)}`, {
         method: "DELETE",
+        cache: "no-store",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "ลบไม่สำเร็จ");
       const d = data.deleted || {};
+      // Optimistic update: เอา row ออกจาก state ทันที (กัน UI lag/cache)
+      setRows((prev) => prev.filter((r) => r.id !== deletedId));
       setLastResult(
-        `🗑 ลบ "${deleting.project_name}" สำเร็จ · cascade activities=${d.activities}, kpis=${d.kpis}, reports=${d.reports}`
+        `🗑 ลบ "${deletedName}" สำเร็จ · cascade activities=${d.activities}, kpis=${d.kpis}, reports=${d.reports}`
       );
       setDeleting(null);
+      // Reload จากเซิร์ฟเวอร์เพื่อ sync ความจริง (เผื่อ cascade affect แถวอื่น)
       await loadProjects();
     } catch (err: unknown) {
       alert("ลบไม่สำเร็จ: " + (err instanceof Error ? err.message : "เกิดข้อผิดพลาด"));
