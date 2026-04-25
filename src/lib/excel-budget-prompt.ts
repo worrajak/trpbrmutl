@@ -3,7 +3,8 @@
 export const EXCEL_BUDGET_SYSTEM_PROMPT = `You are a data extraction assistant. Extract budget data from a pipe-delimited table and return ONLY a valid JSON array. No explanations, no markdown, no extra text — just the raw JSON array.`;
 
 export const EXCEL_BUDGET_USER_PROMPT = `The table below uses | as delimiter. The first row is the header. Extract every data row into a JSON array with these exact fields:
-- project_name: string (from "ชื่อโครงการ" column)
+- project_name: string (from "ชื่อโครงการ" column — copy as-is, KEEP the leading number prefix and trailing parenthesis if any)
+- responsible: string (from "responsible" column — the project leader's name; empty string if "-")
 - erp_code: string (from "erp_code" column)
 - budget_total: number (from "budget_total" column)
 - budget_used: number (from "budget_used" column, use 0 if empty)
