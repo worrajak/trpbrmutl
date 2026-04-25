@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
 
 // ไม่ cache — ดึงข้อมูลสดจาก Supabase ทุกครั้ง
+// (force-dynamic + revalidate=0 + fetchCache=no-store + response header → กัน cache ทุกชั้น)
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 /** ป้องกันชื่อสถาบัน/หน่วยงานถูกแสดงเป็น "ผู้รับผิดชอบ" */
 function sanitizeResponsible(
@@ -82,5 +85,14 @@ export async function GET(_req: NextRequest) {
       last_report: latestByProject.get(p.id) || null,
     }));
 
-  return NextResponse.json({ projects, isLive: true });
+  return NextResponse.json(
+    { projects, isLive: true },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    }
+  );
 }

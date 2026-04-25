@@ -143,7 +143,13 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   }
 
   // FK CASCADE จะลบ activities/kpis/reports/tokens อัตโนมัติ
-  const { error } = await supabase.from("projects").delete().eq("id", id);
+  // ใช้ .select() เพื่อให้ Supabase คืนแถวที่ถูกลบจริง (กัน RLS silent block)
+  const { data: deletedRows, error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
   if (error) {
     return NextResponse.json(
       {
@@ -155,13 +161,32 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     );
   }
 
-  return NextResponse.json({
-    success: true,
-    deleted: {
-      project: { id: project.id, project_name: project.project_name, erp_code: project.erp_code },
-      activities: actCount || 0,
-      kpis: kpiCount || 0,
-      reports: reportCount || 0,
+  // ถ้า RLS silent block → error=null แต่ deletedRows=[] (ไม่มีอะไรถูกลบ)
+  // ต้อง verify ไม่งั้นจะหลอก UI ว่าลบสำเร็จทั้งที่ DB ยังมีของเดิม
+  if (!deletedRows || deletedRows.length === 0) {
+    return NextResponse.json(
+      {
+        error: "ลบไม่สำเร็จ: ไม่มีแถวถูกลบใน DB (RLS policy ปฏิเสธแบบเงียบ)",
+        hint:
+          "เปิด Supabase Dashboard → SQL Editor → รัน supabase/schema.sql ใหม่ทั้งไฟล์ เพื่อเพิ่ม anon delete policies (projects, activities, kpi_targets, activity_reports, project_tokens, participants)",
+        debug: { id, project_name: project.project_name },
+      },
+      { status: 403 }
+    );
+  }
+
+  return NextResponse.json(
+    {
+      success: true,
+      deleted: {
+        project: { id: project.id, project_name: project.project_name, erp_code: project.erp_code },
+        activities: actCount || 0,
+        kpis: kpiCount || 0,
+        reports: reportCount || 0,
+      },
     },
-  });
+    {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    }
+  );
 }
