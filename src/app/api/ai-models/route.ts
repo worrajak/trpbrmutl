@@ -1,87 +1,100 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-// GET /api/ai-models?provider=gemini&api_key=...&local_base_url=...
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const provider = searchParams.get("provider");
-  const apiKey = searchParams.get("api_key") || "";
-  const localBaseUrl = searchParams.get("local_base_url") || "http://localhost:11434";
+/**
+ * GET /api/ai-models
+ * ดึง model list จาก OpenRouter (public endpoint, ไม่ต้องใช้ key)
+ * คืน { free, paid, all, free_count, paid_count, total } เรียง free ก่อน
+ *
+ * Cache 5 นาทีบน edge
+ */
 
+interface OpenRouterModel {
+  id: string;
+  name?: string;
+  pricing?: { prompt?: string; completion?: string };
+  context_length?: number;
+  architecture?: { modality?: string; input_modalities?: string[] };
+}
+
+interface FormattedModel {
+  id: string;
+  name: string;
+  is_free: boolean;
+  price: string;
+  context_length: number;
+  has_vision: boolean;
+  provider: string;
+}
+
+export const revalidate = 300;
+
+export async function GET() {
   try {
-    let models: string[] = [];
+    const res = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: { Accept: "application/json" },
+      next: { revalidate: 300 },
+    });
 
-    if (provider === "gemini") {
-      models = await fetchGeminiModels(apiKey);
-    } else if (provider === "claude") {
-      models = await fetchClaudeModels(apiKey);
-    } else if (provider === "openai") {
-      models = await fetchOpenAIModels(apiKey);
-    } else if (provider === "local") {
-      models = await fetchLocalModels(localBaseUrl);
-    } else {
-      return NextResponse.json({ error: "provider ไม่รองรับ" }, { status: 400 });
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: `OpenRouter API returned ${res.status}` },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ models });
+    const data = await res.json();
+    const models: OpenRouterModel[] = data.data || [];
+
+    const isFreeModel = (m: OpenRouterModel): boolean =>
+      m.id.includes(":free") ||
+      (!!m.pricing && m.pricing.prompt === "0" && m.pricing.completion === "0");
+
+    const format = (m: OpenRouterModel): FormattedModel => {
+      const promptCost = parseFloat(m.pricing?.prompt || "0");
+      const completionCost = parseFloat(m.pricing?.completion || "0");
+      const free = promptCost === 0 && completionCost === 0;
+      const hasVision = !!(
+        m.architecture?.input_modalities?.includes("image") ||
+        m.architecture?.modality?.toLowerCase().includes("image")
+      );
+      return {
+        id: m.id,
+        name: m.name || m.id,
+        is_free: free,
+        price: free
+          ? "FREE"
+          : `$${(promptCost * 1_000_000).toFixed(2)}/$${(completionCost * 1_000_000).toFixed(2)} per M`,
+        context_length: m.context_length || 0,
+        has_vision: hasVision,
+        provider: m.id.split("/")[0] || "unknown",
+      };
+    };
+
+    const free = models
+      .filter(isFreeModel)
+      .map(format)
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    const paid = models
+      .filter((m) => !isFreeModel(m))
+      .map(format)
+      .sort((a, b) => {
+        const aPrice = parseFloat(a.price.replace(/[^0-9.]/g, "")) || 999;
+        const bPrice = parseFloat(b.price.replace(/[^0-9.]/g, "")) || 999;
+        if (aPrice !== bPrice) return aPrice - bPrice;
+        return a.id.localeCompare(b.id);
+      });
+
+    return NextResponse.json({
+      total: models.length,
+      free_count: free.length,
+      paid_count: paid.length,
+      free,
+      paid,
+      all: [...free, ...paid],
+    });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+    const message = err instanceof Error ? err.message : "Failed to fetch OpenRouter models";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
-
-async function fetchGeminiModels(apiKey: string): Promise<string[]> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=50`
-  );
-  if (!res.ok) throw new Error(`Gemini: ${res.status} ${res.statusText}`);
-  const data = await res.json();
-  return (data.models || [])
-    .filter((m: { supportedGenerationMethods?: string[]; name: string }) =>
-      m.supportedGenerationMethods?.includes("generateContent")
-    )
-    .map((m: { name: string }) => m.name.replace("models/", ""))
-    .filter((name: string) => name.startsWith("gemini"));
-}
-
-async function fetchClaudeModels(apiKey: string): Promise<string[]> {
-  const res = await fetch("https://api.anthropic.com/v1/models", {
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-  });
-  if (!res.ok) throw new Error(`Claude: ${res.status} ${res.statusText}`);
-  const data = await res.json();
-  return (data.data || []).map((m: { id: string }) => m.id);
-}
-
-async function fetchOpenAIModels(apiKey: string): Promise<string[]> {
-  const res = await fetch("https://api.openai.com/v1/models", {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-  if (!res.ok) throw new Error(`OpenAI: ${res.status} ${res.statusText}`);
-  const data = await res.json();
-  return (data.data || [])
-    .map((m: { id: string }) => m.id)
-    .filter((id: string) => id.startsWith("gpt"))
-    .sort();
-}
-
-async function fetchLocalModels(baseUrl: string): Promise<string[]> {
-  const base = baseUrl.replace(/\/$/, "");
-
-  // ลอง Ollama native API ก่อน
-  try {
-    const res = await fetch(`${base}/api/tags`);
-    if (res.ok) {
-      const data = await res.json();
-      return (data.models || []).map((m: { name: string }) => m.name);
-    }
-  } catch { /* ลอง OpenAI compat แทน */ }
-
-  // Fallback: OpenAI-compatible /v1/models
-  const res = await fetch(`${base}/v1/models`);
-  if (!res.ok) throw new Error(`Local AI: ไม่สามารถเชื่อมต่อ ${base}`);
-  const data = await res.json();
-  return (data.data || []).map((m: { id: string }) => m.id);
 }

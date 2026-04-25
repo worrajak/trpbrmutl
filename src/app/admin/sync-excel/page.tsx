@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 type Mode = "upload" | "gdrive" | "sheets" | "ai";
-type AiProvider = "gemini" | "claude" | "openai" | "local";
 
 interface SyncResult {
   success: boolean;
   total_parsed: number;
   updated: number;
-  not_found: string[];
+  created?: number;
+  not_found?: string[];
   errors: string[];
 }
 
@@ -20,12 +20,16 @@ interface PreviewRow {
   budget_remaining: number;
 }
 
-const AI_PROVIDERS: { value: AiProvider; label: string; hint: string }[] = [
-  { value: "gemini", label: "Google Gemini (แนะนำ)", hint: "aistudio.google.com" },
-  { value: "claude", label: "Claude (Anthropic)", hint: "console.anthropic.com" },
-  { value: "openai", label: "OpenAI GPT-4o Mini", hint: "platform.openai.com" },
-  { value: "local", label: "🖥️ Local AI (ฟรี)", hint: "Ollama / LM Studio / Jan" },
+// OpenRouter — quick-pick models (browser ผ่าน /admin → SyncExcelPanel → modal)
+const OR_QUICK_MODELS = [
+  { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 · FREE" },
+  { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 · FREE" },
+  { id: "deepseek/deepseek-chat-v3.1:free", label: "DeepSeek v3.1 · FREE" },
+  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { id: "openai/gpt-4.1-mini", label: "GPT-4.1 mini" },
+  { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
 ];
+const OR_STORAGE = "rpf_openrouter_settings";
 
 export default function SyncExcelPage() {
   const [authed, setAuthed] = useState(false);
@@ -36,10 +40,10 @@ export default function SyncExcelPage() {
   const [gdriveId, setGdriveId] = useState("");
   const [sheetsUrl, setSheetsUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
+
+  // OpenRouter (shared กับหน้า /admin)
   const [apiKey, setApiKey] = useState("");
-  const [localBaseUrl, setLocalBaseUrl] = useState("http://localhost:11434");
-  const [localModel, setLocalModel] = useState("llama3");
+  const [model, setModel] = useState("google/gemini-2.0-flash-exp:free");
 
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"idle" | "preview" | "done">("idle");
@@ -47,6 +51,23 @@ export default function SyncExcelPage() {
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(OR_STORAGE);
+      if (raw) {
+        const cfg = JSON.parse(raw) as { api_key?: string; model?: string };
+        if (cfg.api_key) setApiKey(cfg.api_key);
+        if (cfg.model) setModel(cfg.model);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  function persistOr() {
+    try {
+      localStorage.setItem(OR_STORAGE, JSON.stringify({ api_key: apiKey, model }));
+    } catch { /* ignore */ }
+  }
 
   async function handleAuth() {
     const res = await fetch("/api/admin/auth", {
@@ -70,18 +91,17 @@ export default function SyncExcelPage() {
     setPreview([]);
     setStep("idle");
 
-    if (aiProvider !== "local" && !apiKey) { setError("กรุณาใส่ API Key"); setLoading(false); return; }
+    if (!apiKey) { setError("กรุณาใส่ OpenRouter API Key"); setLoading(false); return; }
+    persistOr();
 
     let body: Record<string, unknown>;
     if (mode === "sheets") {
       if (!sheetsUrl) { setError("กรุณาใส่ Google Sheets URL"); setLoading(false); return; }
-      body = { sheets_url: sheetsUrl, ai_provider: aiProvider, api_key: apiKey,
-               local_base_url: localBaseUrl, local_model: localModel, preview_only: true };
+      body = { sheets_url: sheetsUrl, api_key: apiKey, model, preview_only: true };
     } else {
       const base64 = await getFileBase64();
       if (!base64) { setError("กรุณาเลือกไฟล์ Excel"); setLoading(false); return; }
-      body = { file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-               local_base_url: localBaseUrl, local_model: localModel, preview_only: true };
+      body = { file_base64: base64, api_key: apiKey, model, preview_only: true };
     }
 
     const res = await fetch("/api/supabase/ai-sync-excel", {
@@ -105,13 +125,11 @@ export default function SyncExcelPage() {
 
     let body: Record<string, unknown>;
     if (mode === "sheets") {
-      body = { sheets_url: sheetsUrl, ai_provider: aiProvider, api_key: apiKey,
-               local_base_url: localBaseUrl, local_model: localModel };
+      body = { sheets_url: sheetsUrl, api_key: apiKey, model };
     } else {
       const base64 = await getFileBase64();
       if (!base64) { setError("ไฟล์หายไป กรุณาเลือกใหม่"); setLoading(false); return; }
-      body = { file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-               local_base_url: localBaseUrl, local_model: localModel };
+      body = { file_base64: base64, api_key: apiKey, model };
     }
 
     const res = await fetch("/api/supabase/ai-sync-excel", {
@@ -251,44 +269,63 @@ export default function SyncExcelPage() {
           </div>
         )}
 
-        {/* AI Provider settings */}
+        {/* OpenRouter settings */}
         {(mode === "ai" || mode === "sheets") && (
           <div className="border-t pt-4 space-y-3">
-            <p className="text-sm font-medium text-purple-700">⚙️ ตั้งค่า AI</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {AI_PROVIDERS.map((p) => (
-                <button key={p.value} onClick={() => setAiProvider(p.value)}
-                  className={`p-3 rounded-lg border text-left text-sm transition ${
-                    aiProvider === p.value ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:border-gray-300"
-                  }`}>
-                  <p className="font-medium">{p.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{p.hint}</p>
-                </button>
-              ))}
+            <div className="rounded-lg border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-3 text-xs text-indigo-800">
+              🌐 ใช้ <span className="font-semibold">OpenRouter</span> เป็น gateway · 1 key รองรับ Claude · GPT · Gemini · Llama · DeepSeek ฯลฯ ·{" "}
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="underline font-medium hover:text-indigo-900">
+                ขอ key ฟรี
+              </a>
             </div>
-            {aiProvider === "local" ? (
-              <div className="space-y-2">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Base URL</label>
-                  <input type="text" className="w-full border rounded-lg px-3 py-2 text-sm"
-                    placeholder="http://localhost:11434"
-                    value={localBaseUrl} onChange={(e) => setLocalBaseUrl(e.target.value)} />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Ollama: 11434 · LM Studio: 1234 · Jan: 1337
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Model name</label>
-                  <input type="text" className="w-full border rounded-lg px-3 py-2 text-sm"
-                    placeholder="เช่น llama3, gemma3, typhoon2"
-                    value={localModel} onChange={(e) => setLocalModel(e.target.value)} />
-                </div>
+
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">OpenRouter API Key</label>
+              <input
+                type="password"
+                className="w-full border rounded-lg px-3 py-2 text-sm font-mono"
+                placeholder="sk-or-v1-..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+              <p className="text-xs text-gray-400 mt-1">เก็บใน localStorage เครื่องนี้เท่านั้น (shared กับ /admin)</p>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Model</label>
+              <input
+                type="text"
+                className="w-full border rounded-lg px-3 py-2 text-sm font-mono"
+                placeholder="google/gemini-2.0-flash-exp:free"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              />
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {OR_QUICK_MODELS.map((m) => {
+                  const isFree = m.id.includes(":free");
+                  const active = model === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setModel(m.id)}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                        active
+                          ? "border-purple-500 bg-purple-50 text-purple-700 ring-1 ring-purple-300"
+                          : isFree
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <input type="password" className="w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder={`API Key สำหรับ ${AI_PROVIDERS.find(p => p.value === aiProvider)?.label}`}
-                value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
-            )}
+              <p className="text-xs text-gray-400 mt-1">
+                ดู model ทั้งหมด → <a href="/admin" className="underline hover:text-blue-600">/admin</a> (มี model browser)
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -363,7 +400,7 @@ export default function SyncExcelPage() {
             {[
               { label: "พบใน Excel", value: result.total_parsed, color: "blue" },
               { label: "อัปเดตสำเร็จ", value: result.updated, color: "green" },
-              { label: "ไม่พบใน DB", value: result.not_found.length, color: "yellow" },
+              { label: "สร้างใหม่ / ไม่พบ", value: result.created ?? result.not_found?.length ?? 0, color: "yellow" },
             ].map(({ label, value, color }) => (
               <div key={label} className={`bg-${color}-50 rounded-lg p-3 text-center`}>
                 <p className={`text-2xl font-bold text-${color}-700`}>{value}</p>
@@ -372,7 +409,7 @@ export default function SyncExcelPage() {
             ))}
           </div>
 
-          {result.not_found.length > 0 && (
+          {result.not_found && result.not_found.length > 0 && (
             <div className="mb-3">
               <p className="text-sm font-medium text-yellow-700 mb-1">ERP code ที่ไม่พบใน Supabase:</p>
               <div className="bg-yellow-50 rounded p-2 text-xs text-gray-600 max-h-28 overflow-y-auto font-mono">

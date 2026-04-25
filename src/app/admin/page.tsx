@@ -38,7 +38,6 @@ interface PreviewRow {
   budget_remaining: number;
 }
 
-type AiProvider = "gemini" | "claude" | "openai" | "local";
 type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
@@ -46,11 +45,17 @@ const PAGE_LABELS: Record<string, string> = {
   "/indicators": "ตัวชี้วัด", "/map": "แผนที่",
   "/staff": "บุคลากร", "/regulations": "ระเบียบ/ประกาศ",
 };
-const AI_PROVIDERS = [
-  { value: "gemini" as AiProvider, label: "Gemini (แนะนำ)", hint: "aistudio.google.com" },
-  { value: "claude" as AiProvider, label: "Claude", hint: "console.anthropic.com" },
-  { value: "openai" as AiProvider, label: "OpenAI", hint: "platform.openai.com" },
-  { value: "local" as AiProvider, label: "🖥️ Local AI", hint: "Ollama / LM Studio" },
+
+// OpenRouter — quick-pick models (browser modal ดึงสด ๆ จาก /api/ai-models)
+const OPENROUTER_QUICK_MODELS = [
+  // ฟรี
+  { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 Flash · FREE" },
+  { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B · FREE" },
+  { id: "deepseek/deepseek-chat-v3-0324:free", label: "DeepSeek V3 · FREE" },
+  // เสียเงิน (ถูก/แม่นยำ)
+  { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
+  { id: "openai/gpt-4.1-mini", label: "GPT-4.1 mini" },
+  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -184,78 +189,89 @@ export default function AdminPage() {
   );
 }
 
-// ─── Sync Excel Panel ─────────────────────────────────────────────────────────
+// ─── Sync Excel Panel (OpenRouter only) ───────────────────────────────────────
+//
+// แทน multi-provider (Gemini/Claude/OpenAI/Local) ด้วย OpenRouter ตัวเดียว
+// (อ้างอิง pattern จาก CESrc_Profile) — 1 key รองรับทุกโมเดล
+// localStorage key: rpf_openrouter_settings = { api_key, model }
 
-const AI_KEY_STORAGE = "rpf_ai_settings";
+const OR_STORAGE = "rpf_openrouter_settings";
 
-function loadAiSettings() {
+interface OrSettings { api_key: string; model: string }
+
+function loadOrSettings(): OrSettings | null {
   if (typeof window === "undefined") return null;
-  try { return JSON.parse(localStorage.getItem(AI_KEY_STORAGE) || "null"); } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(OR_STORAGE) || "null"); } catch { return null; }
 }
-function saveAiSettings(settings: Record<string, unknown>) {
-  localStorage.setItem(AI_KEY_STORAGE, JSON.stringify(settings));
+function saveOrSettings(s: OrSettings) {
+  localStorage.setItem(OR_STORAGE, JSON.stringify(s));
+}
+
+interface OrModelInfo {
+  id: string;
+  name: string;
+  is_free: boolean;
+  price: string;
+  context_length: number;
+  has_vision: boolean;
+  provider: string;
+}
+interface OrModelList {
+  total: number; free_count: number; paid_count: number;
+  free: OrModelInfo[]; paid: OrModelInfo[]; all: OrModelInfo[];
 }
 
 function SyncExcelPanel() {
   const [mode, setMode] = useState<"ai" | "manual">("ai");
   const [file, setFile] = useState<File | null>(null);
-  const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
-  const [apiKeys, setApiKeys] = useState<Record<string, string>>({ gemini: "", claude: "", openai: "" });
-  const [localBaseUrl, setLocalBaseUrl] = useState("http://localhost:11434");
-  const [localModel, setLocalModel] = useState("llama3");
-  const [availableModels, setAvailableModels] = useState<Record<string, string[]>>({});
-  const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
-  const [fetchingModels, setFetchingModels] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("google/gemini-2.0-flash-exp:free");
+  const [savedTick, setSavedTick] = useState(false);
+
+  // Model browser modal
+  const [showOrModels, setShowOrModels] = useState(false);
+  const [orModels, setOrModels] = useState<OrModelList | null>(null);
+  const [orLoading, setOrLoading] = useState(false);
+  const [orFilter, setOrFilter] = useState<"free" | "paid" | "all">("free");
+  const [orSearch, setOrSearch] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"idle" | "preview" | "done">("idle");
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState("");
   const [rawAiText, setRawAiText] = useState("");
-  const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // โหลด settings จาก localStorage ตอน mount
   useEffect(() => {
-    const s = loadAiSettings();
+    const s = loadOrSettings();
     if (!s) return;
-    if (s.provider) setAiProvider(s.provider);
-    if (s.keys) setApiKeys(s.keys);
-    if (s.localBaseUrl) setLocalBaseUrl(s.localBaseUrl);
-    if (s.localModel) setLocalModel(s.localModel);
-    if (s.selectedModels) setSelectedModels(s.selectedModels);
+    if (s.api_key) setApiKey(s.api_key);
+    if (s.model) setModel(s.model);
   }, []);
 
   function handleSaveSettings() {
-    saveAiSettings({ provider: aiProvider, keys: apiKeys, localBaseUrl, localModel, selectedModels });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    saveOrSettings({ api_key: apiKey, model });
+    setSavedTick(true);
+    setTimeout(() => setSavedTick(false), 2000);
   }
 
-  async function handleFetchModels() {
-    const key = apiKeys[aiProvider] || "";
-    if (aiProvider !== "local" && !key) { setError("กรุณาใส่ API Key ก่อน"); return; }
-    setFetchingModels(true);
-    setError("");
-    const params = new URLSearchParams({
-      provider: aiProvider,
-      api_key: key,
-      local_base_url: localBaseUrl,
-    });
-    const res = await fetch(`/api/ai-models?${params}`);
-    const data = await res.json();
-    setFetchingModels(false);
-    if (!res.ok) { setError(data.error || "ดึง models ไม่ได้"); return; }
-    setAvailableModels((prev) => ({ ...prev, [aiProvider]: data.models }));
-    // ตั้ง default model ถ้ายังไม่ได้เลือก
-    if (!selectedModels[aiProvider] && data.models.length > 0) {
-      setSelectedModels((prev) => ({ ...prev, [aiProvider]: data.models[0] }));
+  async function fetchOrModels() {
+    setOrLoading(true);
+    try {
+      const res = await fetch("/api/ai-models");
+      const data = await res.json();
+      if (res.ok) setOrModels(data);
+    } finally {
+      setOrLoading(false);
     }
   }
 
-  const apiKey = apiKeys[aiProvider] || "";
-  const currentModels = availableModels[aiProvider] || [];
-  const selectedModel = selectedModels[aiProvider] || "";
+  function openOrModelsBrowser() {
+    setShowOrModels(true);
+    if (!orModels) fetchOrModels();
+  }
 
   async function getBase64(): Promise<string | null> {
     if (!file) return null;
@@ -271,12 +287,11 @@ function SyncExcelPanel() {
     setLoading(true); setError("");
     const base64 = await getBase64();
     if (!base64) { setError("กรุณาเลือกไฟล์"); setLoading(false); return; }
-    if (aiProvider !== "local" && !apiKey) { setError("กรุณาใส่ API Key"); setLoading(false); return; }
+    if (!apiKey) { setError("กรุณาใส่ OpenRouter API Key"); setLoading(false); return; }
 
     const res = await fetch("/api/supabase/ai-sync-excel", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-        local_base_url: localBaseUrl, local_model: localModel, model: selectedModel, preview_only: true }),
+      body: JSON.stringify({ file_base64: base64, api_key: apiKey, model, preview_only: true }),
     });
     const data = await res.json();
     setLoading(false);
@@ -291,8 +306,7 @@ function SyncExcelPanel() {
     if (!base64) { setError("กรุณาเลือกไฟล์ใหม่"); setLoading(false); return; }
     const res = await fetch("/api/supabase/ai-sync-excel", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ file_base64: base64, ai_provider: aiProvider, api_key: apiKey,
-        local_base_url: localBaseUrl, local_model: localModel, model: selectedModel }),
+      body: JSON.stringify({ file_base64: base64, api_key: apiKey, model }),
     });
     const data = await res.json();
     setLoading(false);
@@ -347,94 +361,153 @@ function SyncExcelPanel() {
         </div>
       </div>
 
-      {/* AI settings */}
+      {/* AI settings — OpenRouter only */}
       {mode === "ai" && (
-        <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+        <div className="space-y-3 rounded-lg bg-gradient-to-br from-orange-50 to-pink-50 border border-orange-200 p-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">AI Provider & API Keys</p>
+            <div>
+              <p className="text-xs font-semibold text-orange-800 flex items-center gap-1">
+                🌐 OpenRouter — 1 key ใช้ได้ทุกโมเดล
+              </p>
+              <p className="text-[10px] text-orange-600 mt-0.5">
+                Claude · GPT · Gemini · Llama · DeepSeek · Qwen ฯลฯ ผ่าน gateway เดียว
+              </p>
+            </div>
             <button onClick={handleSaveSettings}
-              className={`rounded px-3 py-1 text-xs font-medium transition ${saved ? "bg-green-100 text-green-700" : "bg-white border text-gray-600 hover:bg-gray-100"}`}>
-              {saved ? "✓ บันทึกแล้ว" : "💾 บันทึก Keys"}
+              className={`rounded px-3 py-1 text-xs font-medium transition ${savedTick ? "bg-green-100 text-green-700" : "bg-white border text-gray-600 hover:bg-gray-100"}`}>
+              {savedTick ? "✓ บันทึกแล้ว" : "💾 บันทึก"}
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {AI_PROVIDERS.map((p) => (
-              <button key={p.value} onClick={() => setAiProvider(p.value)}
-                className={`rounded-lg border p-2 text-left text-xs transition ${aiProvider === p.value ? "border-yellow-500 bg-yellow-50" : "border-gray-200 bg-white hover:border-gray-300"}`}>
-                <p className="font-medium">{p.label}</p>
-                <p className="text-gray-400 mt-0.5">{p.hint}</p>
-                {p.value !== "local" && apiKeys[p.value] && (
-                  <p className="text-green-500 mt-0.5">✓ มี key</p>
-                )}
-              </button>
-            ))}
+          {/* API Key */}
+          <div>
+            <p className="text-xs text-gray-500 mb-1">
+              OpenRouter API Key
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer"
+                className="ml-2 text-[11px] text-orange-600 hover:underline">สมัคร →</a>
+            </p>
+            <input type="password" className="w-full rounded border px-3 py-1.5 text-sm font-mono"
+              placeholder="sk-or-v1-xxxxxxxxxxxx..."
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)} />
+            <p className="text-[10px] text-gray-400 mt-1">🔒 เก็บใน browser เท่านั้น (localStorage)</p>
           </div>
 
-          {aiProvider === "local" ? (
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+          {/* Model picker */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-gray-500">Model</p>
+              <button onClick={openOrModelsBrowser}
+                className="text-[11px] text-orange-600 hover:text-orange-800 font-medium">
+                🔄 ดู Models ทั้งหมดจาก OpenRouter (Live) →
+              </button>
+            </div>
+            <input type="text" className="w-full rounded border px-3 py-1.5 text-sm font-mono"
+              placeholder="เช่น google/gemini-2.0-flash-exp:free"
+              value={model}
+              onChange={(e) => setModel(e.target.value)} />
+            <p className="text-[10px] text-gray-500 mt-1">⚡ Quick pick:</p>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {OPENROUTER_QUICK_MODELS.map((m) => (
+                <button key={m.id} onClick={() => setModel(m.id)}
+                  className={`text-[10px] px-2 py-1 rounded font-mono transition ${
+                    model === m.id
+                      ? "bg-orange-600 text-white"
+                      : m.id.includes(":free")
+                      ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                      : "bg-white border text-gray-600 hover:bg-gray-50"
+                  }`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OpenRouter Models Modal */}
+      {showOrModels && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowOrModels(false)}>
+          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex-shrink-0 bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-3 text-white">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Base URL</p>
-                  <input type="text" className="w-full rounded border px-3 py-1.5 text-sm"
-                    value={localBaseUrl} onChange={(e) => setLocalBaseUrl(e.target.value)}
-                    placeholder="http://localhost:11434" />
+                  <h3 className="font-bold flex items-center gap-2">🌐 OpenRouter Models</h3>
+                  {orModels && (
+                    <p className="text-xs text-white/80 mt-0.5">
+                      ทั้งหมด {orModels.total} · ฟรี {orModels.free_count} · เสียเงิน {orModels.paid_count}
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-end">
-                  <button onClick={handleFetchModels} disabled={fetchingModels}
-                    className="w-full rounded border bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">
-                    {fetchingModels ? "⏳..." : "🔍 ดึง Models"}
-                  </button>
-                </div>
+                <button onClick={() => setShowOrModels(false)}
+                  className="text-white/80 hover:text-white text-xl">✕</button>
               </div>
-              {currentModels.length > 0 ? (
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">เลือก Model ({currentModels.length} ตัว)</p>
-                  <select className="w-full rounded border px-3 py-1.5 text-sm"
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModels((prev) => ({ ...prev, [aiProvider]: e.target.value }))}>
-                    {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
+            </div>
+            <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b bg-gray-50 px-4 py-2">
+              <button onClick={() => setOrFilter("free")}
+                className={`rounded-full px-3 py-1 text-xs ${orFilter === "free" ? "bg-emerald-600 text-white" : "border bg-white"}`}>
+                ✨ ฟรี ({orModels?.free_count || 0})
+              </button>
+              <button onClick={() => setOrFilter("paid")}
+                className={`rounded-full px-3 py-1 text-xs ${orFilter === "paid" ? "bg-blue-600 text-white" : "border bg-white"}`}>
+                💰 Premium ({orModels?.paid_count || 0})
+              </button>
+              <button onClick={() => setOrFilter("all")}
+                className={`rounded-full px-3 py-1 text-xs ${orFilter === "all" ? "bg-gray-600 text-white" : "border bg-white"}`}>
+                ทั้งหมด ({orModels?.total || 0})
+              </button>
+              <input type="text" value={orSearch} onChange={(e) => setOrSearch(e.target.value)}
+                placeholder="🔍 ค้นหา model..."
+                className="min-w-[160px] flex-1 rounded border px-3 py-1 text-xs" />
+              <button onClick={fetchOrModels} disabled={orLoading}
+                className="rounded border bg-white px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-50">
+                {orLoading ? "⏳" : "🔄"} Refresh
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {orLoading ? (
+                <p className="py-12 text-center text-sm text-gray-400">กำลังโหลด...</p>
+              ) : !orModels ? (
+                <p className="py-12 text-center text-sm text-gray-400">ไม่มีข้อมูล</p>
               ) : (
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">หรือพิมพ์ชื่อ Model</p>
-                  <input type="text" className="w-full rounded border px-3 py-1.5 text-sm"
-                    value={selectedModel} placeholder="llama3, typhoon2..."
-                    onChange={(e) => setSelectedModels((prev) => ({ ...prev, [aiProvider]: e.target.value }))} />
+                <div className="space-y-1">
+                  {(orFilter === "free" ? orModels.free
+                    : orFilter === "paid" ? orModels.paid
+                    : orModels.all)
+                    .filter((m) => !orSearch || m.id.toLowerCase().includes(orSearch.toLowerCase()) || m.name?.toLowerCase().includes(orSearch.toLowerCase()))
+                    .slice(0, 200)
+                    .map((m) => {
+                      const active = model === m.id;
+                      return (
+                        <div key={m.id}
+                          className={`flex items-start gap-2 rounded-lg p-2 transition ${
+                            active ? "bg-orange-50 border border-orange-300" : "border border-transparent hover:bg-gray-50"
+                          }`}>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono text-xs font-semibold">{m.id}</span>
+                              {m.is_free && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">FREE</span>}
+                              {m.has_vision && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-700">📷 Vision</span>}
+                              {!m.is_free && <span className="text-[10px] text-gray-500">{m.price}</span>}
+                            </div>
+                            <p className="mt-0.5 text-[10px] text-gray-400">
+                              {m.provider}
+                              {m.context_length > 0 && <> · {(m.context_length / 1000).toFixed(0)}k ctx</>}
+                            </p>
+                          </div>
+                          <button onClick={() => { setModel(m.id); setShowOrModels(false); }}
+                            className="flex-shrink-0 rounded bg-orange-100 px-2 py-1 text-[10px] text-orange-700 hover:bg-orange-200">
+                            {active ? "✓ ใช้อยู่" : "ใช้ตัวนี้"}
+                          </button>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">
-                  API Key — {AI_PROVIDERS.find(p => p.value === aiProvider)?.label}
-                </p>
-                <div className="flex gap-2">
-                  <input type="password" className="flex-1 rounded border px-3 py-1.5 text-sm"
-                    placeholder="sk-... หรือ AIza..."
-                    value={apiKeys[aiProvider] || ""}
-                    onChange={(e) => setApiKeys((prev) => ({ ...prev, [aiProvider]: e.target.value }))} />
-                  <button onClick={handleFetchModels} disabled={fetchingModels || !apiKey}
-                    className="rounded border bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap">
-                    {fetchingModels ? "⏳..." : "🔍 ดึง Models"}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">🔒 เก็บใน browser เท่านั้น</p>
-              </div>
-              {currentModels.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">เลือก Model ({currentModels.length} ตัว)</p>
-                  <select className="w-full rounded border px-3 py-1.5 text-sm"
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModels((prev) => ({ ...prev, [aiProvider]: e.target.value }))}>
-                    {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -532,9 +605,9 @@ function Ngor9Panel() {
       <p className="text-sm text-gray-600">
         Upload PDF ง9 → AI อ่านและแยกข้อมูล → ตรวจสอบ → บันทึกลง Supabase
       </p>
-      <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-        <p className="text-sm font-medium text-blue-800 mb-1">รองรับ AI หลายตัว</p>
-        <p className="text-xs text-blue-600">Gemini · Claude · OpenAI GPT-4o · Local AI (Ollama)</p>
+      <div className="rounded-lg bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200 p-4">
+        <p className="text-sm font-medium text-orange-800 mb-1">🌐 ใช้ OpenRouter เป็น gateway</p>
+        <p className="text-xs text-orange-600">1 key รองรับ Claude · GPT · Gemini · Llama · DeepSeek ฯลฯ</p>
       </div>
       <a href="/admin/upload-ngor9"
         className="flex items-center justify-center gap-2 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">

@@ -27,11 +27,14 @@ interface ParsedProject {
   };
 }
 
-const AI_PROVIDERS = [
-  { value: "gemini", label: "Google Gemini (ฟรี)", hint: "ขอ key ที่ aistudio.google.com" },
-  { value: "claude", label: "Claude (Anthropic)", hint: "ขอ key ที่ console.anthropic.com" },
-  { value: "openai", label: "OpenAI GPT-4o", hint: "ขอ key ที่ platform.openai.com" },
+// OpenRouter — quick-pick models (browser ผ่าน /admin → SyncExcelPanel → modal)
+const OR_QUICK_MODELS = [
+  { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5 (แม่น/ถูก)" },
+  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { id: "openai/gpt-4.1-mini", label: "GPT-4.1 mini" },
+  { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 · FREE" },
 ];
+const OR_STORAGE = "rpf_openrouter_settings";
 
 const MONTH_LABELS: Record<number, string> = {
   10: "ต.ค.", 11: "พ.ย.", 12: "ธ.ค.",
@@ -46,9 +49,9 @@ export default function UploadNgor9Page() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
 
-  // AI settings
-  const [aiProvider, setAiProvider] = useState("gemini");
+  // OpenRouter settings (shared กับหน้า /admin)
   const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("anthropic/claude-haiku-4.5");
 
   // Upload state
   const [file, setFile] = useState<File | null>(null);
@@ -69,10 +72,16 @@ export default function UploadNgor9Page() {
   useEffect(() => {
     const s = sessionStorage.getItem("admin_auth");
     if (s === "true") setAuthed(true);
-    // Load saved API key
-    const savedKey = localStorage.getItem(`ai_key_${aiProvider}`);
-    if (savedKey) setApiKey(savedKey);
-  }, [aiProvider]);
+    // โหลด OpenRouter settings (key+model) จาก localStorage shared กับ /admin
+    try {
+      const raw = localStorage.getItem(OR_STORAGE);
+      if (raw) {
+        const cfg = JSON.parse(raw) as { api_key?: string; model?: string };
+        if (cfg.api_key) setApiKey(cfg.api_key);
+        if (cfg.model) setModel(cfg.model);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -93,8 +102,8 @@ export default function UploadNgor9Page() {
     setParseError("");
 
     try {
-      // Save API key locally
-      localStorage.setItem(`ai_key_${aiProvider}`, apiKey);
+      // Save OpenRouter settings (shared กับหน้า /admin)
+      localStorage.setItem(OR_STORAGE, JSON.stringify({ api_key: apiKey, model }));
 
       // Convert file to base64
       const buffer = await file.arrayBuffer();
@@ -107,8 +116,8 @@ export default function UploadNgor9Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pdf_base64: base64,
-          ai_provider: aiProvider,
           api_key: apiKey,
+          model,
         }),
       });
 
@@ -288,31 +297,69 @@ export default function UploadNgor9Page() {
         <div className="space-y-4 rounded-lg bg-white p-6 shadow">
           <h2 className="font-semibold text-gray-800">1. ตั้งค่า AI + เลือกไฟล์</h2>
 
-          {/* AI Provider */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">เลือก AI</label>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {AI_PROVIDERS.map((p) => (
-                <button key={p.value} type="button"
-                  onClick={() => setAiProvider(p.value)}
-                  className={`rounded border p-3 text-left text-sm transition ${
-                    aiProvider === p.value ? "border-royal-500 bg-royal-50 ring-2 ring-royal-200" : "hover:bg-gray-50"
-                  }`}
-                >
-                  <p className="font-medium">{p.label}</p>
-                  <p className="text-xs text-gray-500">{p.hint}</p>
-                </button>
-              ))}
-            </div>
+          {/* OpenRouter banner */}
+          <div className="rounded-lg border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-3 text-xs text-indigo-800">
+            🌐 ใช้ <span className="font-semibold">OpenRouter</span> เป็น gateway · 1 key รองรับ Claude · GPT · Gemini · Llama · DeepSeek ฯลฯ ·{" "}
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="underline font-medium hover:text-indigo-900">
+              ขอ key ฟรี
+            </a>
           </div>
 
-          {/* API Key */}
+          {/* OpenRouter API Key */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">API Key</label>
-            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
-              placeholder={`ใส่ ${aiProvider} API key...`}
-              className="w-full rounded border px-3 py-2 text-sm font-mono" />
-            <p className="mt-1 text-xs text-gray-400">Key จะถูกเก็บในเครื่องเท่านั้น (localStorage)</p>
+            <label className="mb-1 block text-sm font-medium text-gray-700">OpenRouter API Key</label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-or-v1-..."
+              className="w-full rounded border px-3 py-2 text-sm font-mono"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Key จะถูกเก็บใน localStorage ของเครื่องนี้เท่านั้น (shared กับหน้า /admin)
+            </p>
+          </div>
+
+          {/* Model picker */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Model{" "}
+              <span className="text-xs font-normal text-gray-400">
+                (PDF ต้องการโมเดลที่ accuracy สูง — แนะนำ Claude Haiku 4.5)
+              </span>
+            </label>
+            <input
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="anthropic/claude-haiku-4.5"
+              className="w-full rounded border px-3 py-2 text-sm font-mono"
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {OR_QUICK_MODELS.map((m) => {
+                const isFree = m.id.includes(":free");
+                const active = model === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setModel(m.id)}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                      active
+                        ? "border-royal-500 bg-royal-50 text-royal-700 ring-1 ring-royal-300"
+                        : isFree
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-gray-400">
+              ดู model ทั้งหมด → ไปที่หน้า <a href="/admin" className="underline hover:text-royal-600">/admin</a> (มี model browser)
+            </p>
           </div>
 
           {/* File Upload */}
