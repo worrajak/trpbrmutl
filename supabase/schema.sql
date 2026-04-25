@@ -327,14 +327,16 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Anon delete (สำหรับ /admin/projects · ลบโครงการ + cascade)
 -- Production: ใช้ admin auth gate ใน API route + service_role key สำหรับงานที่ละเอียดอ่อน
-DO $$ BEGIN
-  CREATE POLICY "anon delete projects"            ON projects            FOR DELETE USING (true);
-  CREATE POLICY "anon delete activities"          ON activities          FOR DELETE USING (true);
-  CREATE POLICY "anon delete kpi_targets"         ON kpi_targets         FOR DELETE USING (true);
-  CREATE POLICY "anon delete activity_reports"    ON activity_reports    FOR DELETE USING (true);
-  CREATE POLICY "anon delete project_tokens"      ON project_tokens      FOR DELETE USING (true);
-  CREATE POLICY "anon delete participants"        ON participants        FOR DELETE USING (true);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+--
+-- หมายเหตุ: ต้องแยก DO $$ block ให้แต่ละ policy เป็นของตัวเอง
+-- เพราะ EXCEPTION WHEN duplicate_object จะทำให้ block ออกทันทีตัวแรกที่ throw
+-- → ตัวที่เหลือใน block เดียวกันจะไม่ถูกสร้าง (ปัญหาเก่าก่อนหน้านี้)
+DO $$ BEGIN CREATE POLICY "anon delete projects"         ON projects         FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete activities"       ON activities       FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete kpi_targets"      ON kpi_targets      FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete activity_reports" ON activity_reports FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete project_tokens"   ON project_tokens   FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete participants"     ON participants     FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
 -- =============================================================================
