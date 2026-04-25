@@ -29,6 +29,7 @@ interface SyncResult {
   total_parsed: number;
   updated: number;
   created: number;
+  unchanged?: number;
   errors: string[];
 }
 interface PreviewRow {
@@ -36,6 +37,21 @@ interface PreviewRow {
   budget_total: number;
   budget_used: number;
   budget_remaining: number;
+}
+interface DiffEntry {
+  erp_code: string;
+  project_name: string;
+  action: "create" | "update";
+  old?: { total: number; used: number; remaining: number };
+  new: { total: number; used: number; remaining: number };
+  changed?: string[];
+}
+interface DryRunResult {
+  total_parsed: number;
+  will_create: number;
+  will_update: number;
+  will_skip: number;
+  diff: DiffEntry[];
 }
 
 type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "seed" | "repair" | null;
@@ -222,13 +238,14 @@ interface OrModelList {
 }
 
 function SyncExcelPanel() {
-  const [mode, setMode] = useState<"ai" | "manual">("ai");
+  // default = manual (ไม่ใช้ AI · เร็ว/ฟรี · เพราะรู้โครงสร้าง Excel แล้ว)
+  const [mode, setMode] = useState<"manual" | "ai">("manual");
   const [file, setFile] = useState<File | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("google/gemini-2.0-flash-exp:free");
   const [savedTick, setSavedTick] = useState(false);
 
-  // Model browser modal
+  // Model browser modal (ใช้กับ AI mode)
   const [showOrModels, setShowOrModels] = useState(false);
   const [orModels, setOrModels] = useState<OrModelList | null>(null);
   const [orLoading, setOrLoading] = useState(false);
@@ -237,7 +254,8 @@ function SyncExcelPanel() {
 
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"idle" | "preview" | "done">("idle");
-  const [preview, setPreview] = useState<PreviewRow[]>([]);
+  const [preview, setPreview] = useState<PreviewRow[]>([]);   // ใช้กับ AI mode
+  const [dryRun, setDryRun] = useState<DryRunResult | null>(null); // ใช้กับ manual mode
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState("");
   const [rawAiText, setRawAiText] = useState("");
@@ -314,10 +332,25 @@ function SyncExcelPanel() {
     setResult(data); setStep("done");
   }
 
-  async function handleManualSync() {
-    setLoading(true); setError("");
+  // Manual mode: 2-step flow — preview diff (dry_run) → confirm sync
+  async function handleManualPreview() {
+    setLoading(true); setError(""); setDryRun(null);
     const base64 = await getBase64();
     if (!base64) { setError("กรุณาเลือกไฟล์"); setLoading(false); return; }
+    const res = await fetch("/api/supabase/sync-excel", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_base64: base64, dry_run: true }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error || "เกิดข้อผิดพลาด"); return; }
+    setDryRun(data); setStep("preview");
+  }
+
+  async function handleManualConfirm() {
+    setLoading(true); setError("");
+    const base64 = await getBase64();
+    if (!base64) { setError("กรุณาเลือกไฟล์ใหม่"); setLoading(false); return; }
     const res = await fetch("/api/supabase/sync-excel", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file_base64: base64 }),
@@ -340,15 +373,31 @@ function SyncExcelPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Mode tabs */}
+      {/* Mode tabs — Direct Sync เป็น default (เร็ว/ฟรี/แม่น) */}
       <div className="flex gap-2">
-        {[{ key: "ai", label: "✨ AI อ่านอัตโนมัติ" }, { key: "manual", label: "📁 Manual" }].map(({ key, label }) => (
-          <button key={key} onClick={() => { setMode(key as "ai" | "manual"); setStep("idle"); setError(""); setResult(null); }}
+        {[
+          { key: "manual", label: "⚡ Direct Sync (แนะนำ)", hint: "ไม่ใช้ AI · ไว · ฟรี · skip ของซ้ำ" },
+          { key: "ai", label: "✨ AI (สำรอง)", hint: "ถ้า Excel โครงสร้างไม่รู้จัก" },
+        ].map(({ key, label, hint }) => (
+          <button key={key} onClick={() => {
+            setMode(key as "ai" | "manual");
+            setStep("idle"); setError(""); setResult(null); setDryRun(null);
+          }}
+            title={hint}
             className={`rounded-lg px-4 py-1.5 text-sm font-medium ${mode === key ? "bg-yellow-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
             {label}
           </button>
         ))}
       </div>
+
+      {/* Direct Sync info banner */}
+      {mode === "manual" && (
+        <div className="rounded-lg border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-3 text-xs text-emerald-800">
+          ⚡ <span className="font-semibold">Direct Sync</span> — parse Excel ตามโครงสร้างที่รู้จัก
+          (col 1 = erp_code · col 4/9/12 = งบรวม/เบิก/คงเหลือ) · ดึง <code className="bg-white px-1 rounded">responsible</code> จากวงเล็บท้ายชื่อ
+          · <span className="font-semibold">skip rows ที่ตัวเลขไม่เปลี่ยน</span> (ลด DB writes)
+        </div>
+      )}
 
       {/* File picker */}
       <div>
@@ -513,11 +562,11 @@ function SyncExcelPanel() {
 
       {/* Actions */}
       {step !== "preview" && (
-        <button onClick={mode === "ai" ? handleAiPreview : handleManualSync} disabled={loading}
+        <button onClick={mode === "ai" ? handleAiPreview : handleManualPreview} disabled={loading}
           className="w-full rounded-lg bg-yellow-500 py-2.5 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">
           {loading ? "⏳ กำลังประมวลผล..."
             : mode === "ai" ? "✨ ให้ AI อ่าน → Preview ก่อน Sync"
-            : "🔄 Sync งบประมาณ → Supabase"}
+            : "🔍 Preview Diff (ดูว่าจะเปลี่ยนอะไรบ้าง)"}
         </button>
       )}
 
@@ -529,8 +578,74 @@ function SyncExcelPanel() {
         </button>
       )}
 
-      {/* Preview */}
-      {step === "preview" && (
+      {/* Manual mode — Diff Preview (skip-if-unchanged) */}
+      {step === "preview" && mode === "manual" && dryRun && (
+        <div className="rounded-lg border bg-white overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 border-b border-emerald-200">
+            <div>
+              <p className="font-medium text-sm text-emerald-900">
+                อ่านได้ {dryRun.total_parsed} โครงการ — จะเปลี่ยน {dryRun.diff.length} รายการ
+              </p>
+              <p className="text-[11px] text-emerald-700 mt-0.5">
+                + สร้างใหม่ {dryRun.will_create} ·
+                ✓ อัปเดต {dryRun.will_update} ·
+                <span className="text-gray-500"> = ไม่เปลี่ยน {dryRun.will_skip} (skip)</span>
+              </p>
+            </div>
+            <button onClick={() => { setStep("idle"); setDryRun(null); }} className="text-xs text-gray-400 hover:text-gray-600">ยกเลิก</button>
+          </div>
+          {dryRun.diff.length === 0 ? (
+            <p className="p-6 text-center text-sm text-gray-500">
+              ✓ ทุกรายการตรงกับ DB อยู่แล้ว — ไม่มีอะไรต้อง sync
+            </p>
+          ) : (
+            <div className="overflow-x-auto max-h-72 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-gray-50 border-b">
+                  <tr>
+                    <th className="p-2 text-left font-medium text-gray-600">Action</th>
+                    <th className="p-2 text-left font-medium text-gray-600">ERP / โครงการ</th>
+                    <th className="p-2 text-right font-medium text-gray-600">งบรวม</th>
+                    <th className="p-2 text-right font-medium text-gray-600">เบิก</th>
+                    <th className="p-2 text-right font-medium text-gray-600">คงเหลือ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dryRun.diff.map((d, i) => (
+                    <tr key={i} className="border-t hover:bg-gray-50 align-top">
+                      <td className="p-2">
+                        {d.action === "create" ? (
+                          <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">+ NEW</span>
+                        ) : (
+                          <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">✓ UPD</span>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        <p className="font-mono text-[10px] text-gray-500">{d.erp_code}</p>
+                        <p className="text-gray-700 truncate max-w-xs" title={d.project_name}>{d.project_name}</p>
+                      </td>
+                      <DiffCell oldVal={d.old?.total} newVal={d.new.total} changed={d.changed?.includes("total")} />
+                      <DiffCell oldVal={d.old?.used} newVal={d.new.used} changed={d.changed?.includes("used")} color="text-orange-600" />
+                      <DiffCell oldVal={d.old?.remaining} newVal={d.new.remaining} changed={d.changed?.includes("remaining")} color="text-green-600" />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="p-3 border-t">
+            <button onClick={handleManualConfirm} disabled={loading || dryRun.diff.length === 0}
+              className="w-full rounded-lg bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
+              {loading ? "⏳ กำลัง Sync..."
+                : dryRun.diff.length === 0 ? "ไม่มีอะไรต้อง sync"
+                : `✅ ยืนยัน Apply ${dryRun.diff.length} การเปลี่ยนแปลง → Supabase`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI mode — Preview (เก่า) */}
+      {step === "preview" && mode === "ai" && (
         <div className="rounded-lg border bg-white overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
             <p className="font-medium text-sm">AI อ่านได้ {preview.length} โครงการ — ตรวจสอบก่อน Sync</p>
@@ -579,11 +694,12 @@ function SyncExcelPanel() {
       {step === "done" && result && (
         <div className="rounded-lg bg-green-50 border border-green-200 p-4">
           <p className="font-semibold text-green-700 mb-3">✅ Sync สำเร็จ</p>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
             {[
               { label: "พบใน Excel", value: result.total_parsed, c: "text-blue-700" },
-              { label: "อัปเดตแล้ว", value: result.updated, c: "text-green-700" },
+              { label: "อัปเดต", value: result.updated, c: "text-green-700" },
               { label: "สร้างใหม่", value: result.created ?? 0, c: "text-purple-700" },
+              { label: "ไม่เปลี่ยน (skip)", value: result.unchanged ?? 0, c: "text-gray-500" },
             ].map(({ label, value, c }) => (
               <div key={label} className="bg-white rounded-lg p-2">
                 <p className={`text-xl font-bold ${c}`}>{value}</p>
@@ -591,9 +707,40 @@ function SyncExcelPanel() {
               </div>
             ))}
           </div>
+          {result.errors && result.errors.length > 0 && (
+            <details className="mt-3">
+              <summary className="cursor-pointer text-xs font-medium text-red-700">
+                ⚠ {result.errors.length} errors — คลิกเพื่อดู
+              </summary>
+              <ul className="mt-2 space-y-0.5 max-h-32 overflow-y-auto text-xs text-red-600 font-mono">
+                {result.errors.map((e, i) => <li key={i}>• {e}</li>)}
+              </ul>
+            </details>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Diff Cell — แสดง old → new พร้อม highlight ถ้าเปลี่ยน ────────────────────
+function DiffCell({
+  oldVal, newVal, changed, color = "",
+}: { oldVal?: number; newVal: number; changed?: boolean; color?: string }) {
+  const fmt = (n: number) => n.toLocaleString("th-TH");
+  if (oldVal === undefined) {
+    // create — ไม่มี old
+    return <td className={`p-2 text-right ${color}`}>{fmt(newVal)}</td>;
+  }
+  if (!changed) {
+    return <td className="p-2 text-right text-gray-400">{fmt(newVal)}</td>;
+  }
+  return (
+    <td className="p-2 text-right">
+      <span className="text-gray-400 line-through text-[10px]">{fmt(oldVal)}</span>
+      <br />
+      <span className={`font-semibold ${color || "text-gray-900"}`}>{fmt(newVal)}</span>
+    </td>
   );
 }
 
