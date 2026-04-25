@@ -104,16 +104,24 @@ export async function callOpenRouterText(
 }
 
 /**
- * PDF parsing — ใช้ OpenRouter file-parser plugin
- * รองรับทุกโมเดลที่ผ่าน gateway (Claude อ่าน PDF native, อื่น ๆ ใช้ pdf-text engine)
+ * PDF parsing engines (OpenRouter file-parser plugin)
+ * - "native"     : Claude/Gemini อ่าน PDF เอง — แม่นสุด รองรับ scan ได้
+ *                  (ใช้ได้กับ models ที่ support PDF natively เท่านั้น)
+ * - "pdf-text"   : ฟรี · text-only · ใช้ไม่ได้กับ scanned PDF
+ * - "mistral-ocr": $2/1,000 หน้า · OCR สำหรับ scan
+ *
  * https://openrouter.ai/docs/features/multimodal/pdfs
  */
+export type PdfEngine = "native" | "pdf-text" | "mistral-ocr";
+export const DEFAULT_PDF_ENGINE: PdfEngine = "native";
+
 export async function callOpenRouterPDF(
   systemPrompt: string,
   userPrompt: string,
   pdfBase64: string,
   apiKey: string,
-  model: string
+  model: string,
+  engine: PdfEngine = DEFAULT_PDF_ENGINE
 ): Promise<OpenRouterResult> {
   return callOpenRouter({
     apiKey,
@@ -135,7 +143,6 @@ export async function callOpenRouterPDF(
         ],
       },
     ],
-    // engine: "pdf-text" = ฟรี (text-only) / "mistral-ocr" = $2/1000 หน้า (OCR scan PDF)
-    plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }],
+    plugins: [{ id: "file-parser", pdf: { engine } }],
   });
 }

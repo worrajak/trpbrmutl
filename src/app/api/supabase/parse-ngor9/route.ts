@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NGOR9_SYSTEM_PROMPT, NGOR9_USER_PROMPT, extractJSON } from "@/lib/ngor9-prompt";
-import { callOpenRouterPDF, DEFAULT_PDF_MODEL } from "@/lib/openrouter";
+import {
+  callOpenRouterPDF,
+  DEFAULT_PDF_MODEL,
+  DEFAULT_PDF_ENGINE,
+  type PdfEngine,
+} from "@/lib/openrouter";
 
 /**
  * POST /api/supabase/parse-ngor9
  * รับ PDF (base64) → ส่งให้ OpenRouter parse → คืน JSON ตาม schema ง9
  *
- * Body: { pdf_base64, api_key, model? }
- * ใช้ OpenRouter เป็น gateway เดียว — รองรับ Claude / GPT / Gemini / ฯลฯ ผ่าน 1 key
+ * Body: { pdf_base64, api_key, model?, engine?: "native"|"pdf-text"|"mistral-ocr" }
+ * Default engine = "native" (Claude/Gemini อ่าน PDF เอง · รองรับ scan)
  */
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { pdf_base64, api_key, model } = body;
+  const { pdf_base64, api_key, model, engine } = body;
 
   if (!pdf_base64 || !api_key) {
     return NextResponse.json(
@@ -20,13 +25,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const ALLOWED_ENGINES: PdfEngine[] = ["native", "pdf-text", "mistral-ocr"];
+  const safeEngine: PdfEngine = ALLOWED_ENGINES.includes(engine)
+    ? (engine as PdfEngine)
+    : DEFAULT_PDF_ENGINE;
+
   try {
     const { text } = await callOpenRouterPDF(
       NGOR9_SYSTEM_PROMPT,
       NGOR9_USER_PROMPT,
       pdf_base64,
       api_key,
-      model || DEFAULT_PDF_MODEL
+      model || DEFAULT_PDF_MODEL,
+      safeEngine
     );
 
     const result = extractJSON(text);

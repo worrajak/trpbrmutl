@@ -83,6 +83,12 @@ export default function UploadNgor9Page() {
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("anthropic/claude-haiku-4.5");
 
+  // PDF parsing engine (file-parser plugin)
+  // - native: Claude/Gemini อ่านเอง (ดีสุด · รองรับ scan)
+  // - pdf-text: ฟรี · text-only · ใช้ไม่ได้กับ scan
+  // - mistral-ocr: $2/1000 หน้า · OCR
+  const [engine, setEngine] = useState<"native" | "pdf-text" | "mistral-ocr">("native");
+
   // Test connection state
   const [testingKey, setTestingKey] = useState(false);
   const [keyTest, setKeyTest] = useState<KeyTestResult | null>(null);
@@ -207,6 +213,7 @@ export default function UploadNgor9Page() {
           pdf_base64: base64,
           api_key: apiKey,
           model,
+          engine,
         }),
       });
 
@@ -214,12 +221,18 @@ export default function UploadNgor9Page() {
       if (!res.ok) {
         const msg = data.error || "เกิดข้อผิดพลาด";
         const raw = data.raw_text ? "\n\nAI ตอบ:\n" + data.raw_text.substring(0, 500) : "";
-        // ตรวจ pattern ของ "Failed to parse document.pdf" → แนะให้เปลี่ยน model หรือ engine
+        // ตรวจ pattern ของ "Failed to parse document.pdf" → แนะให้เปลี่ยน engine ก่อน
         const hint = /Failed to parse|file-parser|provider_name":null/i.test(msg)
-          ? "\n\nคำแนะนำ:\n" +
-            "  • ลองเปลี่ยนเป็น Claude Haiku/Sonnet 4.5 หรือ Gemini 2.5 (อ่าน PDF ได้ดี)\n" +
-            "  • ถ้า PDF เป็นภาพ scan → pdf-text engine อ่านไม่ได้ (ต้อง OCR)\n" +
-            "  • ลองคลิก '🔌 ทดสอบ Key' ตรวจว่า key ใช้งานได้ + มี credit"
+          ? "\n\nคำแนะนำ (ลองตามลำดับ):\n" +
+            `  1. เปลี่ยน PDF Engine — ตอนนี้ใช้ "${engine}" → ลอง ${
+              engine === "native"
+                ? "'pdf-text' (ฟรี · text PDF) หรือ 'mistral-ocr' (สำหรับ scan)"
+                : engine === "pdf-text"
+                ? "'native' (Claude/Gemini อ่านเอง · รองรับ scan)"
+                : "'native' หรือ 'pdf-text'"
+            }\n` +
+            "  2. เปลี่ยน Model → Claude Haiku/Sonnet 4.5 หรือ Gemini 2.5 (PDF native)\n" +
+            "  3. ถ้า PDF เป็นภาพ scan ทั้งเล่ม → ต้องใช้ 'mistral-ocr' (เสียเงิน $2/1000 หน้า)"
           : "";
         throw new Error(msg + raw + hint);
       }
@@ -516,6 +529,63 @@ export default function UploadNgor9Page() {
             <p className="mt-1 text-xs text-gray-400">
               💡 Tip: ถ้า PDF ภาพ scan ลองใช้ <code className="font-mono">anthropic/claude-haiku-4.5</code> หรือ <code className="font-mono">google/gemini-2.5-flash</code> (vision)
             </p>
+          </div>
+
+          {/* PDF Engine picker */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              PDF Engine{" "}
+              <span className="text-xs font-normal text-gray-400">
+                (ถ้า &quot;Failed to parse&quot; → เปลี่ยน engine)
+              </span>
+            </label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {[
+                {
+                  id: "native" as const,
+                  title: "🎯 Native",
+                  desc: "Claude/Gemini อ่าน PDF เอง · รองรับ scan · แม่นสุด",
+                  badge: "แนะนำ",
+                  badgeColor: "bg-emerald-100 text-emerald-700",
+                },
+                {
+                  id: "pdf-text" as const,
+                  title: "📄 pdf-text",
+                  desc: "ฟรี · text-only · ใช้ไม่ได้กับภาพ scan",
+                  badge: "FREE",
+                  badgeColor: "bg-emerald-100 text-emerald-700",
+                },
+                {
+                  id: "mistral-ocr" as const,
+                  title: "🔍 mistral-ocr",
+                  desc: "OCR สำหรับ scan · $2/1,000 หน้า",
+                  badge: "$",
+                  badgeColor: "bg-amber-100 text-amber-700",
+                },
+              ].map((opt) => {
+                const active = engine === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setEngine(opt.id)}
+                    className={`rounded-lg border p-3 text-left text-xs transition ${
+                      active
+                        ? "border-royal-500 bg-royal-50 ring-1 ring-royal-300"
+                        : "border-gray-200 bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="mb-1 flex items-center justify-between gap-1">
+                      <span className="font-semibold text-gray-800">{opt.title}</span>
+                      <span className={`rounded px-1.5 py-0.5 text-[9px] ${opt.badgeColor}`}>
+                        {opt.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] leading-snug text-gray-500">{opt.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* File Upload */}
