@@ -27,7 +27,7 @@ interface ParsedProject {
   };
 }
 
-// OpenRouter — quick-pick models (browser ผ่าน /admin → SyncExcelPanel → modal)
+// OpenRouter — quick-pick models (browser modal อยู่ในหน้านี้แล้ว)
 const OR_QUICK_MODELS = [
   { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5 (แม่น/ถูก)" },
   { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
@@ -35,6 +35,36 @@ const OR_QUICK_MODELS = [
   { id: "google/gemini-2.0-flash-exp:free", label: "Gemini 2.0 · FREE" },
 ];
 const OR_STORAGE = "rpf_openrouter_settings";
+
+// ===== Model browser types (sync กับ /api/ai-models) =====
+interface OrModelInfo {
+  id: string;
+  name: string;
+  is_free: boolean;
+  price: string;
+  context_length: number;
+  has_vision: boolean;
+  provider: string;
+}
+interface OrModelList {
+  total: number;
+  free_count: number;
+  paid_count: number;
+  free: OrModelInfo[];
+  paid: OrModelInfo[];
+  all: OrModelInfo[];
+}
+
+// ===== Test-key result =====
+interface KeyTestResult {
+  ok: boolean;
+  label?: string | null;
+  usage?: number | null;
+  limit?: number | null;
+  limit_remaining?: number | null;
+  is_free_tier?: boolean;
+  error?: string;
+}
 
 const MONTH_LABELS: Record<number, string> = {
   10: "ต.ค.", 11: "พ.ย.", 12: "ธ.ค.",
@@ -52,6 +82,18 @@ export default function UploadNgor9Page() {
   // OpenRouter settings (shared กับหน้า /admin)
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("anthropic/claude-haiku-4.5");
+
+  // Test connection state
+  const [testingKey, setTestingKey] = useState(false);
+  const [keyTest, setKeyTest] = useState<KeyTestResult | null>(null);
+
+  // Model browser modal
+  const [showOrModels, setShowOrModels] = useState(false);
+  const [orModels, setOrModels] = useState<OrModelList | null>(null);
+  const [orLoading, setOrLoading] = useState(false);
+  const [orFilter, setOrFilter] = useState<"free" | "paid" | "all">("paid");
+  const [orSearch, setOrSearch] = useState("");
+  const [orVisionOnly, setOrVisionOnly] = useState(false);
 
   // Upload state
   const [file, setFile] = useState<File | null>(null);
@@ -96,6 +138,53 @@ export default function UploadNgor9Page() {
     } else alert("รหัสผ่านไม่ถูกต้อง");
   }
 
+  // ===== Test OpenRouter API key =====
+  async function handleTestKey() {
+    if (!apiKey) {
+      setKeyTest({ ok: false, error: "กรุณาใส่ API Key ก่อน" });
+      return;
+    }
+    setTestingKey(true);
+    setKeyTest(null);
+    try {
+      const res = await fetch("/api/openrouter/test-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+      const data = (await res.json()) as KeyTestResult;
+      setKeyTest(data);
+      // ถ้า key ใช้ได้ → save (ใช้ครั้งหน้าไม่ต้องกรอกใหม่)
+      if (data.ok) {
+        localStorage.setItem(OR_STORAGE, JSON.stringify({ api_key: apiKey, model }));
+      }
+    } catch (err: unknown) {
+      setKeyTest({
+        ok: false,
+        error: err instanceof Error ? err.message : "ทดสอบ key ไม่สำเร็จ",
+      });
+    } finally {
+      setTestingKey(false);
+    }
+  }
+
+  // ===== Fetch OpenRouter model list =====
+  async function fetchOrModels() {
+    setOrLoading(true);
+    try {
+      const res = await fetch("/api/ai-models");
+      const data = await res.json();
+      if (res.ok) setOrModels(data);
+    } finally {
+      setOrLoading(false);
+    }
+  }
+
+  function openOrModelsBrowser() {
+    setShowOrModels(true);
+    if (!orModels) fetchOrModels();
+  }
+
   async function handleParse() {
     if (!file || !apiKey) return;
     setParsing(true);
@@ -125,7 +214,14 @@ export default function UploadNgor9Page() {
       if (!res.ok) {
         const msg = data.error || "เกิดข้อผิดพลาด";
         const raw = data.raw_text ? "\n\nAI ตอบ:\n" + data.raw_text.substring(0, 500) : "";
-        throw new Error(msg + raw);
+        // ตรวจ pattern ของ "Failed to parse document.pdf" → แนะให้เปลี่ยน model หรือ engine
+        const hint = /Failed to parse|file-parser|provider_name":null/i.test(msg)
+          ? "\n\nคำแนะนำ:\n" +
+            "  • ลองเปลี่ยนเป็น Claude Haiku/Sonnet 4.5 หรือ Gemini 2.5 (อ่าน PDF ได้ดี)\n" +
+            "  • ถ้า PDF เป็นภาพ scan → pdf-text engine อ่านไม่ได้ (ต้อง OCR)\n" +
+            "  • ลองคลิก '🔌 ทดสอบ Key' ตรวจว่า key ใช้งานได้ + มี credit"
+          : "";
+        throw new Error(msg + raw + hint);
       }
 
       setParsed(data.data as ParsedProject);
@@ -307,27 +403,87 @@ export default function UploadNgor9Page() {
 
           {/* OpenRouter API Key */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">OpenRouter API Key</label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">OpenRouter API Key</label>
+              <button
+                type="button"
+                onClick={handleTestKey}
+                disabled={!apiKey || testingKey}
+                className="rounded border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+              >
+                {testingKey ? "⏳ กำลังตรวจ..." : "🔌 ทดสอบ Key"}
+              </button>
+            </div>
             <input
               type="password"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(e) => { setApiKey(e.target.value); setKeyTest(null); }}
               placeholder="sk-or-v1-..."
               className="w-full rounded border px-3 py-2 text-sm font-mono"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Key จะถูกเก็บใน localStorage ของเครื่องนี้เท่านั้น (shared กับหน้า /admin)
+              Key จะถูกเก็บใน localStorage ของเครื่องนี้เท่านั้น (shared กับหน้า /admin) ·{" "}
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="underline hover:text-indigo-600">
+                ขอ key ฟรี
+              </a>
             </p>
+
+            {/* Test result */}
+            {keyTest && (
+              <div
+                className={`mt-2 rounded-lg border p-3 text-xs ${
+                  keyTest.ok
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {keyTest.ok ? (
+                  <>
+                    <p className="font-medium">✓ Key ใช้งานได้</p>
+                    <ul className="mt-1 space-y-0.5 text-[11px]">
+                      {keyTest.label && <li>• Label: <code className="font-mono">{keyTest.label}</code></li>}
+                      {typeof keyTest.usage === "number" && (
+                        <li>• ใช้ไปแล้ว: <strong>${keyTest.usage.toFixed(4)}</strong></li>
+                      )}
+                      {typeof keyTest.limit === "number" && keyTest.limit > 0 ? (
+                        <li>
+                          • Limit: ${keyTest.limit.toFixed(2)}
+                          {typeof keyTest.limit_remaining === "number" && (
+                            <> · เหลือ <strong>${keyTest.limit_remaining.toFixed(4)}</strong></>
+                          )}
+                        </li>
+                      ) : (
+                        <li>• Limit: ไม่จำกัด (pay-as-you-go)</li>
+                      )}
+                      {keyTest.is_free_tier && (
+                        <li className="text-emerald-700">• 🆓 Free tier — ใช้ได้เฉพาะ models ลงท้าย <code>:free</code></li>
+                      )}
+                    </ul>
+                  </>
+                ) : (
+                  <p>✗ {keyTest.error}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Model picker */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Model{" "}
-              <span className="text-xs font-normal text-gray-400">
-                (PDF ต้องการโมเดลที่ accuracy สูง — แนะนำ Claude Haiku 4.5)
-              </span>
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">
+                Model{" "}
+                <span className="text-xs font-normal text-gray-400">
+                  (PDF — แนะนำ Claude Haiku 4.5 / Gemini 2.5)
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={openOrModelsBrowser}
+                className="rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-medium text-orange-700 hover:bg-orange-100"
+              >
+                🔄 ดู Models ทั้งหมด (Live)
+              </button>
+            </div>
             <input
               type="text"
               value={model}
@@ -358,7 +514,7 @@ export default function UploadNgor9Page() {
               })}
             </div>
             <p className="mt-1 text-xs text-gray-400">
-              ดู model ทั้งหมด → ไปที่หน้า <a href="/admin" className="underline hover:text-royal-600">/admin</a> (มี model browser)
+              💡 Tip: ถ้า PDF ภาพ scan ลองใช้ <code className="font-mono">anthropic/claude-haiku-4.5</code> หรือ <code className="font-mono">google/gemini-2.5-flash</code> (vision)
             </p>
           </div>
 
@@ -581,6 +737,167 @@ export default function UploadNgor9Page() {
           {saveError && (
             <div className="rounded bg-red-50 p-3 text-sm text-red-700">{saveError}</div>
           )}
+        </div>
+      )}
+
+      {/* ===== OpenRouter Models Browser Modal ===== */}
+      {showOrModels && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowOrModels(false)}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex-shrink-0 bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-3 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold flex items-center gap-2">🌐 OpenRouter Models</h3>
+                  {orModels && (
+                    <p className="text-xs text-white/80 mt-0.5">
+                      ทั้งหมด {orModels.total} · ฟรี {orModels.free_count} · เสียเงิน {orModels.paid_count}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowOrModels(false)}
+                  className="text-white/80 hover:text-white text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b bg-gray-50 px-4 py-2">
+              <button
+                onClick={() => setOrFilter("free")}
+                className={`rounded-full px-3 py-1 text-xs ${
+                  orFilter === "free" ? "bg-emerald-600 text-white" : "border bg-white"
+                }`}
+              >
+                ✨ ฟรี ({orModels?.free_count || 0})
+              </button>
+              <button
+                onClick={() => setOrFilter("paid")}
+                className={`rounded-full px-3 py-1 text-xs ${
+                  orFilter === "paid" ? "bg-blue-600 text-white" : "border bg-white"
+                }`}
+              >
+                💰 Premium ({orModels?.paid_count || 0})
+              </button>
+              <button
+                onClick={() => setOrFilter("all")}
+                className={`rounded-full px-3 py-1 text-xs ${
+                  orFilter === "all" ? "bg-gray-600 text-white" : "border bg-white"
+                }`}
+              >
+                ทั้งหมด ({orModels?.total || 0})
+              </button>
+              <label className="flex items-center gap-1 rounded-full border bg-white px-3 py-1 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={orVisionOnly}
+                  onChange={(e) => setOrVisionOnly(e.target.checked)}
+                  className="h-3 w-3"
+                />
+                📷 Vision เท่านั้น <span className="text-gray-400">(แนะนำสำหรับ PDF)</span>
+              </label>
+              <input
+                type="text"
+                value={orSearch}
+                onChange={(e) => setOrSearch(e.target.value)}
+                placeholder="🔍 ค้นหา model..."
+                className="min-w-[160px] flex-1 rounded border px-3 py-1 text-xs"
+              />
+              <button
+                onClick={fetchOrModels}
+                disabled={orLoading}
+                className="rounded border bg-white px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-50"
+              >
+                {orLoading ? "⏳" : "🔄"} Refresh
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-2">
+              {orLoading ? (
+                <p className="py-12 text-center text-sm text-gray-400">กำลังโหลด...</p>
+              ) : !orModels ? (
+                <p className="py-12 text-center text-sm text-gray-400">ไม่มีข้อมูล</p>
+              ) : (
+                <div className="space-y-1">
+                  {(orFilter === "free"
+                    ? orModels.free
+                    : orFilter === "paid"
+                    ? orModels.paid
+                    : orModels.all
+                  )
+                    .filter(
+                      (m) =>
+                        (!orSearch ||
+                          m.id.toLowerCase().includes(orSearch.toLowerCase()) ||
+                          m.name?.toLowerCase().includes(orSearch.toLowerCase())) &&
+                        (!orVisionOnly || m.has_vision)
+                    )
+                    .slice(0, 200)
+                    .map((m) => {
+                      const active = model === m.id;
+                      return (
+                        <div
+                          key={m.id}
+                          className={`flex items-start gap-2 rounded-lg p-2 transition ${
+                            active
+                              ? "bg-orange-50 border border-orange-300"
+                              : "border border-transparent hover:bg-gray-50"
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono text-xs font-semibold">{m.id}</span>
+                              {m.is_free && (
+                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">
+                                  FREE
+                                </span>
+                              )}
+                              {m.has_vision && (
+                                <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-700">
+                                  📷 Vision
+                                </span>
+                              )}
+                              {!m.is_free && (
+                                <span className="text-[10px] text-gray-500">{m.price}</span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-[10px] text-gray-400">
+                              {m.provider}
+                              {m.context_length > 0 && (
+                                <> · {(m.context_length / 1000).toFixed(0)}k ctx</>
+                              )}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setModel(m.id);
+                              setShowOrModels(false);
+                            }}
+                            className="flex-shrink-0 rounded bg-orange-100 px-2 py-1 text-[10px] text-orange-700 hover:bg-orange-200"
+                          >
+                            {active ? "✓ ใช้อยู่" : "ใช้ตัวนี้"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer hint */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-4 py-2 text-[10px] text-gray-500">
+              💡 Tip: PDF parsing ใช้ <code className="font-mono">file-parser</code> plugin · models ที่มี <span className="text-violet-700">📷 Vision</span> จะอ่าน PDF ได้แม่นกว่า
+            </div>
+          </div>
         </div>
       )}
     </div>
