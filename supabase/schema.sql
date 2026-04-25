@@ -325,6 +325,17 @@ DO $$ BEGIN
   CREATE POLICY "anon update participants"        ON participants        FOR UPDATE USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Anon delete (สำหรับ /admin/projects · ลบโครงการ + cascade)
+-- Production: ใช้ admin auth gate ใน API route + service_role key สำหรับงานที่ละเอียดอ่อน
+DO $$ BEGIN
+  CREATE POLICY "anon delete projects"            ON projects            FOR DELETE USING (true);
+  CREATE POLICY "anon delete activities"          ON activities          FOR DELETE USING (true);
+  CREATE POLICY "anon delete kpi_targets"         ON kpi_targets         FOR DELETE USING (true);
+  CREATE POLICY "anon delete activity_reports"    ON activity_reports    FOR DELETE USING (true);
+  CREATE POLICY "anon delete project_tokens"      ON project_tokens      FOR DELETE USING (true);
+  CREATE POLICY "anon delete participants"        ON participants        FOR DELETE USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 
 -- =============================================================================
 --  เสร็จสิ้น

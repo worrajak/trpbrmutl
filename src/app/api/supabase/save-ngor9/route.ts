@@ -61,24 +61,34 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Insert activities
+  let activitiesInserted = 0;
+  let activitiesError: string | null = null;
   if (activities && activities.length > 0) {
     const actRows = activities.map((a: { order: number; name: string; budget: number; planned_months: number[]; output: string }) => ({
       project_id: projectId,
       activity_order: a.order,
-      activity_name: a.name,
+      activity_name: a.name || `กิจกรรมที่ ${a.order}`,
       budget: a.budget || 0,
       planned_months: a.planned_months || [],
       expected_output: a.output || null,
       status: "not_started",
     }));
 
-    const { error: actErr } = await supabase.from("activities").insert(actRows);
+    const { data: insertedActs, error: actErr } = await supabase
+      .from("activities")
+      .insert(actRows)
+      .select("id");
     if (actErr) {
       console.error("Activities error:", actErr.message);
+      activitiesError = actErr.message;
+    } else {
+      activitiesInserted = insertedActs?.length || actRows.length;
     }
   }
 
   // 3. Insert KPI targets
+  let kpisInserted = 0;
+  let kpisError: string | null = null;
   if (kpi) {
     const targets: Array<Record<string, unknown>> = [];
 
@@ -141,8 +151,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (targets.length > 0) {
-      const { error: kpiErr } = await supabase.from("kpi_targets").insert(targets);
-      if (kpiErr) console.error("KPI error:", kpiErr.message);
+      const { data: insertedKpis, error: kpiErr } = await supabase
+        .from("kpi_targets")
+        .insert(targets)
+        .select("id");
+      if (kpiErr) {
+        console.error("KPI error:", kpiErr.message);
+        kpisError = kpiErr.message;
+      } else {
+        kpisInserted = insertedKpis?.length || targets.length;
+      }
     }
   }
 
@@ -163,11 +181,28 @@ export async function POST(req: NextRequest) {
     });
   } catch { /* token tables may not exist */ }
 
+  // ===== Build warnings list (เห็นใน UI ทันที — ไม่ต้องเปิด server log) =====
+  const warnings: string[] = [];
+  if (!activities || activities.length === 0) {
+    warnings.push("⚠ AI ไม่พบกิจกรรมใน PDF — ลองเปลี่ยน model/engine แล้ว parse ใหม่ หรือเพิ่มกิจกรรมเองในหน้า /admin/projects");
+  } else if (activitiesError) {
+    warnings.push(`⚠ บันทึกกิจกรรมล้มเหลว (${activitiesInserted}/${activities.length}): ${activitiesError}`);
+  } else if (activitiesInserted < activities.length) {
+    warnings.push(`⚠ บันทึกกิจกรรมไม่ครบ: ${activitiesInserted}/${activities.length}`);
+  }
+  if (kpisError) {
+    warnings.push(`⚠ บันทึก KPI ล้มเหลว: ${kpisError}`);
+  }
+
   return NextResponse.json({
     success: true,
     project_id: projectId,
     token_code: tokenCode,
     fiscal_year,
     duplicate_warning: duplicateInfo,
+    activities_inserted: activitiesInserted,
+    activities_total: activities?.length || 0,
+    kpis_inserted: kpisInserted,
+    warnings,
   });
 }

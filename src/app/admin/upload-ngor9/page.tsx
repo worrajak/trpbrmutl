@@ -115,6 +115,13 @@ export default function UploadNgor9Page() {
   const [saveError, setSaveError] = useState("");
   const [savedToken, setSavedToken] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState<Array<{ id: string; project_name: string; responsible: string | null }> | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState("");
+  const [savedCounts, setSavedCounts] = useState<{
+    activities_inserted: number;
+    activities_total: number;
+    kpis_inserted: number;
+    warnings: string[];
+  } | null>(null);
   const [fiscalYear, setFiscalYear] = useState(2570);
 
   useEffect(() => {
@@ -302,7 +309,14 @@ export default function UploadNgor9Page() {
       if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
 
       setSavedToken(data.token_code || "");
+      setSavedProjectId(data.project_id || "");
       setDuplicateWarning(data.duplicate_warning || null);
+      setSavedCounts({
+        activities_inserted: data.activities_inserted ?? 0,
+        activities_total: data.activities_total ?? 0,
+        kpis_inserted: data.kpis_inserted ?? 0,
+        warnings: data.warnings ?? [],
+      });
       setSaved(true);
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
@@ -352,6 +366,31 @@ export default function UploadNgor9Page() {
               <p className="mt-2 text-xs text-gray-500">
                 ส่ง Token นี้ให้ {parsed?.responsible || "หัวหน้าโครงการ"} เพื่อรายงานผลและรับ RPF Coin
               </p>
+            </div>
+          )}
+
+          {/* Activities/KPIs counts + warnings */}
+          {savedCounts && (
+            <div className="mt-4 rounded-lg border bg-gray-50 p-3 text-left">
+              <p className="text-xs font-medium text-gray-700">รายละเอียดที่บันทึก:</p>
+              <ul className="mt-1 space-y-0.5 text-xs text-gray-600">
+                <li>• กิจกรรม: <strong>{savedCounts.activities_inserted}</strong>/{savedCounts.activities_total}</li>
+                <li>• ตัวชี้วัด (KPI): <strong>{savedCounts.kpis_inserted}</strong></li>
+              </ul>
+              {savedCounts.warnings.length > 0 && (
+                <div className="mt-2 rounded border border-amber-300 bg-amber-50 p-2">
+                  {savedCounts.warnings.map((w, i) => (
+                    <p key={i} className="text-[11px] text-amber-800">{w}</p>
+                  ))}
+                  {savedProjectId && (
+                    <p className="mt-1 text-[11px] text-amber-700">
+                      → เปิด <a href={`/projects/${savedProjectId}`} className="underline" target="_blank" rel="noreferrer">ดูโครงการ</a>
+                      {" หรือ "}
+                      <a href="/admin/projects" className="underline">แก้ไข/ลบโครงการ</a>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

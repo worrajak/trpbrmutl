@@ -54,7 +54,7 @@ interface DryRunResult {
   diff: DiffEntry[];
 }
 
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "seed" | "repair" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -134,6 +134,14 @@ export default function AdminPage() {
       activeColor: "border-blue-400",
     },
     {
+      key: "manage" as OpenSection,
+      icon: "🗂",
+      title: "จัดการโครงการ (แก้ไข / ลบ)",
+      desc: "list ทุกโครงการ · search/filter · edit ฟิลด์ · delete (cascade activities/kpis)",
+      color: "border-indigo-300 bg-indigo-50",
+      activeColor: "border-indigo-400",
+    },
+    {
       key: "tokens" as OpenSection,
       icon: "🔑",
       title: "จัดการ Token / RPF Coin",
@@ -193,6 +201,7 @@ export default function AdminPage() {
             <div className="border-t px-5 pb-6 pt-4">
               {card.key === "sync" && <SyncExcelPanel />}
               {card.key === "ngor9" && <Ngor9Panel />}
+              {card.key === "manage" && <ManageProjectsPanel />}
               {card.key === "tokens" && <TokensPanel />}
               {card.key === "analytics" && <AnalyticsPanel />}
               {card.key === "seed" && <SeedActivitiesPanel />}
@@ -759,6 +768,26 @@ function Ngor9Panel() {
       <a href="/admin/upload-ngor9"
         className="flex items-center justify-center gap-2 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
         เปิดหน้านำเข้าเอกสาร ง9 →
+      </a>
+    </div>
+  );
+}
+
+// ─── Manage Projects Panel ────────────────────────────────────────────────────
+
+function ManageProjectsPanel() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600">
+        แก้ไขฟิลด์โครงการ (ชื่อ · ผู้รับผิดชอบ · งบ · ฯลฯ) หรือ <strong>ลบโครงการ</strong>
+        เพื่อนำเข้าใหม่จาก Excel/PDF · การลบจะ cascade ลบ activities/KPIs/reports/tokens
+      </p>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+        ⚠ ใช้ด้วยความระมัดระวัง — หลังลบจะกู้คืนไม่ได้ · แนะนำให้ดูข้อมูลในหน้าโครงการก่อน
+      </div>
+      <a href="/admin/projects"
+        className="flex items-center justify-center gap-2 w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+        🗂 เปิดหน้าจัดการโครงการ →
       </a>
     </div>
   );
