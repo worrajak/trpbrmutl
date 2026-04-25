@@ -121,8 +121,30 @@ export default function UploadNgor9Page() {
     activities_total: number;
     kpis_inserted: number;
     warnings: string[];
+    mode?: "insert" | "merge";
+    activities_replaced?: number;
+    kpis_replaced?: number;
   } | null>(null);
   const [fiscalYear, setFiscalYear] = useState(2570);
+
+  // ===== Match-then-merge flow (เช็คโครงการซ้ำก่อน save) =====
+  type MatchCandidate = {
+    id: string;
+    project_name: string;
+    responsible: string | null;
+    organization: string | null;
+    fiscal_year: number | null;
+    erp_code: string | null;
+    budget_total: number;
+    budget_used: number;
+    main_program: string | null;
+    score: number;
+    signals: string[];
+  };
+  const [matchCandidates, setMatchCandidates] = useState<MatchCandidate[] | null>(null);
+  const [matching, setMatching] = useState(false);
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [budgetStrategy, setBudgetStrategy] = useState<"keep" | "ngor9">("keep");
 
   useEffect(() => {
     const s = sessionStorage.getItem("admin_auth");
@@ -293,18 +315,60 @@ export default function UploadNgor9Page() {
     setParsed({ ...parsed, activities: acts });
   }
 
+  // ===== Step 1: ตรวจ match ก่อน save =====
+  // เป็น entry point ของปุ่ม "บันทึกลง Supabase"
   async function handleSave() {
+    if (!parsed) return;
+    setSaveError("");
+    setMatching(true);
+    try {
+      const res = await fetch("/api/supabase/match-ngor9", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_name: parsed.project_name,
+          responsible: parsed.responsible,
+          fiscal_year: fiscalYear,
+          organization: parsed.organization,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ตรวจซ้ำไม่สำเร็จ");
+
+      const matches: MatchCandidate[] = data.matches || [];
+      if (matches.length === 0) {
+        // ไม่เจอใกล้เคียง → save เป็นโครงการใหม่ทันที
+        await actuallySave(null, "keep");
+      } else {
+        // เจอ → เปิด modal ให้ admin เลือก
+        setMatchCandidates(matches);
+        setShowMatchModal(true);
+      }
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setMatching(false);
+    }
+  }
+
+  // ===== Step 2: ลงทะเบียนจริง (insert ใหม่ หรือ merge) =====
+  async function actuallySave(mergeIntoId: string | null, strategy: "keep" | "ngor9") {
     if (!parsed) return;
     setSaving(true);
     setSaveError("");
+    setShowMatchModal(false);
 
     try {
       const res = await fetch("/api/supabase/save-ngor9", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...parsed, fiscal_year: fiscalYear }),
+        body: JSON.stringify({
+          ...parsed,
+          fiscal_year: fiscalYear,
+          merge_into_id: mergeIntoId,
+          budget_strategy: strategy,
+        }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
 
@@ -316,6 +380,9 @@ export default function UploadNgor9Page() {
         activities_total: data.activities_total ?? 0,
         kpis_inserted: data.kpis_inserted ?? 0,
         warnings: data.warnings ?? [],
+        mode: data.mode,
+        activities_replaced: data.activities_replaced,
+        kpis_replaced: data.kpis_replaced,
       });
       setSaved(true);
     } catch (err: unknown) {
@@ -372,10 +439,32 @@ export default function UploadNgor9Page() {
           {/* Activities/KPIs counts + warnings */}
           {savedCounts && (
             <div className="mt-4 rounded-lg border bg-gray-50 p-3 text-left">
-              <p className="text-xs font-medium text-gray-700">รายละเอียดที่บันทึก:</p>
+              <p className="text-xs font-medium text-gray-700">
+                รายละเอียดที่บันทึก
+                {savedCounts.mode === "merge" && (
+                  <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800">
+                    🔄 อัปเดตโครงการเดิม
+                  </span>
+                )}
+                {savedCounts.mode === "insert" && (
+                  <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">
+                    ➕ โครงการใหม่
+                  </span>
+                )}
+              </p>
               <ul className="mt-1 space-y-0.5 text-xs text-gray-600">
-                <li>• กิจกรรม: <strong>{savedCounts.activities_inserted}</strong>/{savedCounts.activities_total}</li>
-                <li>• ตัวชี้วัด (KPI): <strong>{savedCounts.kpis_inserted}</strong></li>
+                <li>
+                  • กิจกรรม: <strong>{savedCounts.activities_inserted}</strong>/{savedCounts.activities_total}
+                  {savedCounts.mode === "merge" && savedCounts.activities_replaced != null && savedCounts.activities_replaced > 0 && (
+                    <span className="text-amber-700"> (แทนที่ของเดิม {savedCounts.activities_replaced} รายการ)</span>
+                  )}
+                </li>
+                <li>
+                  • ตัวชี้วัด (KPI): <strong>{savedCounts.kpis_inserted}</strong>
+                  {savedCounts.mode === "merge" && savedCounts.kpis_replaced != null && savedCounts.kpis_replaced > 0 && (
+                    <span className="text-amber-700"> (แทนที่ของเดิม {savedCounts.kpis_replaced} รายการ)</span>
+                  )}
+                </li>
               </ul>
               {savedCounts.warnings.length > 0 && (
                 <div className="mt-2 rounded border border-amber-300 bg-amber-50 p-2">
@@ -417,7 +506,12 @@ export default function UploadNgor9Page() {
           )}
 
           <div className="mt-6 flex justify-center gap-3">
-            <button onClick={() => { setParsed(null); setSaved(false); setFile(null); setSavedToken(""); setDuplicateWarning(null); }}
+            <button onClick={() => {
+              setParsed(null); setSaved(false); setFile(null);
+              setSavedToken(""); setDuplicateWarning(null); setSavedCounts(null);
+              setMatchCandidates(null); setShowMatchModal(false);
+              setBudgetStrategy("keep");
+            }}
               className="rounded bg-royal-700 px-4 py-2 text-white hover:bg-royal-800">
               นำเข้าไฟล์ใหม่
             </button>
@@ -837,15 +931,200 @@ export default function UploadNgor9Page() {
               className="flex-1 rounded border py-3 text-gray-600 hover:bg-gray-100">
               ยกเลิก / อ่านใหม่
             </button>
-            <button onClick={handleSave} disabled={saving}
+            <button onClick={handleSave} disabled={saving || matching}
               className="flex-1 rounded bg-royal-700 py-3 font-medium text-white hover:bg-royal-800 disabled:opacity-50">
-              {saving ? "กำลังบันทึก..." : "บันทึกลง Supabase"}
+              {matching ? "🔍 กำลังตรวจโครงการซ้ำ..." : saving ? "💾 กำลังบันทึก..." : "🔍 ตรวจซ้ำ → บันทึก"}
             </button>
           </div>
 
           {saveError && (
             <div className="rounded bg-red-50 p-3 text-sm text-red-700">{saveError}</div>
           )}
+        </div>
+      )}
+
+      {/* ===== Match Decision Modal ===== */}
+      {showMatchModal && matchCandidates && parsed && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => !saving && setShowMatchModal(false)}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold">🔍 พบโครงการที่อาจตรงกัน</h3>
+                  <p className="text-xs text-white/80 mt-0.5">
+                    เลือกว่าจะ <strong>อัปเดต</strong> โครงการเดิม (ใช้ ง9 เป็นข้อมูลละเอียด) หรือ <strong>สร้างใหม่</strong>
+                  </p>
+                </div>
+                <button
+                  onClick={() => !saving && setShowMatchModal(false)}
+                  disabled={saving}
+                  className="text-white/80 hover:text-white text-xl disabled:opacity-50"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm">
+              {/* Source NGOR9 info */}
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-[11px] font-medium text-emerald-700">🆕 ข้อมูลจาก ง9 ที่กำลังจะบันทึก:</p>
+                <p className="mt-1 font-medium text-emerald-900">{parsed.project_name}</p>
+                <p className="text-xs text-emerald-700">
+                  ผู้รับผิดชอบ: {parsed.responsible || "—"} · งบ: {Number(parsed.budget_total || 0).toLocaleString()} · ปี {fiscalYear}
+                </p>
+                <p className="mt-1 text-xs text-emerald-600">
+                  กิจกรรม {parsed.activities?.length || 0} รายการ · KPI {(parsed.kpi.quantitative?.length || 0) + (parsed.kpi.qualitative?.length || 0) + (parsed.kpi.time_target ? 1 : 0) + (parsed.kpi.budget_target ? 1 : 0)} รายการ
+                </p>
+              </div>
+
+              {/* Match candidates */}
+              <p className="text-xs font-medium text-gray-700">
+                โครงการที่ตรงกัน {matchCandidates.length} รายการ (เรียงตามคะแนน):
+              </p>
+              {matchCandidates.map((m, i) => {
+                const isTop = i === 0;
+                return (
+                  <div
+                    key={m.id}
+                    className={`rounded-lg border-2 p-3 ${
+                      isTop ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {isTop && (
+                            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                              แนะนำ
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-gray-400">
+                            score: {(m.score * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <p className="mt-1 font-medium text-gray-800">{m.project_name}</p>
+                        <p className="text-xs text-gray-600">
+                          ผู้รับผิดชอบ: {m.responsible || "—"} · ปี {m.fiscal_year || "—"}
+                          {m.erp_code && (
+                            <>
+                              {" "}
+                              · ERP: <code className="font-mono text-[10px]">{m.erp_code}</code>
+                            </>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          งบ: {m.budget_total.toLocaleString()} · เบิก: {m.budget_used.toLocaleString()}
+                        </p>
+                        {m.signals.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {m.signals.map((s, si) => (
+                              <span
+                                key={si}
+                                className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Budget comparison + strategy chooser (เฉพาะ row นี้) */}
+                        {Math.abs(m.budget_total - Number(parsed.budget_total || 0)) > 1 &&
+                          Number(parsed.budget_total || 0) > 0 && (
+                            <div className="mt-2 rounded border border-gray-300 bg-white p-2">
+                              <p className="text-[11px] font-medium text-gray-700">
+                                ⚠ งบประมาณต่างกัน — ใช้ของไหน?
+                              </p>
+                              <div className="mt-1 flex flex-col gap-1">
+                                <label className="flex cursor-pointer items-center gap-2 text-xs">
+                                  <input
+                                    type="radio"
+                                    name={`budget-${m.id}`}
+                                    checked={budgetStrategy === "keep"}
+                                    onChange={() => setBudgetStrategy("keep")}
+                                  />
+                                  <span>
+                                    เก็บของเดิม{" "}
+                                    <strong className="text-blue-700">{m.budget_total.toLocaleString()}</strong>
+                                    <span className="text-gray-400 text-[10px]"> (ปกติมาจาก Excel/ERP - แม่นกว่า)</span>
+                                  </span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2 text-xs">
+                                  <input
+                                    type="radio"
+                                    name={`budget-${m.id}`}
+                                    checked={budgetStrategy === "ngor9"}
+                                    onChange={() => setBudgetStrategy("ngor9")}
+                                  />
+                                  <span>
+                                    ใช้ของ ง9{" "}
+                                    <strong className="text-emerald-700">
+                                      {Number(parsed.budget_total || 0).toLocaleString()}
+                                    </strong>
+                                    <span className="text-gray-400 text-[10px]"> (ถ้างบเดิมไม่สมเหตุสมผล)</span>
+                                  </span>
+                                </label>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => actuallySave(m.id, budgetStrategy)}
+                          disabled={saving}
+                          className={`whitespace-nowrap rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${
+                            isTop ? "bg-amber-600 hover:bg-amber-700" : "bg-blue-600 hover:bg-blue-700"
+                          }`}
+                        >
+                          🔄 อัปเดตเข้าโครงการนี้
+                        </button>
+                        <a
+                          href={`/projects/${m.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="whitespace-nowrap rounded border border-gray-300 px-3 py-1.5 text-center text-[11px] text-gray-600 hover:bg-gray-50"
+                        >
+                          🔗 ดูของเดิม
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-5 py-3">
+              <p className="mb-2 text-[11px] text-gray-500">
+                หรือถ้าไม่ใช่โครงการเดียวกัน:
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => !saving && setShowMatchModal(false)}
+                  disabled={saving}
+                  className="flex-1 rounded border bg-white py-2 text-sm hover:bg-gray-100 disabled:opacity-50"
+                >
+                  ⬅ กลับไปแก้ไข
+                </button>
+                <button
+                  onClick={() => actuallySave(null, "keep")}
+                  disabled={saving}
+                  className="flex-1 rounded bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {saving ? "⏳ กำลังบันทึก..." : "➕ สร้างเป็นโครงการใหม่"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
