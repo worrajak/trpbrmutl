@@ -122,6 +122,7 @@ export default function AdminProjectsPage() {
     try {
       const payload = {
         project_name: editing.project_name,
+        erp_code: editing.erp_code?.trim() || null,
         responsible: editing.responsible,
         responsible_title: editing.responsible_title,
         organization: editing.organization,
@@ -433,6 +434,19 @@ export default function AdminProjectsPage() {
                     }
                     className="w-full rounded border px-3 py-2"
                   />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">ERP code</label>
+                  <input
+                    type="text"
+                    value={editing.erp_code || ""}
+                    onChange={(e) => setEditing({ ...editing, erp_code: e.target.value })}
+                    placeholder="เช่น 010012"
+                    className="w-full rounded border px-3 py-2 font-mono"
+                  />
+                  <p className="mt-1 text-[10px] text-gray-400">
+                    💡 ใส่เพื่อ link กับยอดเบิกจาก Excel ERP (sync-excel จะใช้ field นี้ match)
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="text-xs text-gray-500">หน่วยงาน</label>

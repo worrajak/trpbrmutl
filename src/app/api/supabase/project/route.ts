@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
 
+// ป้องกัน Next.js + browser/CDN cache
+// (เคสเดิม: หลัง merge/edit หน้า detail ยังโชว์ของเก่าจน Ctrl+Shift+R)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
   if (!id) {
@@ -29,9 +35,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  return NextResponse.json({
-    project: projectRes.data,
-    activities: activitiesRes.data || [],
-    kpis: kpisRes.data || [],
-  });
+  return NextResponse.json(
+    {
+      project: projectRes.data,
+      activities: activitiesRes.data || [],
+      kpis: kpisRes.data || [],
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    }
+  );
 }

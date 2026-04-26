@@ -141,8 +141,8 @@ export default function ProjectDetailPage() {
   async function loadData() {
     try {
       const [projRes, reportRes] = await Promise.all([
-        fetch(`/api/supabase/project?id=${id}`),
-        fetch(`/api/supabase/report?project_id=${id}`),
+        fetch(`/api/supabase/project?id=${id}&t=${Date.now()}`, { cache: "no-store" }),
+        fetch(`/api/supabase/report?project_id=${id}&t=${Date.now()}`, { cache: "no-store" }),
       ]);
       if (!projRes.ok) throw new Error("not found");
       const projData = await projRes.json();

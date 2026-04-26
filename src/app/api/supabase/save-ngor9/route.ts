@@ -207,44 +207,57 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. REPLACE activities — DELETE then INSERT
+    // 3. REPLACE activities — DELETE then INSERT (เฉพาะถ้ามีของใหม่)
+    // กฎสำคัญ: ถ้า ง9 ไม่มี activities (AI parse ไม่ได้) → ห้ามลบของเดิม
+    //          เพราะของเดิมจาก Excel placeholder/import เก่า ก็ยังดีกว่าศูนย์
     const { count: oldActCount } = await supabase
       .from("activities")
       .select("*", { count: "exact", head: true })
       .eq("project_id", targetId);
 
-    const { error: delActErr } = await supabase.from("activities").delete().eq("project_id", targetId);
-    if (delActErr) warnings.push(`ลบกิจกรรมเดิมไม่สำเร็จ: ${delActErr.message}`);
-
     let activitiesInserted = 0;
+    let activitiesReplaced = 0;
     const actRows = buildActivityRows(targetId, body.activities);
     if (actRows.length > 0) {
+      // มีของใหม่ → ลบของเดิมทั้งหมด แล้ว insert ของใหม่
+      const { error: delActErr } = await supabase.from("activities").delete().eq("project_id", targetId);
+      if (delActErr) warnings.push(`ลบกิจกรรมเดิมไม่สำเร็จ: ${delActErr.message}`);
+      else activitiesReplaced = oldActCount || 0;
+
       const { data: ins, error: insErr } = await supabase.from("activities").insert(actRows).select("id");
       if (insErr) warnings.push(`เพิ่มกิจกรรมใหม่ล้มเหลว: ${insErr.message}`);
       else activitiesInserted = ins?.length || actRows.length;
+    } else if ((oldActCount || 0) > 0) {
+      // ง9 ไม่มีของใหม่ + เดิมมีอยู่ → คงของเดิมไว้ + เตือน
+      warnings.push(`⚠ AI ไม่พบกิจกรรมใน ง9 → คงกิจกรรมเดิม ${oldActCount} รายการไว้ (ไม่ลบ)`);
     } else {
-      warnings.push("⚠ ไม่มีกิจกรรมใน ง9 — กิจกรรมเดิมถูกล้างไปด้วย ถ้าไม่ต้องการ ให้กลับไปแก้ไขก่อน save");
+      warnings.push("⚠ ทั้ง ง9 และของเดิมไม่มีกิจกรรม — เพิ่มเองได้ที่ /admin/projects");
     }
 
     // 4. REPLACE kpi_targets — เก็บเฉพาะที่ is_additional=true (admin เพิ่มเอง)
+    // กฎเดียวกัน: ไม่ลบถ้า ง9 ไม่มีของใหม่
     const { count: oldKpiCount } = await supabase
       .from("kpi_targets")
       .select("*", { count: "exact", head: true })
       .eq("project_id", targetId);
 
-    const { error: delKpiErr } = await supabase
-      .from("kpi_targets")
-      .delete()
-      .eq("project_id", targetId)
-      .or("is_additional.is.null,is_additional.eq.false");
-    if (delKpiErr) warnings.push(`ลบ KPI เดิมไม่สำเร็จ: ${delKpiErr.message}`);
-
     let kpisInserted = 0;
+    let kpisReplaced = 0;
     const kpiRows = buildKpiRows(targetId, body.kpi);
     if (kpiRows.length > 0) {
+      const { error: delKpiErr } = await supabase
+        .from("kpi_targets")
+        .delete()
+        .eq("project_id", targetId)
+        .or("is_additional.is.null,is_additional.eq.false");
+      if (delKpiErr) warnings.push(`ลบ KPI เดิมไม่สำเร็จ: ${delKpiErr.message}`);
+      else kpisReplaced = oldKpiCount || 0;
+
       const { data: ins, error: insErr } = await supabase.from("kpi_targets").insert(kpiRows).select("id");
       if (insErr) warnings.push(`เพิ่ม KPI ใหม่ล้มเหลว: ${insErr.message}`);
       else kpisInserted = ins?.length || kpiRows.length;
+    } else if ((oldKpiCount || 0) > 0) {
+      warnings.push(`⚠ AI ไม่พบ KPI ใน ง9 → คง KPI เดิม ${oldKpiCount} รายการไว้`);
     }
 
     // 5. Token — หา token ที่มีอยู่ ไม่สร้างใหม่
@@ -263,9 +276,11 @@ export async function POST(req: NextRequest) {
       fiscal_year: target.fiscal_year || fiscal_year,
       activities_inserted: activitiesInserted,
       activities_total: body.activities?.length || 0,
-      activities_replaced: oldActCount || 0,
+      activities_replaced: activitiesReplaced,
+      activities_kept: actRows.length === 0 ? (oldActCount || 0) : 0,
       kpis_inserted: kpisInserted,
-      kpis_replaced: oldKpiCount || 0,
+      kpis_replaced: kpisReplaced,
+      kpis_kept: kpiRows.length === 0 ? (oldKpiCount || 0) : 0,
       budget_strategy: strategy,
       warnings,
     });
