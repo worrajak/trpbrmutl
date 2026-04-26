@@ -123,7 +123,11 @@ export default function UploadNgor9Page() {
     warnings: string[];
     mode?: "insert" | "merge";
     activities_replaced?: number;
+    activities_kept?: number;
+    activities_strategy?: "replace" | "append" | "keep";
     kpis_replaced?: number;
+    kpis_kept?: number;
+    kpis_strategy?: "replace" | "append" | "keep";
   } | null>(null);
   const [fiscalYear, setFiscalYear] = useState(2570);
 
@@ -140,11 +144,16 @@ export default function UploadNgor9Page() {
     main_program: string | null;
     score: number;
     signals: string[];
+    existing_activities: number;
+    existing_kpis: number;
   };
+  type ListStrategy = "replace" | "append" | "keep";
   const [matchCandidates, setMatchCandidates] = useState<MatchCandidate[] | null>(null);
   const [matching, setMatching] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [budgetStrategy, setBudgetStrategy] = useState<"keep" | "ngor9">("keep");
+  const [activitiesStrategy, setActivitiesStrategy] = useState<ListStrategy>("replace");
+  const [kpisStrategy, setKpisStrategy] = useState<ListStrategy>("replace");
 
   useEffect(() => {
     const s = sessionStorage.getItem("admin_auth");
@@ -338,9 +347,19 @@ export default function UploadNgor9Page() {
       const matches: MatchCandidate[] = data.matches || [];
       if (matches.length === 0) {
         // ไม่เจอใกล้เคียง → save เป็นโครงการใหม่ทันที
-        await actuallySave(null, "keep");
+        await actuallySave(null, "keep", "replace", "replace");
       } else {
         // เจอ → เปิด modal ให้ admin เลือก
+        // Default strategy: ถ้า top match มีของเดิม + ง9 ก็มี → แนะนำ "append" เพื่อกัน data loss
+        const top = matches[0];
+        const newActsCount = parsed.activities?.length || 0;
+        const newKpisCount =
+          (parsed.kpi.quantitative?.length || 0) +
+          (parsed.kpi.qualitative?.length || 0) +
+          (parsed.kpi.time_target ? 1 : 0) +
+          (parsed.kpi.budget_target ? 1 : 0);
+        setActivitiesStrategy(top.existing_activities > 0 && newActsCount > 0 ? "append" : "replace");
+        setKpisStrategy(top.existing_kpis > 0 && newKpisCount > 0 ? "append" : "replace");
         setMatchCandidates(matches);
         setShowMatchModal(true);
       }
@@ -352,7 +371,12 @@ export default function UploadNgor9Page() {
   }
 
   // ===== Step 2: ลงทะเบียนจริง (insert ใหม่ หรือ merge) =====
-  async function actuallySave(mergeIntoId: string | null, strategy: "keep" | "ngor9") {
+  async function actuallySave(
+    mergeIntoId: string | null,
+    strategy: "keep" | "ngor9",
+    actStrategy: ListStrategy,
+    kpiStrategy: ListStrategy,
+  ) {
     if (!parsed) return;
     setSaving(true);
     setSaveError("");
@@ -367,6 +391,8 @@ export default function UploadNgor9Page() {
           fiscal_year: fiscalYear,
           merge_into_id: mergeIntoId,
           budget_strategy: strategy,
+          activities_strategy: actStrategy,
+          kpis_strategy: kpiStrategy,
         }),
       });
       const data = await res.json();
@@ -382,7 +408,11 @@ export default function UploadNgor9Page() {
         warnings: data.warnings ?? [],
         mode: data.mode,
         activities_replaced: data.activities_replaced,
+        activities_kept: data.activities_kept,
+        activities_strategy: data.activities_strategy,
         kpis_replaced: data.kpis_replaced,
+        kpis_kept: data.kpis_kept,
+        kpis_strategy: data.kpis_strategy,
       });
       setSaved(true);
     } catch (err: unknown) {
@@ -455,14 +485,34 @@ export default function UploadNgor9Page() {
               <ul className="mt-1 space-y-0.5 text-xs text-gray-600">
                 <li>
                   • กิจกรรม: <strong>{savedCounts.activities_inserted}</strong>/{savedCounts.activities_total}
-                  {savedCounts.mode === "merge" && savedCounts.activities_replaced != null && savedCounts.activities_replaced > 0 && (
-                    <span className="text-amber-700"> (แทนที่ของเดิม {savedCounts.activities_replaced} รายการ)</span>
+                  {savedCounts.mode === "merge" && (
+                    <>
+                      {savedCounts.activities_strategy === "append" && (savedCounts.activities_kept || 0) > 0 && (
+                        <span className="text-blue-700"> (เพิ่มต่อ · คงของเดิม {savedCounts.activities_kept})</span>
+                      )}
+                      {savedCounts.activities_strategy === "replace" && (savedCounts.activities_replaced || 0) > 0 && (
+                        <span className="text-amber-700"> (แทนที่ของเดิม {savedCounts.activities_replaced})</span>
+                      )}
+                      {savedCounts.activities_strategy === "keep" && (savedCounts.activities_kept || 0) > 0 && (
+                        <span className="text-gray-500"> (คงของเดิม {savedCounts.activities_kept} · ไม่แตะ)</span>
+                      )}
+                    </>
                   )}
                 </li>
                 <li>
                   • ตัวชี้วัด (KPI): <strong>{savedCounts.kpis_inserted}</strong>
-                  {savedCounts.mode === "merge" && savedCounts.kpis_replaced != null && savedCounts.kpis_replaced > 0 && (
-                    <span className="text-amber-700"> (แทนที่ของเดิม {savedCounts.kpis_replaced} รายการ)</span>
+                  {savedCounts.mode === "merge" && (
+                    <>
+                      {savedCounts.kpis_strategy === "append" && (savedCounts.kpis_kept || 0) > 0 && (
+                        <span className="text-blue-700"> (เพิ่มต่อ · คงของเดิม {savedCounts.kpis_kept})</span>
+                      )}
+                      {savedCounts.kpis_strategy === "replace" && (savedCounts.kpis_replaced || 0) > 0 && (
+                        <span className="text-amber-700"> (แทนที่ของเดิม {savedCounts.kpis_replaced})</span>
+                      )}
+                      {savedCounts.kpis_strategy === "keep" && (savedCounts.kpis_kept || 0) > 0 && (
+                        <span className="text-gray-500"> (คงของเดิม {savedCounts.kpis_kept})</span>
+                      )}
+                    </>
                   )}
                 </li>
               </ul>
@@ -511,6 +561,7 @@ export default function UploadNgor9Page() {
               setSavedToken(""); setDuplicateWarning(null); setSavedCounts(null);
               setMatchCandidates(null); setShowMatchModal(false);
               setBudgetStrategy("keep");
+              setActivitiesStrategy("replace"); setKpisStrategy("replace");
             }}
               className="rounded bg-royal-700 px-4 py-2 text-white hover:bg-royal-800">
               นำเข้าไฟล์ใหม่
@@ -986,6 +1037,81 @@ export default function UploadNgor9Page() {
                 </p>
               </div>
 
+              {/* Strategy selectors — ส่งผลต่อ "อัปเดตเข้าโครงการนี้" ทุกปุ่ม */}
+              {matchCandidates.length > 0 && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
+                  <p className="text-[11px] font-medium text-blue-800">
+                    ⚙ วิธีจัดการกับข้อมูลเดิมเมื่อ &quot;อัปเดต&quot;:
+                  </p>
+
+                  {/* Activities strategy */}
+                  <div>
+                    <p className="text-[11px] text-blue-700 mb-1">
+                      <strong>กิจกรรม / แผน Gantt</strong>
+                      <span className="text-blue-500 ml-1">
+                        (ของเดิม {matchCandidates[0].existing_activities} · ง9 {parsed.activities?.length || 0})
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {([
+                        { id: "append", label: "➕ เพิ่มต่อท้าย", hint: "ปลอดภัยสุด · กันของเดิมหาย" },
+                        { id: "replace", label: "🔄 แทนที่", hint: "ลบของเดิม · ใช้ของ ง9" },
+                        { id: "keep", label: "🔒 คงเดิม", hint: "ไม่แตะของเดิม · ทิ้งของ ง9" },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setActivitiesStrategy(opt.id)}
+                          type="button"
+                          className={`rounded border-2 px-2 py-1.5 text-left text-[10px] transition ${
+                            activitiesStrategy === opt.id
+                              ? "border-blue-500 bg-white shadow-sm"
+                              : "border-blue-200 bg-blue-50 opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <p className="font-medium text-blue-900">{opt.label}</p>
+                          <p className="text-blue-500 mt-0.5">{opt.hint}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* KPIs strategy */}
+                  <div>
+                    <p className="text-[11px] text-blue-700 mb-1">
+                      <strong>ตัวชี้วัด KPI</strong>
+                      <span className="text-blue-500 ml-1">
+                        (ของเดิม {matchCandidates[0].existing_kpis} · ง9 {(parsed.kpi.quantitative?.length || 0) + (parsed.kpi.qualitative?.length || 0) + (parsed.kpi.time_target ? 1 : 0) + (parsed.kpi.budget_target ? 1 : 0)})
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {([
+                        { id: "append", label: "➕ เพิ่มต่อท้าย", hint: "ปลอดภัยสุด" },
+                        { id: "replace", label: "🔄 แทนที่", hint: "ใช้ของ ง9" },
+                        { id: "keep", label: "🔒 คงเดิม", hint: "ทิ้งของ ง9" },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setKpisStrategy(opt.id)}
+                          type="button"
+                          className={`rounded border-2 px-2 py-1.5 text-left text-[10px] transition ${
+                            kpisStrategy === opt.id
+                              ? "border-blue-500 bg-white shadow-sm"
+                              : "border-blue-200 bg-blue-50 opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <p className="font-medium text-blue-900">{opt.label}</p>
+                          <p className="text-blue-500 mt-0.5">{opt.hint}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-blue-600 bg-blue-100 rounded p-1.5">
+                    💡 แนะนำ <strong>เพิ่มต่อท้าย</strong> ถ้าของเดิมจาก Excel มี Gantt Chart ดีแล้ว · เลือก <strong>แทนที่</strong> เฉพาะตอนของเดิมเป็น placeholder ที่ไม่ตรง
+                  </p>
+                </div>
+              )}
+
               {/* Match candidates */}
               <p className="text-xs font-medium text-gray-700">
                 โครงการที่ตรงกัน {matchCandidates.length} รายการ (เรียงตามคะแนน):
@@ -1023,6 +1149,15 @@ export default function UploadNgor9Page() {
                         </p>
                         <p className="text-xs text-gray-600">
                           งบ: {m.budget_total.toLocaleString()} · เบิก: {m.budget_used.toLocaleString()}
+                        </p>
+                        <p className="text-xs">
+                          <span className={m.existing_activities > 0 ? "text-emerald-700" : "text-gray-400"}>
+                            กิจกรรมเดิม: <strong>{m.existing_activities}</strong>
+                          </span>
+                          <span className="mx-1 text-gray-300">·</span>
+                          <span className={m.existing_kpis > 0 ? "text-emerald-700" : "text-gray-400"}>
+                            KPI เดิม: <strong>{m.existing_kpis}</strong>
+                          </span>
                         </p>
                         {m.signals.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
@@ -1079,7 +1214,7 @@ export default function UploadNgor9Page() {
                       </div>
                       <div className="flex flex-col gap-1">
                         <button
-                          onClick={() => actuallySave(m.id, budgetStrategy)}
+                          onClick={() => actuallySave(m.id, budgetStrategy, activitiesStrategy, kpisStrategy)}
                           disabled={saving}
                           className={`whitespace-nowrap rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${
                             isTop ? "bg-amber-600 hover:bg-amber-700" : "bg-blue-600 hover:bg-blue-700"
@@ -1116,7 +1251,7 @@ export default function UploadNgor9Page() {
                   ⬅ กลับไปแก้ไข
                 </button>
                 <button
-                  onClick={() => actuallySave(null, "keep")}
+                  onClick={() => actuallySave(null, "keep", "replace", "replace")}
                   disabled={saving}
                   className="flex-1 rounded bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                 >

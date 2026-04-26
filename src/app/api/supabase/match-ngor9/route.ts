@@ -144,9 +144,25 @@ export async function POST(req: NextRequest) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
 
+  // เพิ่ม count ของ activities/kpis เดิมในแต่ละ candidate
+  // เพื่อให้ admin ตัดสินใจได้ว่าจะ replace/append/keep
+  const enriched = await Promise.all(
+    scored.map(async (c) => {
+      const [{ count: actCount }, { count: kpiCount }] = await Promise.all([
+        supabase.from("activities").select("*", { count: "exact", head: true }).eq("project_id", c.id),
+        supabase.from("kpi_targets").select("*", { count: "exact", head: true }).eq("project_id", c.id),
+      ]);
+      return {
+        ...c,
+        existing_activities: actCount || 0,
+        existing_kpis: kpiCount || 0,
+      };
+    })
+  );
+
   return NextResponse.json(
     {
-      matches: scored,
+      matches: enriched,
       total_searched: data?.length || 0,
       threshold: 0.3,
     },

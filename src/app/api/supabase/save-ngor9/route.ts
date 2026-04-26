@@ -36,6 +36,8 @@ interface KpiIn {
   budget_target?: string;
 }
 
+type ListStrategy = "replace" | "append" | "keep";
+
 interface SaveBody {
   project_name: string;
   responsible?: string | null;
@@ -53,6 +55,12 @@ interface SaveBody {
   // MERGE mode
   merge_into_id?: string | null;
   budget_strategy?: "keep" | "ngor9";
+  // ใหม่: ให้ admin เลือกว่าจะจัดการกับของเดิมยังไง
+  // - replace: ลบของเดิมหมด แล้วใส่ของ ง9 (พฤติกรรมเดิม)
+  // - append: คงของเดิม แล้วเติมของ ง9 ต่อท้าย (renumber order)
+  // - keep: ไม่แตะของเดิม + ไม่ใส่ของ ง9 (ใช้เมื่อของเดิมดีอยู่แล้ว)
+  activities_strategy?: ListStrategy;
+  kpis_strategy?: ListStrategy;
 }
 
 /** Build kpi_targets rows จาก parsed KPI */
@@ -207,9 +215,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. REPLACE activities — DELETE then INSERT (เฉพาะถ้ามีของใหม่)
-    // กฎสำคัญ: ถ้า ง9 ไม่มี activities (AI parse ไม่ได้) → ห้ามลบของเดิม
-    //          เพราะของเดิมจาก Excel placeholder/import เก่า ก็ยังดีกว่าศูนย์
+    // 3. ACTIVITIES — จัดการตาม activities_strategy
+    // - replace: ลบของเดิมหมด → INSERT ของ ง9
+    // - append:  คงของเดิม → INSERT ของ ง9 ต่อท้าย (renumber order)
+    // - keep:    ไม่แตะของเดิม + ไม่ใส่ของ ง9
+    // ค่า default = "replace" (พฤติกรรมเดิม) แต่ฝั่ง UI จะแนะนำ "append" ถ้าของเดิมมี > 0
+    const actStrategy: ListStrategy = body.activities_strategy || "replace";
     const { count: oldActCount } = await supabase
       .from("activities")
       .select("*", { count: "exact", head: true })
@@ -217,25 +228,56 @@ export async function POST(req: NextRequest) {
 
     let activitiesInserted = 0;
     let activitiesReplaced = 0;
-    const actRows = buildActivityRows(targetId, body.activities);
-    if (actRows.length > 0) {
-      // มีของใหม่ → ลบของเดิมทั้งหมด แล้ว insert ของใหม่
-      const { error: delActErr } = await supabase.from("activities").delete().eq("project_id", targetId);
-      if (delActErr) warnings.push(`ลบกิจกรรมเดิมไม่สำเร็จ: ${delActErr.message}`);
-      else activitiesReplaced = oldActCount || 0;
+    let activitiesKept = 0;
+    const newActsRaw = body.activities || [];
 
-      const { data: ins, error: insErr } = await supabase.from("activities").insert(actRows).select("id");
-      if (insErr) warnings.push(`เพิ่มกิจกรรมใหม่ล้มเหลว: ${insErr.message}`);
-      else activitiesInserted = ins?.length || actRows.length;
-    } else if ((oldActCount || 0) > 0) {
-      // ง9 ไม่มีของใหม่ + เดิมมีอยู่ → คงของเดิมไว้ + เตือน
-      warnings.push(`⚠ AI ไม่พบกิจกรรมใน ง9 → คงกิจกรรมเดิม ${oldActCount} รายการไว้ (ไม่ลบ)`);
+    if (actStrategy === "keep") {
+      activitiesKept = oldActCount || 0;
+      if (newActsRaw.length > 0) {
+        warnings.push(`ℹ คงกิจกรรมเดิม ${oldActCount} รายการไว้ (ทิ้งกิจกรรม ง9 ${newActsRaw.length} รายการ)`);
+      }
+    } else if (actStrategy === "append") {
+      // หา max activity_order ของเดิม → renumber ของใหม่ต่อจากนั้น
+      const { data: maxRow } = await supabase
+        .from("activities")
+        .select("activity_order")
+        .eq("project_id", targetId)
+        .order("activity_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const startOrder = (maxRow?.activity_order || 0) + 1;
+      const renumbered = newActsRaw.map((a, i) => ({ ...a, order: startOrder + i }));
+      const actRows = buildActivityRows(targetId, renumbered);
+      activitiesKept = oldActCount || 0;
+      if (actRows.length > 0) {
+        const { data: ins, error: insErr } = await supabase.from("activities").insert(actRows).select("id");
+        if (insErr) warnings.push(`เพิ่มกิจกรรม ง9 ล้มเหลว: ${insErr.message}`);
+        else activitiesInserted = ins?.length || actRows.length;
+      } else if ((oldActCount || 0) === 0) {
+        warnings.push("⚠ ทั้ง ง9 และของเดิมไม่มีกิจกรรม — เพิ่มเองได้ที่ /admin/projects");
+      }
     } else {
-      warnings.push("⚠ ทั้ง ง9 และของเดิมไม่มีกิจกรรม — เพิ่มเองได้ที่ /admin/projects");
+      // replace (default)
+      const actRows = buildActivityRows(targetId, newActsRaw);
+      if (actRows.length > 0) {
+        const { error: delActErr } = await supabase.from("activities").delete().eq("project_id", targetId);
+        if (delActErr) warnings.push(`ลบกิจกรรมเดิมไม่สำเร็จ: ${delActErr.message}`);
+        else activitiesReplaced = oldActCount || 0;
+
+        const { data: ins, error: insErr } = await supabase.from("activities").insert(actRows).select("id");
+        if (insErr) warnings.push(`เพิ่มกิจกรรมใหม่ล้มเหลว: ${insErr.message}`);
+        else activitiesInserted = ins?.length || actRows.length;
+      } else if ((oldActCount || 0) > 0) {
+        // safety: ง9 ว่าง + เดิมมี → คงของเดิมไว้ (ไม่ลบ) ถึงจะเลือก replace
+        activitiesKept = oldActCount || 0;
+        warnings.push(`⚠ AI ไม่พบกิจกรรมใน ง9 → คงกิจกรรมเดิม ${oldActCount} รายการไว้ (ไม่ลบ)`);
+      } else {
+        warnings.push("⚠ ทั้ง ง9 และของเดิมไม่มีกิจกรรม — เพิ่มเองได้ที่ /admin/projects");
+      }
     }
 
-    // 4. REPLACE kpi_targets — เก็บเฉพาะที่ is_additional=true (admin เพิ่มเอง)
-    // กฎเดียวกัน: ไม่ลบถ้า ง9 ไม่มีของใหม่
+    // 4. KPI_TARGETS — จัดการตาม kpis_strategy (logic เดียวกับ activities)
+    const kpiStrategy: ListStrategy = body.kpis_strategy || "replace";
     const { count: oldKpiCount } = await supabase
       .from("kpi_targets")
       .select("*", { count: "exact", head: true })
@@ -243,21 +285,39 @@ export async function POST(req: NextRequest) {
 
     let kpisInserted = 0;
     let kpisReplaced = 0;
+    let kpisKept = 0;
     const kpiRows = buildKpiRows(targetId, body.kpi);
-    if (kpiRows.length > 0) {
-      const { error: delKpiErr } = await supabase
-        .from("kpi_targets")
-        .delete()
-        .eq("project_id", targetId)
-        .or("is_additional.is.null,is_additional.eq.false");
-      if (delKpiErr) warnings.push(`ลบ KPI เดิมไม่สำเร็จ: ${delKpiErr.message}`);
-      else kpisReplaced = oldKpiCount || 0;
 
-      const { data: ins, error: insErr } = await supabase.from("kpi_targets").insert(kpiRows).select("id");
-      if (insErr) warnings.push(`เพิ่ม KPI ใหม่ล้มเหลว: ${insErr.message}`);
-      else kpisInserted = ins?.length || kpiRows.length;
-    } else if ((oldKpiCount || 0) > 0) {
-      warnings.push(`⚠ AI ไม่พบ KPI ใน ง9 → คง KPI เดิม ${oldKpiCount} รายการไว้`);
+    if (kpiStrategy === "keep") {
+      kpisKept = oldKpiCount || 0;
+      if (kpiRows.length > 0) {
+        warnings.push(`ℹ คง KPI เดิม ${oldKpiCount} รายการไว้ (ทิ้ง KPI ง9 ${kpiRows.length} รายการ)`);
+      }
+    } else if (kpiStrategy === "append") {
+      kpisKept = oldKpiCount || 0;
+      if (kpiRows.length > 0) {
+        const { data: ins, error: insErr } = await supabase.from("kpi_targets").insert(kpiRows).select("id");
+        if (insErr) warnings.push(`เพิ่ม KPI ง9 ล้มเหลว: ${insErr.message}`);
+        else kpisInserted = ins?.length || kpiRows.length;
+      }
+    } else {
+      // replace
+      if (kpiRows.length > 0) {
+        const { error: delKpiErr } = await supabase
+          .from("kpi_targets")
+          .delete()
+          .eq("project_id", targetId)
+          .or("is_additional.is.null,is_additional.eq.false");
+        if (delKpiErr) warnings.push(`ลบ KPI เดิมไม่สำเร็จ: ${delKpiErr.message}`);
+        else kpisReplaced = oldKpiCount || 0;
+
+        const { data: ins, error: insErr } = await supabase.from("kpi_targets").insert(kpiRows).select("id");
+        if (insErr) warnings.push(`เพิ่ม KPI ใหม่ล้มเหลว: ${insErr.message}`);
+        else kpisInserted = ins?.length || kpiRows.length;
+      } else if ((oldKpiCount || 0) > 0) {
+        kpisKept = oldKpiCount || 0;
+        warnings.push(`⚠ AI ไม่พบ KPI ใน ง9 → คง KPI เดิม ${oldKpiCount} รายการไว้`);
+      }
     }
 
     // 5. Token — หา token ที่มีอยู่ ไม่สร้างใหม่
@@ -277,10 +337,12 @@ export async function POST(req: NextRequest) {
       activities_inserted: activitiesInserted,
       activities_total: body.activities?.length || 0,
       activities_replaced: activitiesReplaced,
-      activities_kept: actRows.length === 0 ? (oldActCount || 0) : 0,
+      activities_kept: activitiesKept,
+      activities_strategy: actStrategy,
       kpis_inserted: kpisInserted,
       kpis_replaced: kpisReplaced,
-      kpis_kept: kpiRows.length === 0 ? (oldKpiCount || 0) : 0,
+      kpis_kept: kpisKept,
+      kpis_strategy: kpiStrategy,
       budget_strategy: strategy,
       warnings,
     });
