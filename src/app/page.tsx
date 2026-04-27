@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase-data";
 import HeroBanner from "@/components/HeroBanner";
 import SdgShowcase from "@/components/SdgShowcase";
+import ExcellenceKpiShowcase from "@/components/ExcellenceKpiShowcase";
 import FeaturedProjects from "@/components/FeaturedProjects";
 import RmutlNewsCatalog from "@/components/RmutlNewsCatalog";
 import NewsSection from "@/components/NewsSection";
@@ -73,6 +74,9 @@ export default async function Home() {
         budgetUsed={budget.effectiveUsed}
         isLive={isLive}
       />
+
+      {/* RMUTL Excellence KPI mapping - "เท่ดี กว่าโชว์ตัวชี้วัดเฉยๆ" */}
+      <ExcellenceKpiShowcase projects={projects} />
 
       {/* SDGs Showcase - 17 goals interactive grid */}
       <SdgShowcase countPerSdg={countPerSdg} totalProjects={projects.length} />
