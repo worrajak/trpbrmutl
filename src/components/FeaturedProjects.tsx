@@ -70,24 +70,24 @@ export default function FeaturedProjects({ projects, limit = 6 }: Props) {
 
   return (
     <section>
-      <div className="mb-4 flex items-end justify-between gap-2">
+      <div className="mb-3 flex items-end justify-between gap-2">
         <div>
           <p className="text-xs font-medium text-violet-600 uppercase tracking-wider">
             ✨ Featured Projects
           </p>
-          <h2 className="mt-0.5 text-xl sm:text-2xl font-bold text-gray-800">
+          <h2 className="mt-0.5 text-lg sm:text-xl font-bold text-gray-800">
             โครงการเด่น · ปี 2569
           </h2>
         </div>
         <Link
           href="/projects"
-          className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-4 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 transition"
+          className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100 transition"
         >
           ดูทั้งหมด {projects.length} โครงการ →
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {featured.map((p) => {
           const gradient =
             PROGRAM_GRADIENT[p.main_program || ""] ||
@@ -108,8 +108,8 @@ export default function FeaturedProjects({ projects, limit = 6 }: Props) {
               href={`/projects/${p.id}`}
               className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 ring-1 ring-gray-100"
             >
-              {/* Header: gradient banner */}
-              <div className={`relative h-20 bg-gradient-to-br ${gradient} p-3`}>
+              {/* Header: gradient banner - smaller */}
+              <div className={`relative h-16 bg-gradient-to-br ${gradient} p-2.5`}>
                 {/* Status pulse */}
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-2 py-0.5 ring-1 ring-white/30">
                   {status.pulse ? (
@@ -145,25 +145,24 @@ export default function FeaturedProjects({ projects, limit = 6 }: Props) {
                 )}
               </div>
 
-              {/* Body */}
-              <div className="p-4">
-                <h3 className="line-clamp-2 text-sm font-bold text-gray-800 group-hover:text-violet-700 transition">
+              {/* Body - tighter */}
+              <div className="p-3">
+                <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-800 group-hover:text-violet-700 transition leading-snug">
                   {p.project_name}
                 </h3>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-[10px] text-gray-500 truncate">
                   👤 {p.responsible || p.organization || "—"}
                 </p>
 
                 {/* Budget bar */}
-                <div className="mt-3">
+                <div className="mt-2">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-gray-400">งบประมาณ</span>
-                    <span className="text-sm font-bold text-gray-700">
-                      {fmt(budgetTotal)}{" "}
-                      <span className="text-[10px] font-normal text-gray-400">บาท</span>
+                    <span className="text-[10px] text-gray-400">งบประมาณ</span>
+                    <span className="text-xs font-bold text-gray-700">
+                      {fmt(budgetTotal)}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="mt-1 h-1 rounded-full bg-gray-100 overflow-hidden">
                     <div
                       className={`h-full transition-all bg-gradient-to-r ${
                         usagePercent >= 80
@@ -175,8 +174,8 @@ export default function FeaturedProjects({ projects, limit = 6 }: Props) {
                       style={{ width: `${Math.min(usagePercent, 100)}%` }}
                     />
                   </div>
-                  <p className="mt-1 text-[10px] text-gray-400">
-                    เบิกแล้ว {fmt(budgetUsed)} ({usagePercent}%)
+                  <p className="mt-1 text-[9px] text-gray-400">
+                    เบิกแล้ว {fmt(budgetUsed)} · {usagePercent}%
                   </p>
                 </div>
               </div>

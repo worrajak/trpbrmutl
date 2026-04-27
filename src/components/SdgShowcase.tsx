@@ -23,12 +23,12 @@ export default function SdgShowcase({ countPerSdg, totalProjects }: SdgShowcaseP
 
   return (
     <section>
-      <div className="mb-4 flex items-end justify-between gap-2">
+      <div className="mb-3 flex items-end justify-between gap-2">
         <div>
           <p className="text-xs font-medium text-emerald-600 uppercase tracking-wider">
             🌍 Sustainable Development Goals
           </p>
-          <h2 className="mt-0.5 text-xl sm:text-2xl font-bold text-gray-800">
+          <h2 className="mt-0.5 text-lg sm:text-xl font-bold text-gray-800">
             17 เป้าหมายโลก · กับโครงการ มทร.ล้านนา
           </h2>
           <p className="mt-1 text-xs text-gray-500">

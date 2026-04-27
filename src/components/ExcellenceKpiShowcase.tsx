@@ -32,18 +32,18 @@ export default function ExcellenceKpiShowcase({ projects }: Props) {
   const activeCount = Object.keys(counts).length;
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-white to-blue-50 p-5 sm:p-7 ring-1 ring-slate-200">
+    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4 sm:p-5 ring-1 ring-slate-200">
       {/* Decorative gradient orb */}
-      <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 opacity-30 blur-3xl" />
+      <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 opacity-30 blur-3xl" />
 
       <div className="relative">
         {/* Header */}
-        <div className="mb-5 flex items-end justify-between gap-2 flex-wrap">
+        <div className="mb-3 flex items-end justify-between gap-2 flex-wrap">
           <div>
             <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">
               🏆 RMUTL Excellence Plan · 2569
             </p>
-            <h2 className="mt-0.5 text-xl sm:text-2xl font-bold text-gray-800">
+            <h2 className="mt-0.5 text-lg sm:text-xl font-bold text-gray-800">
               ตอบยุทธศาสตร์ความเลิศ มทร.ล้านนา
             </h2>
             <p className="mt-1 text-xs text-gray-500">

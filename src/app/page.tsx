@@ -65,7 +65,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="space-y-10 sm:space-y-12">
+    <div className="space-y-6 sm:space-y-8">
       {/* Modern Hero */}
       <HeroBanner
         projectCount={projects.length}
@@ -83,11 +83,11 @@ export default async function Home() {
 
       {/* Program Cards - modern gradient */}
       <section>
-        <div className="mb-4">
+        <div className="mb-3">
           <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">
             🎯 Main Programs
           </p>
-          <h2 className="mt-0.5 text-xl sm:text-2xl font-bold text-gray-800">
+          <h2 className="mt-0.5 text-lg sm:text-xl font-bold text-gray-800">
             โครงการหลัก 3 ด้าน
           </h2>
         </div>
@@ -150,8 +150,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Featured Projects Catalog */}
-      <FeaturedProjects projects={projects} limit={6} />
+      {/* Featured Projects Catalog - 4 cols x 2 rows */}
+      <FeaturedProjects projects={projects} limit={8} />
 
       {/* Budget Reconciliation Panel - ย่อให้กระชับ */}
       <section className="rounded-2xl bg-gradient-to-br from-gray-50 to-white p-5 shadow-sm ring-1 ring-gray-100">
