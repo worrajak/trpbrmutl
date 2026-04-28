@@ -5,12 +5,12 @@ import { trackEvent } from "@/lib/tracker";
 import type { NewsItem } from "@/lib/scraper";
 
 /**
- * RmutlNewsCatalog v2 — uniform grid
+ * RmutlNewsCatalog v3 — แถบ list แบบ news ticker
  *
- * เปลี่ยนจาก v1 (1 hero + 4 small):
- *  - ทุก card ขนาดเท่ากัน (4 cols on desktop, 2 cols on tablet)
- *  - แสดง 8 ข่าว (ตาม API limit)
- *  - Card สมส่วน aspect-[4/3] รูป + body
+ * เปลี่ยนจาก v2 (4-col grid):
+ *  - List เล็ก ๆ · thumbnail ซ้าย + title ขวา
+ *  - 2 cols (desktop) · 1 col (mobile) — แสดง 8 items ในที่เดียวกับ grid 2 rows
+ *  - Compact — สูงต่อ item ~64px
  */
 export default function RmutlNewsCatalog() {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -29,14 +29,14 @@ export default function RmutlNewsCatalog() {
   if (loading) {
     return (
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-            📰 ข่าวสารมหาวิทยาลัย
+        <div className="mb-2 flex items-end justify-between">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">
+            📰 ข่าวสาร · มทร.ล้านนา
           </h2>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="space-y-2">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="aspect-[4/3] animate-pulse rounded-xl bg-gray-100" />
+            <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100" />
           ))}
         </div>
       </section>
@@ -47,12 +47,12 @@ export default function RmutlNewsCatalog() {
 
   return (
     <section>
-      <div className="mb-3 flex items-end justify-between">
+      <div className="mb-2 flex items-end justify-between">
         <div>
-          <p className="text-xs font-medium text-blue-600 uppercase tracking-wider">
+          <p className="text-[10px] font-medium text-blue-600 uppercase tracking-wider">
             📰 University News
           </p>
-          <h2 className="mt-0.5 text-lg sm:text-xl font-bold text-gray-800">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">
             ข่าวสาร · มทร.ล้านนา
           </h2>
         </div>
@@ -60,44 +60,45 @@ export default function RmutlNewsCatalog() {
           href="https://www.rmutl.ac.th/news"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 transition"
+          className="text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
           onClick={() => trackEvent("link_click", "/", "www.rmutl.ac.th/news")}
         >
           ดูทั้งหมด →
         </a>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {/* List style - single col (parent อาจ wrap เป็น 2-col layout) */}
+      <div className="space-y-2">
         {news.slice(0, 8).map((item, i) => (
           <a
             key={i}
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex flex-col overflow-hidden rounded-xl bg-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 ring-1 ring-gray-100"
+            className="group flex items-stretch gap-2 rounded-lg bg-white p-2 ring-1 ring-gray-100 hover:ring-blue-200 hover:shadow-sm transition"
             onClick={() => trackEvent("rmutl_news_click", "/", item.title)}
           >
-            {/* Image: uniform aspect */}
+            {/* Thumbnail - small square */}
             {item.image ? (
-              <div className="aspect-[4/3] overflow-hidden bg-gray-100">
+              <div className="flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-md bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.image}
                   alt=""
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
             ) : (
-              <div className="aspect-[4/3] bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center">
-                <span className="text-3xl">📄</span>
+              <div className="flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 rounded-md bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-lg">
+                📄
               </div>
             )}
-            {/* Body — fixed height */}
-            <div className="flex-1 p-2.5">
+            {/* Body */}
+            <div className="flex-1 min-w-0">
               {item.date && (
-                <p className="text-[9px] text-gray-400 mb-0.5">{item.date}</p>
+                <p className="text-[9px] text-gray-400">{item.date}</p>
               )}
-              <h3 className="line-clamp-3 text-[11px] sm:text-xs font-medium text-gray-800 leading-snug group-hover:text-blue-700 transition">
+              <h3 className="line-clamp-2 text-[11px] sm:text-xs font-medium text-gray-800 leading-snug group-hover:text-blue-700 transition">
                 {item.title}
               </h3>
             </div>

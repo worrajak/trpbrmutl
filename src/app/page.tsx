@@ -206,12 +206,14 @@ export default async function Home() {
         )}
       </section>
 
-      {/* News from main RMUTL */}
-      <RmutlNewsCatalog />
-
-      {/* Reports + ข่าวจาก trpb */}
+      {/* Reports - กลาง */}
       <LatestReportsFeed limit={8} />
-      <NewsSection />
+
+      {/* ข่าวสารจาก 2 แหล่ง — วางคู่กัน 2 cols (lg+) */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <RmutlNewsCatalog />
+        <NewsSection />
+      </div>
 
       {/* Quick links - modern pill style */}
       <section>
