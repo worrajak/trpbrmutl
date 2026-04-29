@@ -10,8 +10,6 @@ import LatestSyncRow from "@/components/LatestSyncRow";
 import KpiIndexPanel from "@/components/KpiIndexPanel";
 import BottomDashboardCards from "@/components/BottomDashboardCards";
 import SdgShowcase from "@/components/SdgShowcase";
-import RmutlNewsCatalog from "@/components/RmutlNewsCatalog";
-import NewsSection from "@/components/NewsSection";
 import LatestReportsFeed from "@/components/LatestReportsFeed";
 
 export const revalidate = 60;
@@ -130,18 +128,6 @@ export default async function Home() {
             timestamp: "manual sync · /admin",
             warning: budget.pendingClearance > 0,
           },
-          {
-            icon: "📰",
-            name: "www.rmutl.ac.th/news",
-            detail: "(ข่าวมหาวิทยาลัย)",
-            timestamp: "auto · cache 1 ชม.",
-          },
-          {
-            icon: "🗞",
-            name: "trpb.rmutl.ac.th",
-            detail: "(ข่าวกลุ่มแผนงาน)",
-            timestamp: "auto · cache 1 ชม.",
-          },
         ]}
       />
 
@@ -156,12 +142,6 @@ export default async function Home() {
 
       {/* Latest reports */}
       <LatestReportsFeed limit={6} />
-
-      {/* News - 2 columns */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <RmutlNewsCatalog />
-        <NewsSection />
-      </div>
     </div>
   );
 }
