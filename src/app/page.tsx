@@ -75,16 +75,6 @@ export default async function Home() {
         isLive={isLive}
         liveText={todayThai()}
         alerts={alerts}
-        navs={[
-          { href: "/", icon: "🏠", label: "หน้าแรก" },
-          { href: "/foundation", icon: "📖", label: "ที่มา" },
-          { href: "/projects", icon: "📋", label: "โครงการ" },
-          { href: "/excellence", icon: "🏆", label: "ความเป็นเลิศ" },
-          { href: "/sdgs", icon: "🌍", label: "SDGs" },
-          { href: "/indicators", icon: "📊", label: "ตัวชี้วัด" },
-          { href: "/map", icon: "🗺️", label: "แผนที่" },
-          { href: "/staff", icon: "👥", label: "บุคลากร" },
-        ]}
         stats={[
           {
             label: "โครงการทั้งหมด",

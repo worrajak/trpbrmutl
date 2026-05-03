@@ -1,15 +1,13 @@
-import Link from "next/link";
-
 /**
  * IntelHeader — สไตล์ North Crop Intel
  *
  * ดีไซน์:
  *  - Title row: ชื่อ + subtitle + live dot (เล็ก, ขวาบน)
  *  - Alert bar (ถ้ามี): bg-red, bold message, สถานะวิกฤต
- *  - Nav pills row: 7 ปุ่มหลัก (icon + label)
  *  - 4 KPI stat boxes: label เล็ก + value ใหญ่สี + sub
  *
  * ทุกอย่าง compact — ไม่มี gradient hero ใหญ่
+ * Note: Nav pills ถูกเอาออก เพราะใช้ Navbar.tsx ด้านบนเป็นหลักแล้ว
  */
 
 interface AlertItem {
@@ -25,19 +23,12 @@ interface KpiBox {
   color: string; // tailwind text class
 }
 
-interface NavItem {
-  href: string;
-  icon: string;
-  label: string;
-}
-
 interface Props {
   title: string;
   subtitle: string;
   isLive: boolean;
   liveText?: string;
   alerts?: AlertItem[];
-  navs: NavItem[];
   stats: KpiBox[];
 }
 
@@ -53,7 +44,6 @@ export default function IntelHeader({
   isLive,
   liveText,
   alerts = [],
-  navs,
   stats,
 }: Props) {
   return (
@@ -98,20 +88,6 @@ export default function IntelHeader({
           </div>
         );
       })}
-
-      {/* Nav pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {navs.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:ring-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>{n.icon}</span>
-            <span>{n.label}</span>
-          </Link>
-        ))}
-      </div>
 
       {/* KPI Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
