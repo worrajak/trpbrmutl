@@ -22,7 +22,7 @@ export const PLAN_TO_DB_PROGRAM: Record<number, string> = {
 };
 
 // ========================================================================
-// 2. 5 กรอบที่เรายึด (Frameworks)
+// 2. 4 กรอบที่เรายึด (Frameworks)
 // ========================================================================
 export interface Framework {
   id: string;
@@ -62,26 +62,14 @@ export const FRAMEWORKS: Framework[] = [
   {
     id: "rmutl-excellence",
     icon: "🏆",
-    name: "แผนความเป็นเลิศ มทร.ล้านนา",
+    name: "แผนความเป็นเลิศ มทร.ล้านนา (ค.ต.ป. + EdPEx)",
     shortDesc:
-      "ค.ต.ป. + EdPEx · ยุทธศาสตร์ 2 (วิจัย+นวัตกรรม) และ 5 (สืบสานศาสตร์พระราชา) · KPI 19-22, 37-41",
+      "คำรับรองปฏิบัติราชการ + EdPEx · ยุทธศาสตร์ 2 (วิจัย+นวัตกรรม) และ 5 (สืบสานศาสตร์พระราชา) · KPI 19-22, 37-41",
     detail:
-      "ยุทธศาสตร์ 5 กลยุทธ์ 1: ส่งเสริมและพัฒนาชุมชน สืบสาน รักษา ต่อยอด · ตัวชี้วัดที่ 37 (พึงพอใจฐานข้อมูล), 38 (โครงการสนับสนุนอาชีพชุมชน), 39 (Outlet/MarketPlace), 40 (กิจกรรมจิตอาสา), 41 (สื่อองค์ความรู้/ภูมิปัญญา)",
+      "ค.ต.ป. = คำรับรองการปฏิบัติราชการประจำปีของผู้บริหาร — เป็นตัวชี้วัดเชิงปฏิบัติของแผนความเป็นเลิศ · ยุทธศาสตร์ 5 กลยุทธ์ 1: ส่งเสริมและพัฒนาชุมชน สืบสาน รักษา ต่อยอด · ตัวชี้วัดที่ 37-41 (พึงพอใจฐานข้อมูล, สนับสนุนอาชีพชุมชน, Outlet/MarketPlace, จิตอาสา, สื่อองค์ความรู้/ภูมิปัญญา) · ทีมใต้ร่มฯ รับผิดชอบหลัก KPI #40 (องค์ความรู้สู่ชุมชน) และ #15 (ระบบนิเวศวิจัย)",
     externalLink: "https://competency-assessment-topaz.vercel.app/",
     color: "from-blue-500 via-indigo-500 to-violet-600",
     level: 3,
-  },
-  {
-    id: "ktpp",
-    icon: "📋",
-    name: "ค.ต.ป. (คำรับรองปฏิบัติราชการ)",
-    shortDesc:
-      "คำรับรองการปฏิบัติราชการประจำปี · ตัวชี้วัด KPI ระดับสถาบัน · ผูก performance ของกลุ่มแผนงาน",
-    detail:
-      "ค.ต.ป. = คำรับรองการปฏิบัติราชการ ของผู้บริหารระดับสำนักงาน/สถาบัน · กลุ่มแผนงานใต้ร่มพระบารมีรับผิดชอบหลัก KPI ที่เกี่ยวข้องกับการแปลงองค์ความรู้สู่ชุมชน (KPI #40) และระบบนิเวศวิจัย (KPI #15)",
-    externalLink: "/excellence",
-    color: "from-emerald-500 via-teal-500 to-cyan-600",
-    level: 4,
   },
   {
     id: "sdgs",
@@ -93,7 +81,7 @@ export const FRAMEWORKS: Framework[] = [
       "เป้าหมายการพัฒนาที่ยั่งยืน 17 เป้า โดย UN · กลุ่มแผนงานใต้ร่มพระบารมีตอบ 10 เป้า โดยเน้น SDG 4 (การศึกษา), SDG 8 (เศรษฐกิจ), SDG 9 (นวัตกรรม), SDG 11 (เมือง+ชุมชน)",
     externalLink: "/sdgs",
     color: "from-green-500 via-lime-500 to-emerald-600",
-    level: 5,
+    level: 4,
   },
 ];
 
@@ -429,7 +417,7 @@ export function buildConnectionTable(): ConnectionRow[] {
     budget: p.budget,
     rmutlKpis: p.rmutlStrategies.flatMap((s) => s.kpiCodes),
     sdgs: p.sdgs,
-    // ทุกแผนยึด 5 กรอบ (ตามคอนเซ็ปต์ของ /foundation)
-    frameworks: ["royal-philosophy", "trpb-strategy", "rmutl-excellence", "ktpp", "sdgs"],
+    // ทุกแผนยึด 4 กรอบ (ตามคอนเซ็ปต์ของ /foundation — รวม ค.ต.ป. ใน rmutl-excellence)
+    frameworks: ["royal-philosophy", "trpb-strategy", "rmutl-excellence", "sdgs"],
   }));
 }

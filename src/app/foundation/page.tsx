@@ -17,7 +17,7 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "ที่มาและความสำคัญ | ใต้ร่มพระบารมี",
   description:
-    "งานของกลุ่มแผนงานใต้ร่มพระบารมี · 5 กรอบ + 4 มิติผลกระทบ + 3 แผนงานหลัก × 25 ตัวชี้วัด · งบ 8M บาท · ปี 2569",
+    "งานของกลุ่มแผนงานใต้ร่มพระบารมี · 4 กรอบ + 4 มิติผลกระทบ + 3 แผนงานหลัก × 25 ตัวชี้วัด · งบ 8M บาท · ปี 2569",
 };
 
 export default async function FoundationPage() {
@@ -42,7 +42,7 @@ export default async function FoundationPage() {
               ที่มาและความสำคัญ
             </h1>
             <p className="mt-1 text-xs text-amber-50/90 max-w-3xl">
-              งานของเรายึดราก <strong>5 กรอบ</strong> · ตอบ <strong>4 มิติผลกระทบ</strong> ·
+              งานของเรายึดราก <strong>4 กรอบ</strong> · ตอบ <strong>4 มิติผลกระทบ</strong> ·
               ผ่าน <strong>3 แผนงานหลัก × {totalKpis} ตัวชี้วัด · {totalSubProjects} โครงการย่อย</strong>
             </p>
           </div>
@@ -62,10 +62,10 @@ export default async function FoundationPage() {
         </div>
       </div>
 
-      {/* ============== SECTION 1: 5 กรอบที่เรายึด ============== */}
+      {/* ============== SECTION 1: 4 กรอบที่เรายึด ============== */}
       <section>
         <h2 className="mb-2 text-base sm:text-lg font-bold text-gray-800">
-          🌳 5 กรอบที่เรายึด
+          🌳 4 กรอบที่เรายึด
         </h2>
         <div className="space-y-3">
           {FRAMEWORKS.map((f) => (
