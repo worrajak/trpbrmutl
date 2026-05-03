@@ -77,7 +77,7 @@ export default function KpiIndexPanel({ projects }: Props) {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-base">🏆</span>
           <p className="text-xs sm:text-sm font-bold text-gray-800 truncate">
-            ตอบยุทธศาสตร์ความเลิศ มทร.ล้านนา · ปี 2569
+            ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา · ปี 2569
           </p>
         </div>
         {offTrackCount > 0 && (

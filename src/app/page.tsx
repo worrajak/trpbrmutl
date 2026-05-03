@@ -79,7 +79,7 @@ export default async function Home() {
           { href: "/", icon: "🏠", label: "หน้าแรก" },
           { href: "/foundation", icon: "📖", label: "ที่มา" },
           { href: "/projects", icon: "📋", label: "โครงการ" },
-          { href: "/excellence", icon: "🏆", label: "ความเลิศ" },
+          { href: "/excellence", icon: "🏆", label: "ความเป็นเลิศ" },
           { href: "/sdgs", icon: "🌍", label: "SDGs" },
           { href: "/indicators", icon: "📊", label: "ตัวชี้วัด" },
           { href: "/map", icon: "🗺️", label: "แผนที่" },

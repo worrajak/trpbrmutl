@@ -6,7 +6,7 @@ import {
 import Link from "next/link";
 
 /**
- * ExcellenceKpiShowcase — โครงการตอบยุทธศาสตร์ความเลิศ มทร.ล้านนา
+ * ExcellenceKpiShowcase — โครงการตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา
  *
  * แทนที่จะแสดง KPI ลอยๆ → mapping โครงการเข้ากับ KPI ของ มทร.
  * แต่ละ card บอกเป้า + จำนวนโครงการที่สนับสนุน + progress
@@ -44,7 +44,7 @@ export default function ExcellenceKpiShowcase({ projects }: Props) {
               🏆 RMUTL Excellence Plan · 2569
             </p>
             <h2 className="mt-0.5 text-lg sm:text-xl font-bold text-gray-800">
-              ตอบยุทธศาสตร์ความเลิศ มทร.ล้านนา
+              ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา
             </h2>
             <p className="mt-1 text-xs text-gray-500">
               โครงการใต้ร่มพระบารมี <strong className="text-gray-700">{projects.length}</strong> โครงการ

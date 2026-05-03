@@ -67,24 +67,24 @@ export default async function FoundationPage() {
         <h2 className="mb-2 text-base sm:text-lg font-bold text-gray-800">
           🌳 5 กรอบที่เรายึด
         </h2>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {FRAMEWORKS.map((f) => (
             <div
               key={f.id}
-              className={`relative overflow-hidden rounded-lg ring-1 ring-gray-200 bg-white p-3 hover:shadow-sm transition`}
+              className="relative overflow-hidden rounded-xl ring-1 ring-slate-200 bg-white p-4 hover:shadow-md transition"
             >
-              {/* Side gradient */}
-              <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${f.color}`} />
-              <div className="pl-3 flex items-start justify-between gap-3">
+              {/* Side gradient strip — ใช้ wider เพื่อโดดเด่นขึ้น */}
+              <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${f.color}`} />
+              <div className="pl-4 flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-2xl flex-shrink-0">{f.icon}</span>
+                  <span className="text-3xl flex-shrink-0">{f.icon}</span>
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-sm font-bold text-gray-900">{f.name}</h3>
-                      <span className="text-[9px] text-gray-400 font-mono">L{f.level}</span>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900">{f.name}</h3>
+                      <span className="text-[10px] text-slate-400 font-mono">L{f.level}</span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-gray-600 leading-snug">{f.shortDesc}</p>
-                    <p className="mt-1 text-[10px] text-gray-400 italic">↳ {f.detail}</p>
+                    <p className="mt-1 text-sm text-slate-700 leading-snug">{f.shortDesc}</p>
+                    <p className="mt-1.5 text-xs text-slate-500 italic leading-relaxed">↳ {f.detail}</p>
                   </div>
                 </div>
                 {f.externalLink && (
@@ -92,7 +92,7 @@ export default async function FoundationPage() {
                     href={f.externalLink}
                     target={f.externalLink.startsWith("http") ? "_blank" : undefined}
                     rel="noreferrer"
-                    className="flex-shrink-0 inline-flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-100"
+                    className="flex-shrink-0 inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200 transition"
                   >
                     อ่านต่อ →
                   </a>
@@ -108,18 +108,18 @@ export default async function FoundationPage() {
         <h2 className="mb-2 text-base sm:text-lg font-bold text-gray-800">
           🎯 4 มิติผลกระทบที่เรามุ่งเป้า
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {IMPACT_DIMENSIONS.map((d) => (
             <div
               key={d.id}
-              className={`rounded-lg p-3 ring-1 ${d.color}`}
+              className={`rounded-xl p-4 ring-1 ${d.color}`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-xl">{d.icon}</span>
-                <h3 className="text-sm font-bold">{d.name}</h3>
+                <span className="text-2xl">{d.icon}</span>
+                <h3 className="text-base font-bold">{d.name}</h3>
               </div>
-              <p className="mt-1 text-[11px] opacity-80 leading-snug">{d.description}</p>
-              <p className="mt-2 text-[10px] font-bold border-t border-current/20 pt-1.5">
+              <p className="mt-2 text-xs opacity-90 leading-snug">{d.description}</p>
+              <p className="mt-3 text-xs font-bold border-t border-current/20 pt-2">
                 {d.computeStatLabel(impactStats)}
               </p>
             </div>
@@ -238,7 +238,7 @@ export default async function FoundationPage() {
           <li className="flex items-start gap-1.5">
             <span>🔗</span>
             <Link href="/excellence" className="text-blue-600 hover:underline">
-              KPI Mapping ความเลิศ มทร.ล้านนา · /excellence
+              KPI Mapping ความเป็นเลิศ มทร.ล้านนา · /excellence
             </Link>
           </li>
           <li className="flex items-start gap-1.5">

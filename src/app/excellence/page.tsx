@@ -11,7 +11,7 @@ import {
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "ตอบยุทธศาสตร์ความเลิศ มทร.ล้านนา | ใต้ร่มพระบารมี",
+  title: "ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา | ใต้ร่มพระบารมี",
   description:
     "Mapping ระหว่างโครงการใต้ร่มพระบารมีกับ KPI แผนความเป็นเลิศของ มทร.ล้านนา (ค.ต.ป. + EdPEx)",
 };
@@ -24,55 +24,47 @@ export default async function ExcellencePage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
-      <section className="rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-rose-600 p-6 sm:p-8 text-white shadow-2xl shadow-amber-500/20">
-        <p className="text-xs font-medium uppercase tracking-wider text-amber-100/80">
+      {/* Hero — solid amber-700 (กัน gradient purge + อ่านชัด) */}
+      <section className="rounded-2xl bg-amber-700 p-6 sm:p-7 text-white shadow-xl shadow-amber-500/20">
+        <p className="text-xs sm:text-sm font-medium uppercase tracking-wider text-amber-100">
           🏆 RMUTL Excellence Plan
         </p>
-        <h1 className="mt-1 text-2xl sm:text-3xl font-bold drop-shadow">
-          ตอบยุทธศาสตร์ความเลิศ มทร.ล้านนา ปี 2569
+        <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold drop-shadow leading-tight text-white">
+          ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา ปี 2569
         </h1>
-        <p className="mt-2 text-sm text-amber-50/90 max-w-2xl">
-          แสดง mapping ระหว่างโครงการใต้ร่มพระบารมี
-          กับ KPI ของแผนความเลิศ มทร.ล้านนา
-          (ค.ต.ป. คำรับรองฯ + EdPEx)
+        <p className="mt-3 text-sm sm:text-base text-amber-50 max-w-3xl leading-relaxed">
+          แสดง mapping ระหว่างโครงการใต้ร่มพระบารมีกับ KPI
+          ของแผนความเป็นเลิศ มทร.ล้านนา (ค.ต.ป. คำรับรองฯ + EdPEx)
           เพื่อให้เห็นว่าแต่ละ KPI กำลังถูกขับเคลื่อนด้วยโครงการใดบ้าง
         </p>
 
-        <div className="mt-5 grid grid-cols-3 gap-3 max-w-xl">
+        <div className="mt-5 grid grid-cols-3 gap-3 max-w-2xl">
           {[
-            {
-              label: "โครงการทั้งหมด",
-              value: projects.length,
-              accent: "text-amber-200",
-            },
+            { label: "โครงการทั้งหมด", value: projects.length },
             {
               label: "KPI ที่สนับสนุน",
               value: `${Object.keys(counts).length}/${EXCELLENCE_KPIS.length}`,
-              accent: "text-yellow-200",
             },
-            {
-              label: "Total Linkages",
-              value: totalLinked,
-              accent: "text-rose-200",
-            },
+            { label: "Total Linkages", value: totalLinked },
           ].map((s) => (
             <div
               key={s.label}
-              className="rounded-2xl bg-white/15 backdrop-blur-md p-3 ring-1 ring-white/20"
+              className="rounded-xl bg-white/15 backdrop-blur-md p-3 ring-1 ring-white/25"
             >
-              <p className="text-[10px] font-medium uppercase text-white/70">
+              <p className="text-xs font-medium uppercase text-amber-50/85">
                 {s.label}
               </p>
-              <p className={`mt-0.5 text-2xl font-bold ${s.accent}`}>{s.value}</p>
+              <p className="mt-1 text-2xl sm:text-3xl font-bold text-white drop-shadow">
+                {s.value}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Source notice */}
-      <div className="rounded-xl bg-blue-50 p-3 text-xs text-blue-800 ring-1 ring-blue-200">
-        📖 Source: PerformanceEvaluation-System (สถช.) · เอกสาร "10-11-68 ตัวชี้วัดสถาบัน" · แผนความเป็นเลิศ มทร.ล้านนา 66-70
+      <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900 ring-1 ring-blue-200">
+        📖 <strong>Source:</strong> PerformanceEvaluation-System (สถช.) · เอกสาร "10-11-68 ตัวชี้วัดสถาบัน" · แผนความเป็นเลิศ มทร.ล้านนา 66-70
       </div>
 
       {/* Per-KPI deep dive */}
@@ -96,58 +88,69 @@ export default async function ExcellencePage() {
               const progress = target > 0 ? Math.min((linkedProjects.length / target) * 100, 100) : 0;
               const isActive = linkedProjects.length > 0;
 
+              // Static fallback bg per KPI category — กัน Tailwind purge dynamic gradient
+              const headerBg =
+                kpi.category === "ktpp"
+                  ? "bg-amber-700"
+                  : kpi.category === "edpex_71_a"
+                  ? "bg-blue-700"
+                  : kpi.category === "edpex_71_c"
+                  ? "bg-violet-700"
+                  : "bg-rose-700";
               return (
                 <div
                   key={kpi.code}
                   className={`overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ${
-                    isActive ? "ring-emerald-200" : "ring-gray-100"
+                    isActive ? "ring-emerald-300" : "ring-slate-200"
                   }`}
                 >
-                  {/* Header */}
-                  <div className={`bg-gradient-to-r ${kpi.color} p-4 text-white`}>
+                  {/* Header — ใช้ static solid bg แทน gradient (อ่านชัดกว่า + ไม่ติด purge) */}
+                  <div className={`${headerBg} p-5 text-white`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{kpi.icon}</span>
-                          <span className="font-mono text-xs font-bold opacity-80">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-2xl">{kpi.icon}</span>
+                          <span className="font-mono text-sm font-bold text-white/90">
                             KPI {kpi.code}
                           </span>
                           {isActive && (
-                            <span className="rounded-full bg-white/30 backdrop-blur px-2 py-0.5 text-[10px] font-bold">
+                            <span className="rounded-full bg-white/25 backdrop-blur px-2.5 py-0.5 text-xs font-bold text-white">
                               ✓ Active
                             </span>
                           )}
                         </div>
-                        <h3 className="mt-1 text-base font-bold drop-shadow">
+                        <h3 className="mt-2 text-lg sm:text-xl font-bold drop-shadow leading-snug text-white">
                           {kpi.name}
                         </h3>
-                        <p className="mt-1 text-xs text-white/80">
-                          เป้า มทร. {kpi.target_university ?? "—"}{" "}
+                        <p className="mt-1.5 text-sm text-white/95 leading-relaxed">
+                          เป้า มทร. <strong>{kpi.target_university ?? "—"}</strong>{" "}
                           {kpi.unit}{" "}
                           {kpi.target_team != null && (
-                            <span>· เป้าทีม {kpi.target_team} {kpi.unit}</span>
+                            <span>· เป้าทีม <strong>{kpi.target_team}</strong> {kpi.unit}</span>
                           )}
-                          · ผู้รับผิดชอบ: {kpi.responsible}
+                        </p>
+                        <p className="mt-1 text-xs text-white/85">
+                          👤 ผู้รับผิดชอบ: {kpi.responsible}
                         </p>
                       </div>
                       <div className="flex-shrink-0 text-right">
-                        <p className="text-3xl font-bold drop-shadow">
+                        <p className="text-4xl font-bold drop-shadow text-white">
                           {linkedProjects.length}
                         </p>
-                        <p className="text-[10px] text-white/80">โครงการ</p>
+                        <p className="text-xs text-white/90 mt-0.5">โครงการ</p>
                       </div>
                     </div>
 
                     {/* Progress vs team target */}
                     {target > 0 && (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-[10px] text-white/80 mb-1">
+                      <div className="mt-4">
+                        <div className="flex justify-between text-xs text-white/95 mb-1.5">
                           <span>ความคืบหน้าต่อเป้า {target} {kpi.unit}</span>
-                          <span>{progress.toFixed(0)}%</span>
+                          <span className="font-bold">{progress.toFixed(0)}%</span>
                         </div>
-                        <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+                        <div className="h-2 rounded-full bg-white/25 overflow-hidden">
                           <div
-                            className="h-full bg-white"
+                            className="h-full bg-white shadow"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
