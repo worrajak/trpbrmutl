@@ -67,6 +67,7 @@ export const FRAMEWORKS: Framework[] = [
       "ค.ต.ป. + EdPEx · ยุทธศาสตร์ 2 (วิจัย+นวัตกรรม) และ 5 (สืบสานศาสตร์พระราชา) · KPI 19-22, 37-41",
     detail:
       "ยุทธศาสตร์ 5 กลยุทธ์ 1: ส่งเสริมและพัฒนาชุมชน สืบสาน รักษา ต่อยอด · ตัวชี้วัดที่ 37 (พึงพอใจฐานข้อมูล), 38 (โครงการสนับสนุนอาชีพชุมชน), 39 (Outlet/MarketPlace), 40 (กิจกรรมจิตอาสา), 41 (สื่อองค์ความรู้/ภูมิปัญญา)",
+    externalLink: "https://competency-assessment-topaz.vercel.app/",
     color: "from-blue-500 via-indigo-500 to-violet-600",
     level: 3,
   },
