@@ -77,6 +77,7 @@ export default async function Home() {
         alerts={alerts}
         navs={[
           { href: "/", icon: "🏠", label: "หน้าแรก" },
+          { href: "/foundation", icon: "📖", label: "ที่มา" },
           { href: "/projects", icon: "📋", label: "โครงการ" },
           { href: "/excellence", icon: "🏆", label: "ความเลิศ" },
           { href: "/sdgs", icon: "🌍", label: "SDGs" },

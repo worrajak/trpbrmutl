@@ -5,6 +5,7 @@ import Logo from "@/components/Logo";
 
 const navLinks = [
   { href: "/", label: "ภาพรวม" },
+  { href: "/foundation", label: "📖 ที่มา" },
   { href: "/projects", label: "โครงการ" },
   { href: "/indicators", label: "ตัวชี้วัด" },
   { href: "/sdgs", label: "🌐 SDGs" },
