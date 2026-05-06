@@ -54,7 +54,7 @@ interface DryRunResult {
   diff: DiffEntry[];
 }
 
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "seed" | "repair" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -81,19 +81,64 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [open, setOpen] = useState<OpenSection>(null);
 
+  // Login tabs (super-admin password vs team token+PIN)
+  const [loginTab, setLoginTab] = useState<"password" | "team">("password");
+  const [teamToken, setTeamToken] = useState("");
+  const [teamPin, setTeamPin] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
+
   useEffect(() => {
-    if (sessionStorage.getItem("admin_auth") === "true") setAuthed(true);
+    if (
+      sessionStorage.getItem("admin_auth") === "true" ||
+      sessionStorage.getItem("team_auth") === "true"
+    ) {
+      setAuthed(true);
+    }
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/admin/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) { sessionStorage.setItem("admin_auth", "true"); setAuthed(true); }
-    else alert("รหัสผ่านไม่ถูกต้อง");
+    setLoginError("");
+    setLoginBusy(true);
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        sessionStorage.setItem("admin_auth", "true");
+        setAuthed(true);
+      } else {
+        setLoginError("รหัสผ่านไม่ถูกต้อง");
+      }
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
+  async function handleTeamLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginError("");
+    setLoginBusy(true);
+    try {
+      const res = await fetch("/api/admin/team-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: teamToken, pin: teamPin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "เข้าสู่ระบบไม่สำเร็จ");
+      // เก็บ session info สำหรับ permission checks
+      sessionStorage.setItem("team_auth", "true");
+      sessionStorage.setItem("team_member", JSON.stringify(data.member));
+      setAuthed(true);
+    } catch (err: unknown) {
+      setLoginError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setLoginBusy(false);
+    }
   }
 
   function toggle(section: OpenSection) {
@@ -103,15 +148,95 @@ export default function AdminPage() {
   if (!authed) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <form onSubmit={handleLogin} className="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg">
+        <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
           <h1 className="mb-1 text-xl font-bold text-royal-700">Admin Panel</h1>
-          <p className="mb-5 text-sm text-gray-500">ระบบจัดการโครงการใต้ร่มพระบารมี</p>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="รหัสผ่าน Admin" className="mb-3 w-full rounded-lg border px-3 py-2" autoFocus />
-          <button className="w-full rounded-lg bg-royal-700 py-2 text-white hover:bg-royal-800">
-            เข้าสู่ระบบ
-          </button>
-        </form>
+          <p className="mb-4 text-sm text-gray-500">ระบบจัดการโครงการใต้ร่มพระบารมี</p>
+
+          {/* Tabs */}
+          <div className="mb-4 flex rounded-lg bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => { setLoginTab("password"); setLoginError(""); }}
+              className={`flex-1 rounded-md py-1.5 text-xs font-medium transition ${
+                loginTab === "password"
+                  ? "bg-white text-royal-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              🔐 Super-admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginTab("team"); setLoginError(""); }}
+              className={`flex-1 rounded-md py-1.5 text-xs font-medium transition ${
+                loginTab === "team"
+                  ? "bg-white text-emerald-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              👥 คณะทำงาน
+            </button>
+          </div>
+
+          {loginTab === "password" ? (
+            <form onSubmit={handleLogin}>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="รหัสผ่าน Super-admin"
+                className="mb-3 w-full rounded-lg border px-3 py-2"
+                autoFocus
+              />
+              {loginError && (
+                <p className="mb-2 text-xs text-red-600">{loginError}</p>
+              )}
+              <button
+                disabled={loginBusy}
+                className="w-full rounded-lg bg-royal-700 py-2 text-white hover:bg-royal-800 disabled:opacity-50"
+              >
+                {loginBusy ? "..." : "เข้าสู่ระบบ"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleTeamLogin}>
+              <input
+                type="text"
+                value={teamToken}
+                onChange={(e) =>
+                  setTeamToken(
+                    e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8)
+                  )
+                }
+                placeholder="Token (เช่น PIMOL07)"
+                maxLength={8}
+                autoFocus
+                className="mb-2 w-full rounded-lg border px-3 py-2 font-mono uppercase tracking-wider"
+              />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={teamPin}
+                onChange={(e) => setTeamPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="PIN 4 หลัก"
+                maxLength={4}
+                className="mb-3 w-full rounded-lg border px-3 py-2 font-mono tracking-[0.4em] text-center"
+              />
+              {loginError && (
+                <p className="mb-2 text-xs text-red-600">{loginError}</p>
+              )}
+              <button
+                disabled={loginBusy || teamToken.length < 6 || teamPin.length !== 4}
+                className="w-full rounded-lg bg-emerald-600 py-2 text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {loginBusy ? "..." : "เข้าสู่ระบบ (คณะทำงาน)"}
+              </button>
+              <p className="mt-3 text-[10px] text-slate-400 text-center">
+                ยังไม่มี Token? ติดต่อ super-admin เพื่อขอออก token
+              </p>
+            </form>
+          )}
+        </div>
       </div>
     );
   }
@@ -140,6 +265,14 @@ export default function AdminPage() {
       desc: "list ทุกโครงการ · search/filter · edit ฟิลด์ · delete (cascade activities/kpis)",
       color: "border-indigo-300 bg-indigo-50",
       activeColor: "border-indigo-400",
+    },
+    {
+      key: "team" as OpenSection,
+      icon: "👥",
+      title: "คณะทำงานใต้ร่ม (Token + PIN)",
+      desc: "ออก Token + PIN 4 หลัก · กำหนดสิทธิ Read/Edit/Delete ต่อคน",
+      color: "border-emerald-300 bg-emerald-50",
+      activeColor: "border-emerald-400",
     },
     {
       key: "tokens" as OpenSection,
@@ -202,6 +335,7 @@ export default function AdminPage() {
               {card.key === "sync" && <SyncExcelPanel />}
               {card.key === "ngor9" && <Ngor9Panel />}
               {card.key === "manage" && <ManageProjectsPanel />}
+              {card.key === "team" && <TeamMembersPanel />}
               {card.key === "tokens" && <TokensPanel />}
               {card.key === "analytics" && <AnalyticsPanel />}
               {card.key === "seed" && <SeedActivitiesPanel />}
@@ -788,6 +922,28 @@ function ManageProjectsPanel() {
       <a href="/admin/projects"
         className="flex items-center justify-center gap-2 w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
         🗂 เปิดหน้าจัดการโครงการ →
+      </a>
+    </div>
+  );
+}
+
+// ─── Team Members Panel ───────────────────────────────────────────────────────
+
+function TeamMembersPanel() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600">
+        จัดการ <strong>คณะทำงานใต้ร่มพระบารมี</strong> · ออก Token alphanumeric (6-8 ตัว) +
+        PIN 4 หลัก ให้แต่ละคน · กำหนดสิทธิ Edit / Delete ได้รายคน
+      </p>
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 space-y-1">
+        <p>📌 <strong>Use case:</strong> ให้สิทธิ admin กับพิมลพรรณ และคนอื่นที่ทำงานร่วมในกลุ่มแผนงาน</p>
+        <p>🔐 <strong>Default:</strong> Read + Edit ทุกโครงการ · ลบไม่ได้ (กัน accident — เปิดได้ภายหลัง)</p>
+        <p>👤 <strong>Login:</strong> /admin → tab "👥 คณะทำงาน" → ใส่ Token + PIN</p>
+      </div>
+      <a href="/admin/team"
+        className="flex items-center justify-center gap-2 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+        👥 เปิดหน้าจัดการคณะทำงาน →
       </a>
     </div>
   );

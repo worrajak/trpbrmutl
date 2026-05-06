@@ -237,6 +237,29 @@ CREATE TABLE IF NOT EXISTS kpi_evidence (
 );
 
 
+-- ==========================================
+-- 13. TEAM_MEMBERS — คณะทำงานใต้ร่มพระบารมี (admin tier)
+-- ==========================================
+-- ใช้ token (alphanumeric 6-8 ตัว) + PIN 4 หลัก สำหรับ login
+-- สิทธิ: read + edit ทุก project แต่ลบไม่ได้ (can_delete = false default)
+CREATE TABLE IF NOT EXISTS team_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,           -- alphanumeric uppercase 6-8 chars (เช่น PIMOL01)
+    pin_hash TEXT NOT NULL,                -- SHA-256(pin + token) - PIN 4 หลัก
+    role TEXT DEFAULT 'team_member'
+      CHECK (role IN ('team_member', 'team_lead')),
+    email TEXT,
+    phone TEXT,
+    can_edit BOOLEAN DEFAULT TRUE,
+    can_delete BOOLEAN DEFAULT FALSE,     -- C1 spec: read+edit only, ลบไม่ได้
+    is_active BOOLEAN DEFAULT TRUE,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ
+);
+
+
 -- =============================================================================
 --  INDEXES
 -- =============================================================================
@@ -257,6 +280,8 @@ CREATE INDEX IF NOT EXISTS idx_participants_project       ON participants(projec
 CREATE INDEX IF NOT EXISTS idx_participants_type          ON participants(participant_type);
 CREATE INDEX IF NOT EXISTS idx_participants_name          ON participants(full_name);
 CREATE INDEX IF NOT EXISTS idx_kpi_evidence_kpi           ON kpi_evidence(kpi_target_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_token         ON team_members(token);
+CREATE INDEX IF NOT EXISTS idx_team_members_active        ON team_members(is_active) WHERE is_active = TRUE;
 -- GIN index สำหรับค้นหา sdg_tags แบบ array-contains
 CREATE INDEX IF NOT EXISTS idx_projects_sdg_tags          ON projects USING GIN (sdg_tags);
 CREATE INDEX IF NOT EXISTS idx_reports_sdg_tags           ON activity_reports USING GIN (sdg_tags);
@@ -279,6 +304,7 @@ ALTER TABLE reward_log          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reward_balance      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE participants        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kpi_evidence        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE team_members        ENABLE ROW LEVEL SECURITY;
 
 -- Public read
 DO $$ BEGIN
@@ -337,6 +363,16 @@ DO $$ BEGIN CREATE POLICY "anon delete kpi_targets"      ON kpi_targets      FOR
 DO $$ BEGIN CREATE POLICY "anon delete activity_reports" ON activity_reports FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon delete project_tokens"   ON project_tokens   FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon delete participants"     ON participants     FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ===========================================================================
+-- TEAM_MEMBERS policies — ระวัง! pin_hash sensitive
+-- ===========================================================================
+-- read: anon select ได้ (รวม pin_hash) เพราะ /api ใช้ anon key verify pin
+-- ใน production จริง ควรใช้ service_role key + RPC แทน
+DO $$ BEGIN CREATE POLICY "anon select team_members"     ON team_members     FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert team_members"     ON team_members     FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update team_members"     ON team_members     FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete team_members"     ON team_members     FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
 -- =============================================================================

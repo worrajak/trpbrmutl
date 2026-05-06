@@ -35,9 +35,48 @@ const PROGRAMS = [
   "ใต้ร่มพระบารมี",
 ];
 
+type SessionInfo = {
+  isSuperAdmin: boolean;
+  isTeamMember: boolean;
+  teamMemberName?: string;
+  canEdit: boolean;
+  canDelete: boolean;
+};
+
+function getSession(): SessionInfo {
+  if (typeof window === "undefined") {
+    return { isSuperAdmin: false, isTeamMember: false, canEdit: false, canDelete: false };
+  }
+  const isSuperAdmin = sessionStorage.getItem("admin_auth") === "true";
+  const isTeamMember = sessionStorage.getItem("team_auth") === "true";
+  let canEdit = false;
+  let canDelete = false;
+  let teamMemberName: string | undefined;
+  if (isSuperAdmin) {
+    canEdit = true;
+    canDelete = true;
+  } else if (isTeamMember) {
+    try {
+      const m = JSON.parse(sessionStorage.getItem("team_member") || "{}");
+      canEdit = !!m.can_edit;
+      canDelete = !!m.can_delete;
+      teamMemberName = m.name;
+    } catch {
+      // ignore
+    }
+  }
+  return { isSuperAdmin, isTeamMember, canEdit, canDelete, teamMemberName };
+}
+
 export default function AdminProjectsPage() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
+  const [session, setSession] = useState<SessionInfo>({
+    isSuperAdmin: false,
+    isTeamMember: false,
+    canEdit: false,
+    canDelete: false,
+  });
 
   const [rows, setRows] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,8 +95,9 @@ export default function AdminProjectsPage() {
   const [lastResult, setLastResult] = useState("");
 
   useEffect(() => {
-    const s = sessionStorage.getItem("admin_auth");
-    if (s === "true") {
+    const s = getSession();
+    setSession(s);
+    if (s.isSuperAdmin || s.isTeamMember) {
       setAuthed(true);
       void loadProjects();
     }
@@ -241,6 +281,26 @@ export default function AdminProjectsPage() {
         </div>
       </div>
 
+      {/* Session role banner */}
+      {session.isTeamMember && (
+        <div className="rounded-lg bg-emerald-50 ring-1 ring-emerald-200 px-3 py-2 text-xs text-emerald-800 flex items-center justify-between">
+          <span>
+            👤 คุณ <strong>{session.teamMemberName}</strong> · สิทธิ:
+            <strong className="ml-1">{session.canEdit ? "✓ Edit" : "—"} · {session.canDelete ? "✓ Delete" : "🔒 ลบไม่ได้"}</strong>
+          </span>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem("team_auth");
+              sessionStorage.removeItem("team_member");
+              window.location.href = "/admin";
+            }}
+            className="text-emerald-700 hover:underline"
+          >
+            ออกจากระบบ
+          </button>
+        </div>
+      )}
+
       {/* Last result */}
       {lastResult && (
         <div className="flex items-start justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
@@ -343,18 +403,24 @@ export default function AdminProjectsPage() {
                     {Number(r.budget_remaining || 0).toLocaleString("th-TH")}
                   </td>
                   <td className="whitespace-nowrap px-2 py-2 text-center">
-                    <button
-                      onClick={() => setEditing(r)}
-                      className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100"
-                    >
-                      ✏️ แก้ไข
-                    </button>{" "}
-                    <button
-                      onClick={() => setDeleting(r)}
-                      className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700 hover:bg-red-100"
-                    >
-                      🗑 ลบ
-                    </button>
+                    {session.canEdit && (
+                      <button
+                        onClick={() => setEditing(r)}
+                        className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100"
+                      >
+                        ✏️ แก้ไข
+                      </button>
+                    )}{" "}
+                    {session.canDelete ? (
+                      <button
+                        onClick={() => setDeleting(r)}
+                        className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700 hover:bg-red-100"
+                      >
+                        🗑 ลบ
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-300" title="คณะทำงานไม่มีสิทธิลบ">🔒</span>
+                    )}
                   </td>
                 </tr>
               ))
