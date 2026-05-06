@@ -31,8 +31,8 @@ export default function TokenLogin({ projectId, onAuthenticated }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (code.length !== 6) {
-      setError("กรุณาใส่ token 6 หลัก");
+    if (code.length < 6) {
+      setError("กรุณาใส่ token 6-8 ตัว");
       return;
     }
 
@@ -67,23 +67,25 @@ export default function TokenLogin({ projectId, onAuthenticated }: Props) {
   return (
     <div className="rounded-lg border-2 border-dashed border-royal-300 bg-royal-50 p-6 text-center">
       <p className="text-sm text-gray-600">
-        ใส่ Token 6 หลัก เพื่อรายงานความก้าวหน้าและรับ RPF Coin
+        ใส่ Token 6-8 ตัว (ตัวเลข+ตัวอักษร) เพื่อรายงานความก้าวหน้าและรับ RPF Coin
       </p>
       <form onSubmit={handleSubmit} className="mt-3 flex items-center justify-center gap-2">
         <input
           type="text"
           value={code}
           onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+            // รับทั้ง digit และ alphabet uppercase (รองรับ token เดิม 6 digit + token ใหม่ alphanumeric)
+            const v = e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8);
             setCode(v);
           }}
-          placeholder="______"
-          maxLength={6}
-          className="w-32 rounded border-2 border-royal-300 px-3 py-2 text-center font-mono text-xl tracking-[0.3em] focus:border-royal-500 focus:outline-none"
+          placeholder="________"
+          maxLength={8}
+          autoCapitalize="characters"
+          className="w-40 rounded border-2 border-royal-300 px-3 py-2 text-center font-mono text-xl tracking-[0.2em] focus:border-royal-500 focus:outline-none uppercase"
         />
         <button
           type="submit"
-          disabled={loading || code.length !== 6}
+          disabled={loading || code.length < 6}
           className="rounded bg-royal-700 px-4 py-2 text-sm font-medium text-white hover:bg-royal-800 disabled:opacity-50"
         >
           {loading ? "..." : "เข้าสู่ระบบ"}
