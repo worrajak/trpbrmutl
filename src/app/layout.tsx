@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Sarabun } from "next/font/google";
 import "./globals.css";
 import PageTracker from "@/components/PageTracker";
 import Navbar from "@/components/Navbar";
 import Logo from "@/components/Logo";
+
+// Sarabun: Google Font Thai สวย รองรับครบทั้ง Latin + Thai
+// แก้ปัญหา system font ที่ render Thai char ขนาดเล็กไม่ชัด (เช่น "ก" → คล้าย "n")
+const sarabun = Sarabun({
+  subsets: ["thai", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-sarabun",
+});
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
@@ -19,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th">
-      <body className="bg-gray-50 text-gray-900 antialiased">
+    <html lang="th" className={sarabun.variable}>
+      <body className={`${sarabun.className} bg-gray-50 text-gray-900 antialiased`}>
         {GA_ID && (
           <>
             <Script
