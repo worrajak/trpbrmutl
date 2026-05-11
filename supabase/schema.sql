@@ -318,6 +318,20 @@ CREATE TABLE IF NOT EXISTS brief_interests (
 
 
 -- ==========================================
+-- 16. APP_SETTINGS — admin global settings (key-value store)
+-- ==========================================
+-- ใช้เก็บ OpenRouter API key + model preference + อื่นๆ
+-- ที่อยากให้ share ทุก device + ทุก admin
+-- Note: anon CRUD เปิดเพื่อ POC · production ควรใช้ service_role + RPC
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,                          -- 'openrouter_api_key', 'openrouter_model'
+    value TEXT,                                    -- ค่าจริง (plain text)
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by TEXT                                -- admin name หรือ token
+);
+
+
+-- ==========================================
 -- 14. RPF_RESEARCHERS — นักวิจัย/นักบริการวิชาการ ของกลุ่มแผนงานใต้ร่มฯ
 -- ==========================================
 -- หมายเหตุ: ใช้ prefix rpf_ เพื่อไม่ทับ table 'researchers' ของระบบอื่นใน Supabase
@@ -431,6 +445,7 @@ ALTER TABLE participants        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kpi_evidence        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_members        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rpf_researchers     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_settings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rpf_research_areas  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE research_briefs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brief_interests     ENABLE ROW LEVEL SECURITY;
@@ -514,6 +529,14 @@ DO $$ BEGIN CREATE POLICY "anon select rpf_areas"        ON rpf_research_areas F
 DO $$ BEGIN CREATE POLICY "anon insert rpf_areas"        ON rpf_research_areas FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon update rpf_areas"        ON rpf_research_areas FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon delete rpf_areas"        ON rpf_research_areas FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ===========================================================================
+-- APP_SETTINGS policies — anon CRUD (POC · admin gate ฝั่ง API)
+-- ===========================================================================
+DO $$ BEGIN CREATE POLICY "anon select app_settings"     ON app_settings     FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert app_settings"     ON app_settings     FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update app_settings"     ON app_settings     FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete app_settings"     ON app_settings     FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ===========================================================================
 -- RESEARCH_BRIEFS + BRIEF_INTERESTS policies — public read · admin/team-gate ฝั่ง API
