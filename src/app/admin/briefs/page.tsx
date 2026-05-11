@@ -65,6 +65,7 @@ export default function AdminBriefsPage() {
     target_audience: string;
     theme: string;
     fiscal_year: number;
+    count: number; // จำนวน briefs ที่จะ gen ใน batch (1-5)
   }>({
     plan_number: 1,
     budget_remaining: 200000,
@@ -72,9 +73,17 @@ export default function AdminBriefsPage() {
     target_audience: "",
     theme: "",
     fiscal_year: 2569,
+    count: 1,
   });
   const [aiGenResult, setAiGenResult] = useState<GeneratedBrief | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Batch progress state
+  const [batchProgress, setBatchProgress] = useState<{
+    total: number;
+    done: number;
+    saved: number;
+    errors: string[];
+  } | null>(null);
 
   // OpenRouter (shared กับ /admin)
   const [apiKey, setApiKey] = useState("");
@@ -115,6 +124,7 @@ export default function AdminBriefsPage() {
     setShowAiGen(true);
     setAiGenError("");
     setAiGenResult(null);
+    setBatchProgress(null);
   }
 
   async function runAiGenerate() {
@@ -125,13 +135,14 @@ export default function AdminBriefsPage() {
     setAiGenBusy(true);
     setAiGenError("");
     setAiGenResult(null);
+    setBatchProgress(null);
 
-    // คำนวณ uncovered KPIs จาก briefs ปัจจุบัน → ส่งให้ AI prioritize
+    // คำนวณ uncovered KPIs จาก briefs ปัจจุบัน
     const coveredCodes = new Set<string>();
     for (const b of list) {
       for (const c of b.target_kpis || []) coveredCodes.add(c);
     }
-    const prioritizeKpis = EXCELLENCE_KPIS
+    const allUncovered = EXCELLENCE_KPIS
       .filter((k) => !coveredCodes.has(k.code))
       .map((k) => ({
         code: k.code,
@@ -140,25 +151,120 @@ export default function AdminBriefsPage() {
         target: k.target_team || k.target_university || 0,
       }));
 
-    try {
-      const res = await fetch("/api/admin/briefs/ai-generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...aiGenForm,
-          api_key: apiKey,
-          model,
-          prioritize_kpis: prioritizeKpis.length > 0 ? prioritizeKpis : undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI generate ล้มเหลว");
-      setAiGenResult(data.generated);
-    } catch (err: unknown) {
-      setAiGenError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-    } finally {
-      setAiGenBusy(false);
+    const count = Math.min(Math.max(aiGenForm.count, 1), 5);
+
+    // ===== Single mode (count=1) — preview เก่า =====
+    if (count === 1) {
+      try {
+        const res = await fetch("/api/admin/briefs/ai-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...aiGenForm,
+            api_key: apiKey,
+            model,
+            prioritize_kpis: allUncovered.length > 0 ? allUncovered : undefined,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "AI generate ล้มเหลว");
+        setAiGenResult(data.generated);
+      } catch (err: unknown) {
+        setAiGenError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+      } finally {
+        setAiGenBusy(false);
+      }
+      return;
     }
+
+    // ===== Batch mode (count > 1) — parallel + chunked KPIs + auto-save drafts =====
+    setBatchProgress({ total: count, done: 0, saved: 0, errors: [] });
+
+    // แบ่ง KPIs เป็น chunks เท่าๆ กัน — แต่ละ brief ได้ KPI ต่างกัน
+    const chunks: (typeof allUncovered)[] = [];
+    if (allUncovered.length > 0) {
+      const perBrief = Math.max(2, Math.ceil(allUncovered.length / count));
+      for (let i = 0; i < count; i++) {
+        const start = i * perBrief;
+        chunks.push(allUncovered.slice(start, start + perBrief));
+      }
+      // ถ้า chunk ไหนว่าง → ใช้ allUncovered แทน
+      for (let i = 0; i < chunks.length; i++) {
+        if (chunks[i].length === 0) chunks[i] = allUncovered;
+      }
+    }
+
+    const teamMember = sessionStorage.getItem("team_member");
+    const createdBy = teamMember ? JSON.parse(teamMember).name : "AI Brief Generator (batch)";
+    const createdByToken = teamMember ? JSON.parse(teamMember).token : null;
+
+    // Parallel calls — แต่ละ call ได้ KPI chunk ต่างกัน + theme variation
+    const results = await Promise.allSettled(
+      Array.from({ length: count }).map(async (_, idx) => {
+        const chunkPriority = chunks[idx] || allUncovered;
+        const themeVariation = aiGenForm.theme
+          ? `${aiGenForm.theme} (variant ${idx + 1})`
+          : `variant ${idx + 1}`;
+
+        const res = await fetch("/api/admin/briefs/ai-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...aiGenForm,
+            theme: themeVariation,
+            api_key: apiKey,
+            model,
+            prioritize_kpis: chunkPriority.length > 0 ? chunkPriority : undefined,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || `Brief ${idx + 1} ล้มเหลว`);
+        }
+        const data = await res.json();
+        // Update progress
+        setBatchProgress((prev) => prev ? { ...prev, done: prev.done + 1 } : null);
+
+        // Auto-save เป็น draft
+        const generated = data.generated as GeneratedBrief;
+        const row = {
+          title: generated.brief.title,
+          problem_statement: generated.brief.problem_statement,
+          location: generated.brief.location,
+          target_audience: generated.brief.target_audience,
+          target_kpis: generated.kpi_mapping.rmutl_kpi_codes,
+          plan_number: aiGenForm.plan_number,
+          required_skills: generated.required_skills,
+          budget_min: Math.round(generated.budget_breakdown.total * 0.8),
+          budget_max: generated.budget_breakdown.total,
+          fiscal_year: generated.brief.fiscal_year,
+          mode: "open",
+          status: "draft", // batch mode → save เป็น draft (admin review ก่อน publish)
+          created_by: createdBy,
+          created_by_token: createdByToken,
+          notes: `🤖 AI Batch (${idx + 1}/${count}) · งบ ${generated.budget_breakdown.total.toLocaleString()} · กิจกรรม ${generated.activities.length} · KPIs: ${generated.kpi_mapping.rmutl_kpi_codes.join(", ")}`,
+        };
+        const saveRes = await fetch("/api/admin/briefs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(row),
+        });
+        if (saveRes.ok) {
+          setBatchProgress((prev) => prev ? { ...prev, saved: prev.saved + 1 } : null);
+        }
+        return { idx, generated, saved: saveRes.ok };
+      })
+    );
+
+    // Collect errors
+    const errors: string[] = [];
+    results.forEach((r, i) => {
+      if (r.status === "rejected") errors.push(`Brief ${i + 1}: ${r.reason?.message || "?"}`);
+    });
+    setBatchProgress((prev) => prev ? { ...prev, errors } : null);
+
+    setAiGenBusy(false);
+    await load();
   }
 
   async function saveAiDraft() {
@@ -448,6 +554,40 @@ export default function AdminBriefsPage() {
                     />
                   </div>
 
+                  {/* Batch count picker */}
+                  <div className="rounded-lg bg-amber-50 ring-1 ring-amber-300 p-3">
+                    <label className="text-xs font-bold text-amber-900 flex items-center gap-2">
+                      📦 จำนวนโจทย์ที่จะ gen ในรอบเดียว
+                    </label>
+                    <div className="mt-1.5 flex gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setAiGenForm({ ...aiGenForm, count: n })}
+                          className={`flex-1 rounded py-2 text-sm font-bold transition ${
+                            aiGenForm.count === n
+                              ? "bg-amber-600 text-white shadow-sm"
+                              : "bg-white text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-amber-700">
+                      {aiGenForm.count === 1 ? (
+                        <>1 brief · review preview ก่อน save</>
+                      ) : (
+                        <>
+                          🚀 <strong>Batch mode:</strong> AI gen {aiGenForm.count} briefs พร้อมกัน (parallel) ·
+                          แบ่ง KPIs ให้แต่ละ brief ตอบไม่ซ้ำกัน · auto-save เป็น <strong>draft</strong> →
+                          admin review + publish ภายหลัง
+                        </>
+                      )}
+                    </p>
+                  </div>
+
                   {/* Form */}
                   <div className="space-y-3">
                     <div>
@@ -553,6 +693,38 @@ export default function AdminBriefsPage() {
 
                   {aiGenError && (
                     <div className="rounded bg-red-50 ring-1 ring-red-200 p-2 text-xs text-red-700">⚠ {aiGenError}</div>
+                  )}
+
+                  {/* Batch progress */}
+                  {batchProgress && (
+                    <div className="rounded-lg bg-purple-50 ring-1 ring-purple-300 p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-purple-900">
+                        <span>🚀 Batch Progress</span>
+                        <span>
+                          {batchProgress.done}/{batchProgress.total} gen ·
+                          {" "}{batchProgress.saved}/{batchProgress.total} saved
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-purple-200 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-emerald-500 transition-all"
+                          style={{ width: `${(batchProgress.done / batchProgress.total) * 100}%` }}
+                        />
+                      </div>
+                      {batchProgress.errors.length > 0 && (
+                        <div className="rounded bg-red-50 p-2 text-[11px] text-red-700">
+                          <p className="font-bold mb-1">⚠ Errors ({batchProgress.errors.length}):</p>
+                          {batchProgress.errors.map((e, i) => (
+                            <p key={i}>• {e}</p>
+                          ))}
+                        </div>
+                      )}
+                      {!aiGenBusy && batchProgress.done === batchProgress.total && (
+                        <div className="rounded bg-emerald-100 p-2 text-xs text-emerald-800 text-center font-bold">
+                          ✅ Generated {batchProgress.saved} drafts · ปิด modal เพื่อดูใน list
+                        </div>
+                      )}
+                    </div>
                   )}
                 </>
               ) : (
@@ -685,7 +857,13 @@ export default function AdminBriefsPage() {
                     disabled={aiGenBusy || !apiKey || aiGenForm.budget_remaining < 50000}
                     className="flex-1 rounded bg-purple-600 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
                   >
-                    {aiGenBusy ? "⏳ กำลัง gen... (30-60 วินาที)" : "🤖 Generate Brief"}
+                    {aiGenBusy
+                      ? aiGenForm.count === 1
+                        ? "⏳ กำลัง gen... (30-60 วินาที)"
+                        : `⏳ กำลัง gen ${aiGenForm.count} briefs... (~${aiGenForm.count * 30}s)`
+                      : aiGenForm.count === 1
+                        ? "🤖 Generate Brief"
+                        : `🚀 Batch Generate ${aiGenForm.count} Briefs`}
                   </button>
                 </>
               ) : (
