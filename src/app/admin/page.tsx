@@ -82,9 +82,11 @@ export default function AdminPage() {
   const [open, setOpen] = useState<OpenSection>(null);
 
   // Login tabs (super-admin password vs team token+PIN)
-  const [loginTab, setLoginTab] = useState<"password" | "team">("password");
+  const [loginTab, setLoginTab] = useState<"password" | "team" | "researcher">("password");
   const [teamToken, setTeamToken] = useState("");
   const [teamPin, setTeamPin] = useState("");
+  const [resToken, setResToken] = useState("");
+  const [resPin, setResPin] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
 
@@ -141,6 +143,29 @@ export default function AdminPage() {
     }
   }
 
+  async function handleResearcherLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginError("");
+    setLoginBusy(true);
+    try {
+      const res = await fetch("/api/researcher/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resToken, pin: resPin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "เข้าสู่ระบบไม่สำเร็จ");
+      sessionStorage.setItem("researcher_auth", "true");
+      sessionStorage.setItem("researcher_info", JSON.stringify(data.researcher));
+      // Redirect to portal
+      window.location.href = "/me/researcher";
+    } catch (err: unknown) {
+      setLoginError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
   function toggle(section: OpenSection) {
     setOpen((prev) => (prev === section ? null : section));
   }
@@ -152,8 +177,8 @@ export default function AdminPage() {
           <h1 className="mb-1 text-xl font-bold text-royal-700">Admin Panel</h1>
           <p className="mb-4 text-sm text-gray-500">ระบบจัดการโครงการใต้ร่มพระบารมี</p>
 
-          {/* Tabs */}
-          <div className="mb-4 flex rounded-lg bg-slate-100 p-1">
+          {/* Tabs — 3 ตัว */}
+          <div className="mb-4 flex rounded-lg bg-slate-100 p-1 gap-0.5">
             <button
               type="button"
               onClick={() => { setLoginTab("password"); setLoginError(""); }}
@@ -163,7 +188,7 @@ export default function AdminPage() {
                   : "text-slate-600 hover:text-slate-800"
               }`}
             >
-              🔐 Super-admin
+              🔐 Admin
             </button>
             <button
               type="button"
@@ -175,6 +200,17 @@ export default function AdminPage() {
               }`}
             >
               👥 คณะทำงาน
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginTab("researcher"); setLoginError(""); }}
+              className={`flex-1 rounded-md py-1.5 text-xs font-medium transition ${
+                loginTab === "researcher"
+                  ? "bg-white text-cyan-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              🔬 นักวิจัย
             </button>
           </div>
 
@@ -233,6 +269,41 @@ export default function AdminPage() {
               </button>
               <p className="mt-3 text-[10px] text-slate-400 text-center">
                 ยังไม่มี Token? ติดต่อ super-admin เพื่อขอออก token
+              </p>
+            </form>
+          )}
+
+          {loginTab === "researcher" && (
+            <form onSubmit={handleResearcherLogin}>
+              <input
+                type="text"
+                value={resToken}
+                onChange={(e) => setResToken(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8))}
+                placeholder="Token (เช่น WACHR07)"
+                maxLength={8}
+                autoFocus
+                className="mb-2 w-full rounded-lg border px-3 py-2 font-mono uppercase tracking-wider"
+              />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={resPin}
+                onChange={(e) => setResPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="PIN 4 หลัก"
+                maxLength={4}
+                className="mb-3 w-full rounded-lg border px-3 py-2 font-mono tracking-[0.4em] text-center"
+              />
+              {loginError && (
+                <p className="mb-2 text-xs text-red-600">{loginError}</p>
+              )}
+              <button
+                disabled={loginBusy || resToken.length < 6 || resPin.length !== 4}
+                className="w-full rounded-lg bg-cyan-600 py-2 text-white hover:bg-cyan-700 disabled:opacity-50"
+              >
+                {loginBusy ? "..." : "🔬 เข้าสู่ Portal นักวิจัย"}
+              </button>
+              <p className="mt-3 text-[10px] text-slate-400 text-center">
+                ยังไม่มี Token? <a href="/researchers/register" className="text-cyan-600 underline">ลงทะเบียนเป็นนักวิจัย</a> · admin จะ approve + ส่ง token
               </p>
             </form>
           )}

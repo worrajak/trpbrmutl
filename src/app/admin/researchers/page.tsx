@@ -222,6 +222,38 @@ export default function AdminResearchersPage() {
     }
   }
 
+  async function handleApproveAndIssueToken(r: Researcher) {
+    if (!confirm(`Approve "${r.name}" + ออก Token + PIN ให้ login?\n\n(ระบบจะ generate token + PIN 4 หลักอัตโนมัติ)`)) return;
+    const res = await fetch(`/api/admin/researchers/${r.id}/issue-token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert("ออก Token ล้มเหลว: " + data.error);
+      return;
+    }
+    if (data.already_issued) {
+      alert(`⚠ ${r.name} มี Token อยู่แล้ว: ${data.token}\n${data.message}`);
+      return;
+    }
+    // Show credentials — admin ต้องคัดลอกส่งให้ researcher ตอนนี้
+    const msg =
+      `🎉 ออก Token สำเร็จ — ${r.name}\n\n` +
+      `Token: ${data.token}\n` +
+      `PIN: ${data.pin}\n\n` +
+      `📌 กรุณาคัดลอก + ส่งให้ researcher ทันที (ครั้งเดียว)\n` +
+      `📍 Login: ${window.location.origin}/admin → tab '🔬 นักวิจัย'\n\n` +
+      `กด OK เพื่อ copy ใส่ clipboard`;
+    if (confirm(msg)) {
+      const clip = `Hi ${r.name},\n\nคุณได้รับสิทธิ login เป็นนักวิจัยในระบบแผนงานใต้ร่มฯ:\n\nToken: ${data.token}\nPIN: ${data.pin}\nLogin: ${window.location.origin}/admin (tab '🔬 นักวิจัย')\n\nหลัง login จะเห็นโจทย์วิจัยที่ตรงกับความถนัด + apply ได้`;
+      navigator.clipboard.writeText(clip);
+      alert("📋 คัดลอกข้อความเข้า clipboard แล้ว · paste ส่ง researcher ได้เลย");
+    }
+    setList((prev) => prev.map((x) => x.id === r.id ? { ...x, is_active: true } : x));
+  }
+
   function toggleTag(slug: string, target: Partial<Researcher>) {
     const current = target.expertise_tags || [];
     const next = current.includes(slug)
@@ -409,7 +441,14 @@ export default function AdminResearchersPage() {
           </p>
         ) : (
           filtered.map((r) => (
-            <ResearcherCard key={r.id} r={r} onEdit={() => setEditing(r)} onDelete={() => handleDelete(r)} onApprove={() => handleApprove(r)} />
+            <ResearcherCard
+              key={r.id}
+              r={r}
+              onEdit={() => setEditing(r)}
+              onDelete={() => handleDelete(r)}
+              onApprove={() => handleApprove(r)}
+              onApproveAndIssueToken={() => handleApproveAndIssueToken(r)}
+            />
           ))
         )}
       </div>
@@ -475,7 +514,7 @@ export default function AdminResearchersPage() {
 
 // ====================== Sub Components ======================
 
-function ResearcherCard({ r, onEdit, onDelete, onApprove }: { r: Researcher; onEdit: () => void; onDelete: () => void; onApprove?: () => void }) {
+function ResearcherCard({ r, onEdit, onDelete, onApprove, onApproveAndIssueToken }: { r: Researcher; onEdit: () => void; onDelete: () => void; onApprove?: () => void; onApproveAndIssueToken?: () => void }) {
   const lvl = LEVEL_META[r.level] || LEVEL_META.mid;
   const isPending = !r.is_active;
   return (
@@ -535,13 +574,22 @@ function ResearcherCard({ r, onEdit, onDelete, onApprove }: { r: Researcher; onE
       )}
 
       {/* Actions */}
-      <div className="mt-3 flex gap-1.5 pt-2 border-t border-slate-100">
+      <div className="mt-3 flex gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
         {isPending && onApprove && (
           <button
             onClick={onApprove}
-            className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+            className="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
           >
             ✓ Approve
+          </button>
+        )}
+        {onApproveAndIssueToken && (
+          <button
+            onClick={onApproveAndIssueToken}
+            className="rounded border border-cyan-300 bg-cyan-50 px-2 py-1 text-xs font-bold text-cyan-700 hover:bg-cyan-100"
+            title="Approve + ออก Token + PIN ให้ login portal"
+          >
+            🔑 Approve + ออก Token
           </button>
         )}
         <button onClick={onEdit} className="flex-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100">
