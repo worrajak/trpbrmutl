@@ -43,9 +43,28 @@ export interface GenerateBriefInput {
   target_audience?: string | null;  // กลุ่มเป้าหมาย (optional)
   theme?: string | null;            // ธีมที่ต้องการ (optional · เช่น "เกษตรอัจฉริยะ")
   fiscal_year: number;
-  // ✨ ใหม่: ตัวชี้วัดที่ยังไม่มีโจทย์ตอบ — AI จะ prioritize เลือกจาก list นี้ก่อน
+  // ✨ ตัวชี้วัดที่ยังไม่มีโจทย์ตอบ — AI จะ prioritize เลือกจาก list นี้ก่อน
   prioritize_kpis?: Array<{ code: string; name: string; unit: string; target: number }>;
+  // ✨ ห้ามตั้งชื่อใกล้กับ briefs เหล่านี้ (สำหรับ batch mode + uniqueness)
+  avoid_titles?: string[];
 }
+
+/**
+ * Theme presets — ใช้สำหรับ batch mode (จำเป็นต้องแตกต่างกันชัดเจน)
+ * แต่ละ theme มี keyword + skill bias ที่ต่างกัน
+ */
+export const BRIEF_THEME_PRESETS = [
+  { name: "เกษตรอัจฉริยะ + IoT", keywords: ["sensor", "data", "precision"] },
+  { name: "หัตถกรรม + ภูมิปัญญาท้องถิ่น", keywords: ["ceramic", "weaving", "wisdom"] },
+  { name: "แปรรูปอาหาร + value-add", keywords: ["food", "processing", "packaging"] },
+  { name: "พลังงานสะอาด + สิ่งแวดล้อม", keywords: ["solar", "climate", "green"] },
+  { name: "หลักสูตร + การฝึกอบรมชุมชน", keywords: ["training", "curriculum", "skill"] },
+  { name: "EdTech + e-Learning", keywords: ["digital", "platform", "online"] },
+  { name: "ระบบบริหารจัดการ + ฐานข้อมูล", keywords: ["database", "management", "tracking"] },
+  { name: "ความปลอดภัยอาหาร + GAP", keywords: ["safety", "GAP", "quality"] },
+  { name: "Community engagement + จิตอาสา", keywords: ["volunteer", "participation"] },
+  { name: "Climate adaptation + พื้นที่สูง", keywords: ["climate", "highland", "resilience"] },
+];
 
 export function buildGenerateBriefUserPrompt(input: GenerateBriefInput): string {
   const plan = PLANS.find((p) => p.number === input.plan_number) || PLANS[0];
@@ -81,6 +100,17 @@ ${input.prioritize_kpis && input.prioritize_kpis.length > 0 ? `
 ${input.prioritize_kpis.map((k) => `- ${k.code}: ${k.name} (เป้า ${k.target} ${k.unit})`).join("\n")}
 
 **สำคัญ:** kpi_mapping.rmutl_kpi_codes ต้องมี code อย่างน้อย 1-3 ตัวจาก list นี้
+` : ""}
+
+${input.avoid_titles && input.avoid_titles.length > 0 ? `
+## ⛔ ห้ามตั้งชื่อโครงการใกล้เคียงต่อไปนี้ (มีอยู่แล้ว/กำลังจะมี)
+${input.avoid_titles.map((t) => `- ${t}`).join("\n")}
+
+**สำคัญ:**
+- ชื่อโครงการต้อง <strong>แตกต่างจาก list ข้างบนอย่างชัดเจน</strong>
+- ห้ามใช้ keyword ร่วม > 2 คำกับ titles ข้างบน (เช่น "โรงเรือนอัจฉริยะ + แปรรูปกาแฟ" ใช้ซ้ำได้สูงสุด 1 keyword)
+- เลือก <strong>ธีมใหม่/ต่างกัน</strong>: เกษตร / หัตถกรรม / EdTech / พลังงาน / ภูมิปัญญา / ฯลฯ
+- เปลี่ยน <strong>พืช/ผลิตภัณฑ์/พื้นที่</strong> ที่ไม่ซ้ำกับ titles ข้างบน
 ` : ""}
 ---
 

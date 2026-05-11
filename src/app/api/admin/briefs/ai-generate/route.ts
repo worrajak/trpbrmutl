@@ -8,6 +8,12 @@ import {
   type GenerateBriefInput,
 } from "@/lib/ai-brief-generator-prompts";
 
+interface ExtendedInput extends GenerateBriefInput {
+  api_key?: string;
+  model?: string;
+  avoid_titles?: string[];
+}
+
 /**
  * POST /api/admin/briefs/ai-generate
  *
@@ -27,7 +33,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 90;
 
 export async function POST(req: NextRequest) {
-  let body: GenerateBriefInput & { api_key?: string; model?: string };
+  let body: ExtendedInput;
   try {
     body = await req.json();
   } catch {
@@ -52,6 +58,7 @@ export async function POST(req: NextRequest) {
     theme: body.theme || null,
     fiscal_year: body.fiscal_year || 2569,
     prioritize_kpis: body.prioritize_kpis,
+    avoid_titles: body.avoid_titles,
   });
 
   let raw: string;

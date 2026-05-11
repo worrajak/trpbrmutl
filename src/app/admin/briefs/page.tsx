@@ -7,6 +7,7 @@ import { BRIEF_STATUS_META, BRIEF_MODE_META } from "@/lib/brief-matching";
 import { EXCELLENCE_KPIS } from "@/lib/excellence-kpi";
 import { PLANS } from "@/lib/foundation";
 import type { GeneratedBrief } from "@/lib/ai-brief-generator-prompts";
+import { BRIEF_THEME_PRESETS } from "@/lib/ai-brief-generator-prompts";
 import AiSettingsBar from "@/components/AiSettingsBar";
 
 const OR_STORAGE = "rpf_openrouter_settings";
@@ -177,10 +178,10 @@ export default function AdminBriefsPage() {
       return;
     }
 
-    // ===== Batch mode (count > 1) — parallel + chunked KPIs + auto-save drafts =====
+    // ===== Batch mode (count > 1) — SEQUENTIAL + chunked KPIs + theme rotation + avoid_titles =====
     setBatchProgress({ total: count, done: 0, saved: 0, errors: [] });
 
-    // แบ่ง KPIs เป็น chunks เท่าๆ กัน — แต่ละ brief ได้ KPI ต่างกัน
+    // แบ่ง KPIs เป็น chunks
     const chunks: (typeof allUncovered)[] = [];
     if (allUncovered.length > 0) {
       const perBrief = Math.max(2, Math.ceil(allUncovered.length / count));
@@ -188,7 +189,6 @@ export default function AdminBriefsPage() {
         const start = i * perBrief;
         chunks.push(allUncovered.slice(start, start + perBrief));
       }
-      // ถ้า chunk ไหนว่าง → ใช้ allUncovered แทน
       for (let i = 0; i < chunks.length; i++) {
         if (chunks[i].length === 0) chunks[i] = allUncovered;
       }
@@ -198,35 +198,48 @@ export default function AdminBriefsPage() {
     const createdBy = teamMember ? JSON.parse(teamMember).name : "AI Brief Generator (batch)";
     const createdByToken = teamMember ? JSON.parse(teamMember).token : null;
 
-    // Parallel calls — แต่ละ call ได้ KPI chunk ต่างกัน + theme variation
-    const results = await Promise.allSettled(
-      Array.from({ length: count }).map(async (_, idx) => {
-        const chunkPriority = chunks[idx] || allUncovered;
-        const themeVariation = aiGenForm.theme
-          ? `${aiGenForm.theme} (variant ${idx + 1})`
-          : `variant ${idx + 1}`;
+    // Avoid_titles: เริ่มจาก briefs ปัจจุบัน + เพิ่ม titles ที่ gen สำเร็จในรอบนี้
+    const avoidTitles: string[] = list.map((b) => b.title);
 
+    // Shuffle theme presets เพื่อ rotation
+    const shuffledThemes = [...BRIEF_THEME_PRESETS].sort(() => Math.random() - 0.5);
+
+    const errors: string[] = [];
+
+    // Sequential loop — เพื่อให้ AI brief ที่ N เห็น brief 1...N-1 ที่เพิ่ง gen
+    for (let idx = 0; idx < count; idx++) {
+      const chunkPriority = chunks[idx] || allUncovered;
+      const presetTheme = shuffledThemes[idx % shuffledThemes.length];
+      const themeStr = aiGenForm.theme
+        ? `${aiGenForm.theme} · มุมเฉพาะ: ${presetTheme.name}`
+        : presetTheme.name;
+
+      try {
         const res = await fetch("/api/admin/briefs/ai-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...aiGenForm,
-            theme: themeVariation,
+            theme: themeStr,
             api_key: apiKey,
             model,
             prioritize_kpis: chunkPriority.length > 0 ? chunkPriority : undefined,
+            avoid_titles: avoidTitles,
           }),
         });
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.error || `Brief ${idx + 1} ล้มเหลว`);
+          throw new Error(err.error || `Brief ${idx + 1}`);
         }
         const data = await res.json();
-        // Update progress
+        const generated = data.generated as GeneratedBrief;
+
         setBatchProgress((prev) => prev ? { ...prev, done: prev.done + 1 } : null);
 
-        // Auto-save เป็น draft
-        const generated = data.generated as GeneratedBrief;
+        // เพิ่ม title ที่เพิ่ง gen ลงใน avoid_titles ของ call ถัดไป
+        avoidTitles.push(generated.brief.title);
+
+        // Auto-save draft
         const row = {
           title: generated.brief.title,
           problem_statement: generated.brief.problem_statement,
@@ -239,10 +252,10 @@ export default function AdminBriefsPage() {
           budget_max: generated.budget_breakdown.total,
           fiscal_year: generated.brief.fiscal_year,
           mode: "open",
-          status: "draft", // batch mode → save เป็น draft (admin review ก่อน publish)
+          status: "draft",
           created_by: createdBy,
           created_by_token: createdByToken,
-          notes: `🤖 AI Batch (${idx + 1}/${count}) · งบ ${generated.budget_breakdown.total.toLocaleString()} · กิจกรรม ${generated.activities.length} · KPIs: ${generated.kpi_mapping.rmutl_kpi_codes.join(", ")}`,
+          notes: `🤖 AI Batch (${idx + 1}/${count}) · ธีม: ${presetTheme.name} · งบ ${generated.budget_breakdown.total.toLocaleString()} · KPIs: ${generated.kpi_mapping.rmutl_kpi_codes.join(", ")}`,
         };
         const saveRes = await fetch("/api/admin/briefs", {
           method: "POST",
@@ -252,17 +265,13 @@ export default function AdminBriefsPage() {
         if (saveRes.ok) {
           setBatchProgress((prev) => prev ? { ...prev, saved: prev.saved + 1 } : null);
         }
-        return { idx, generated, saved: saveRes.ok };
-      })
-    );
+      } catch (err: unknown) {
+        errors.push(`Brief ${idx + 1}: ${err instanceof Error ? err.message : "?"}`);
+        setBatchProgress((prev) => prev ? { ...prev, done: prev.done + 1 } : null);
+      }
+    }
 
-    // Collect errors
-    const errors: string[] = [];
-    results.forEach((r, i) => {
-      if (r.status === "rejected") errors.push(`Brief ${i + 1}: ${r.reason?.message || "?"}`);
-    });
     setBatchProgress((prev) => prev ? { ...prev, errors } : null);
-
     setAiGenBusy(false);
     await load();
   }
@@ -580,9 +589,10 @@ export default function AdminBriefsPage() {
                         <>1 brief · review preview ก่อน save</>
                       ) : (
                         <>
-                          🚀 <strong>Batch mode:</strong> AI gen {aiGenForm.count} briefs พร้อมกัน (parallel) ·
-                          แบ่ง KPIs ให้แต่ละ brief ตอบไม่ซ้ำกัน · auto-save เป็น <strong>draft</strong> →
-                          admin review + publish ภายหลัง
+                          🚀 <strong>Batch mode:</strong> AI gen {aiGenForm.count} briefs ตามลำดับ (sequential) ·
+                          แต่ละ brief ใช้ <strong>theme ต่างกัน</strong> + <strong>KPIs ต่างกัน</strong> +
+                          เห็น titles ที่เพิ่ง gen → ป้องกันชื่อซ้ำ · auto-save <strong>draft</strong> ·
+                          เวลา ~{aiGenForm.count * 30}s
                         </>
                       )}
                     </p>
