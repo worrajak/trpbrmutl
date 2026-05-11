@@ -54,7 +54,7 @@ interface DryRunResult {
   diff: DiffEntry[];
 }
 
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "researchers" | "seed" | "repair" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "researchers" | "briefs" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -283,6 +283,14 @@ export default function AdminPage() {
       activeColor: "border-cyan-400",
     },
     {
+      key: "briefs" as OpenSection,
+      icon: "📢",
+      title: "จัดการโจทย์วิจัย (Phase 2)",
+      desc: "สร้าง brief · match กับ researchers · open/assigned/mentorship · 3 modes",
+      color: "border-violet-300 bg-violet-50",
+      activeColor: "border-violet-400",
+    },
+    {
       key: "tokens" as OpenSection,
       icon: "🔑",
       title: "จัดการ Token / RPF Coin",
@@ -345,6 +353,7 @@ export default function AdminPage() {
               {card.key === "manage" && <ManageProjectsPanel />}
               {card.key === "team" && <TeamMembersPanel />}
               {card.key === "researchers" && <ResearchersPanel />}
+              {card.key === "briefs" && <BriefsPanel />}
               {card.key === "tokens" && <TokensPanel />}
               {card.key === "analytics" && <AnalyticsPanel />}
               {card.key === "seed" && <SeedActivitiesPanel />}
@@ -931,6 +940,30 @@ function ManageProjectsPanel() {
       <a href="/admin/projects"
         className="flex items-center justify-center gap-2 w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
         🗂 เปิดหน้าจัดการโครงการ →
+      </a>
+    </div>
+  );
+}
+
+// ─── Briefs Panel ────────────────────────────────────────────────────────────
+
+function BriefsPanel() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600">
+        จัดการ <strong>โจทย์วิจัย/บริการวิชาการ</strong> · สร้าง brief จากปัญหาพื้นที่ ·
+        match กับ researchers ผ่าน skill score ranking
+      </p>
+      <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-xs text-violet-800 space-y-1">
+        <p>📌 <strong>3 modes:</strong></p>
+        <p>📢 <strong>Open:</strong> ใครสนใจก็ apply ได้ (researcher login เห็น match)</p>
+        <p>🎯 <strong>Assigned:</strong> มอบให้ senior คนใดคนหนึ่งโดยตรง</p>
+        <p>🌱 <strong>Mentorship:</strong> Mentor (senior) + Mentee (junior/mid) — สร้างนักวิจัยใหม่</p>
+        <p className="pt-1">🤖 Phase 3 ถัดไป: AI auto-match + auto-generate ง9 ตาม KPI/งบ template</p>
+      </div>
+      <a href="/admin/briefs"
+        className="flex items-center justify-center gap-2 w-full rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
+        📢 เปิดหน้าจัดการโจทย์ →
       </a>
     </div>
   );

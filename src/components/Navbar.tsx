@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/map", label: "แผนที่" },
   { href: "/staff", label: "บุคลากร" },
   { href: "/researchers", label: "🔬 นักวิจัย" },
+  { href: "/briefs", label: "📢 โจทย์วิจัย" },
   { href: "/regulations", label: "ระเบียบ" },
 ];
 

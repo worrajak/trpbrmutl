@@ -261,6 +261,61 @@ CREATE TABLE IF NOT EXISTS team_members (
 
 
 -- ==========================================
+-- 15. RESEARCH_BRIEFS — โจทย์/ปัญหา ที่ต้องการนักวิจัยมารับ (Phase 2)
+-- ==========================================
+-- Use case: admin/team_lead สร้าง brief จากโจทย์พื้นที่ → match กับ researchers
+-- mode: 'open' (ใครก็มาแสดงความสนใจได้) | 'assigned' (มอบให้คนใดคนหนึ่ง) | 'mentorship' (junior+senior คู่)
+CREATE TABLE IF NOT EXISTS research_briefs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,                          -- ชื่อโจทย์
+    problem_statement TEXT NOT NULL,              -- ปัญหา/ความต้องการ (paragraph)
+    location TEXT,                                -- พื้นที่ (เช่น "ห้วยเสี้ยว", "ดอยอ่างขาง")
+    target_audience TEXT,                         -- กลุ่มเป้าหมาย
+    -- KPI ที่โจทย์นี้ตอบ — เป็น string codes เช่น ["19","40","7.1ก-3"] ผูกกับ excellence-kpi
+    target_kpis TEXT[] DEFAULT '{}',
+    -- Plan ที่ผูก — 1, 2, 3 (ตาม PDF) ใช้ map ผ่าน foundation.ts
+    plan_number INT CHECK (plan_number IN (1, 2, 3)),
+    -- Skill tags ที่ต้องการ — slug จาก researcher-tags
+    required_skills TEXT[] DEFAULT '{}',
+    -- งบประมาณกรอบ
+    budget_min DECIMAL(12,2),
+    budget_max DECIMAL(12,2),
+    fiscal_year INT DEFAULT 2569,
+    -- Mode
+    mode TEXT DEFAULT 'open'
+      CHECK (mode IN ('open', 'assigned', 'mentorship')),
+    -- assigned researcher (ถ้า mode = assigned/mentorship)
+    assigned_researcher_id UUID REFERENCES researchers(id) ON DELETE SET NULL,
+    -- mentor_researcher_id (สำหรับ mentorship)
+    mentor_researcher_id UUID REFERENCES researchers(id) ON DELETE SET NULL,
+    -- Status
+    status TEXT DEFAULT 'open'
+      CHECK (status IN ('draft', 'open', 'matched', 'in_progress', 'closed', 'cancelled')),
+    deadline DATE,
+    -- meta
+    created_by TEXT,                              -- name ของคนสร้าง (admin หรือ team)
+    created_by_token TEXT,                        -- team_member token (audit)
+    notes TEXT,
+    -- AI generated ng9 draft (เมื่อ Phase 3)
+    ai_ngor9_draft JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ตัวเชื่อม brief ↔ researchers ที่แสดงความสนใจ (mode = open)
+CREATE TABLE IF NOT EXISTS brief_interests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    brief_id UUID REFERENCES research_briefs(id) ON DELETE CASCADE,
+    researcher_id UUID REFERENCES researchers(id) ON DELETE CASCADE,
+    note TEXT,                                    -- ผู้สนใจเขียน proposal สั้น
+    status TEXT DEFAULT 'submitted'
+      CHECK (status IN ('submitted', 'shortlisted', 'rejected', 'accepted')),
+    submitted_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(brief_id, researcher_id)
+);
+
+
+-- ==========================================
 -- 14. RESEARCHERS — นักวิจัย/นักบริการวิชาการ (สำหรับ AI matching engine Phase 1)
 -- ==========================================
 -- เก็บข้อมูลนักวิจัย + ความเชี่ยวชาญ → ใช้ matching กับ research_briefs ผ่าน AI
@@ -314,6 +369,11 @@ CREATE INDEX IF NOT EXISTS idx_team_members_active        ON team_members(is_act
 CREATE INDEX IF NOT EXISTS idx_researchers_active         ON researchers(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_researchers_expertise      ON researchers USING GIN (expertise_tags);
 CREATE INDEX IF NOT EXISTS idx_researchers_areas          ON researchers USING GIN (areas);
+CREATE INDEX IF NOT EXISTS idx_briefs_status              ON research_briefs(status);
+CREATE INDEX IF NOT EXISTS idx_briefs_skills              ON research_briefs USING GIN (required_skills);
+CREATE INDEX IF NOT EXISTS idx_briefs_kpis                ON research_briefs USING GIN (target_kpis);
+CREATE INDEX IF NOT EXISTS idx_brief_interests_brief      ON brief_interests(brief_id);
+CREATE INDEX IF NOT EXISTS idx_brief_interests_researcher ON brief_interests(researcher_id);
 -- GIN index สำหรับค้นหา sdg_tags แบบ array-contains
 CREATE INDEX IF NOT EXISTS idx_projects_sdg_tags          ON projects USING GIN (sdg_tags);
 CREATE INDEX IF NOT EXISTS idx_reports_sdg_tags           ON activity_reports USING GIN (sdg_tags);
@@ -338,6 +398,8 @@ ALTER TABLE participants        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kpi_evidence        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_members        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE researchers         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE research_briefs     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brief_interests     ENABLE ROW LEVEL SECURITY;
 
 -- Public read
 DO $$ BEGIN
@@ -414,6 +476,18 @@ DO $$ BEGIN CREATE POLICY "anon select researchers"      ON researchers      FOR
 DO $$ BEGIN CREATE POLICY "anon insert researchers"      ON researchers      FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon update researchers"      ON researchers      FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon delete researchers"      ON researchers      FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ===========================================================================
+-- RESEARCH_BRIEFS + BRIEF_INTERESTS policies — public read · admin/team-gate ฝั่ง API
+-- ===========================================================================
+DO $$ BEGIN CREATE POLICY "anon select research_briefs"  ON research_briefs  FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert research_briefs"  ON research_briefs  FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update research_briefs"  ON research_briefs  FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete research_briefs"  ON research_briefs  FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon select brief_interests"  ON brief_interests  FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert brief_interests"  ON brief_interests  FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update brief_interests"  ON brief_interests  FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete brief_interests"  ON brief_interests  FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
 -- =============================================================================
