@@ -146,13 +146,26 @@ export default function BriefDetailPage() {
       setAiError("ต้องตั้งค่า OpenRouter API key ที่ /admin ก่อน");
       return;
     }
+    // Reload model จาก localStorage ตอน click
+    let useModel = model;
+    try {
+      const raw = localStorage.getItem(OR_STORAGE);
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (cfg.model) {
+          useModel = cfg.model;
+          setModel(cfg.model);
+        }
+      }
+    } catch { /* ignore */ }
+
     setAiRerankBusy(true);
     setAiError("");
     try {
       const res = await fetch(`/api/admin/briefs/${id}/ai-rerank`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: apiKey, model }),
+        body: JSON.stringify({ api_key: apiKey, model: useModel }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI rerank ล้มเหลว");
@@ -171,6 +184,19 @@ export default function BriefDetailPage() {
       setAiError("ต้องตั้งค่า OpenRouter API key ที่ /admin ก่อน");
       return;
     }
+    // Reload model จาก localStorage ตอน click — กัน user เพิ่งเปลี่ยน model
+    let useModel = model;
+    try {
+      const raw = localStorage.getItem(OR_STORAGE);
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (cfg.model) {
+          useModel = cfg.model;
+          setModel(cfg.model);
+        }
+      }
+    } catch { /* ignore */ }
+
     setAiNgor9Busy(true);
     setAiError("");
     setDraft(null);
@@ -181,7 +207,7 @@ export default function BriefDetailPage() {
         body: JSON.stringify({
           researcher_id: researcherId,
           api_key: apiKey,
-          model: model.includes("haiku") ? "anthropic/claude-sonnet-4.5" : model,
+          model: useModel,
           save_draft: true,
         }),
       });
@@ -311,7 +337,14 @@ export default function BriefDetailPage() {
       {canManage && brief.status !== "closed" && brief.status !== "cancelled" && (
         <div className="rounded-lg bg-white ring-1 ring-slate-200 p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h3 className="text-base font-bold text-slate-800">🔍 Match นักวิจัย</h3>
+            <div>
+              <h3 className="text-base font-bold text-slate-800">🔍 Match นักวิจัย</h3>
+              {apiKey && (
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  🤖 AI Model: <code className="font-mono bg-slate-100 px-1 rounded">{model}</code>
+                </p>
+              )}
+            </div>
             <div className="flex gap-1.5 flex-wrap">
               <button
                 onClick={loadMatches}

@@ -99,6 +99,21 @@ export default function AdminBriefsPage() {
   }, []);
 
   // ===== AI Generate Brief =====
+  function openAiGen() {
+    // Reload settings จาก localStorage ตอนเปิด modal — กัน user เพิ่งเปลี่ยน model
+    try {
+      const raw = localStorage.getItem(OR_STORAGE);
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (cfg.api_key) setApiKey(cfg.api_key);
+        if (cfg.model) setModel(cfg.model);
+      }
+    } catch { /* ignore */ }
+    setShowAiGen(true);
+    setAiGenError("");
+    setAiGenResult(null);
+  }
+
   async function runAiGenerate() {
     if (!apiKey) {
       setAiGenError("ต้องตั้งค่า OpenRouter API key ที่ /admin ก่อน");
@@ -308,7 +323,7 @@ export default function AdminBriefsPage() {
             👀 ดูหน้าสาธารณะ
           </Link>
           <button
-            onClick={() => { setShowAiGen(true); setAiGenError(""); setAiGenResult(null); }}
+            onClick={openAiGen}
             className="rounded bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700"
             title={apiKey ? "ให้ AI gen brief จาก KPI ของแผน + งบ" : "ต้องตั้งค่า API key ที่ /admin ก่อน"}
           >
@@ -344,6 +359,21 @@ export default function AdminBriefsPage() {
             <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm">
               {!aiGenResult ? (
                 <>
+                  {/* Model display + override */}
+                  <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3 flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-700">🤖 AI Model:</span>
+                    <input
+                      type="text"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      placeholder="anthropic/claude-sonnet-4.5"
+                      className="flex-1 rounded border px-2 py-1 text-xs font-mono"
+                    />
+                    <span className="text-[10px] text-slate-500 whitespace-nowrap">
+                      {apiKey ? `🔑 ${apiKey.slice(0, 12)}...` : "⚠ ไม่มี key"}
+                    </span>
+                  </div>
+
                   {/* Form */}
                   <div className="space-y-3">
                     <div>
