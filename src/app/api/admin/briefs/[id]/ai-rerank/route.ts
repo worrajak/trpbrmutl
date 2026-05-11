@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const [briefRes, researchersRes] = await Promise.all([
     supabase.from("research_briefs").select("*").eq("id", id).maybeSingle(),
     supabase
-      .from("researchers")
+      .from("rpf_researchers")
       .select("id, name, title, faculty, level, expertise_tags, areas, current_load, bio")
       .eq("is_active", true),
   ]);

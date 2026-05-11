@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/alerts", label: "🔔 แจ้งเตือน" },
   { href: "/map", label: "แผนที่" },
   { href: "/staff", label: "บุคลากร" },
+  { href: "/research-areas", label: "📚 สาขาที่ต้องการ" },
   { href: "/researchers", label: "🔬 นักวิจัย" },
   { href: "/briefs", label: "📢 โจทย์วิจัย" },
   { href: "/regulations", label: "ระเบียบ" },

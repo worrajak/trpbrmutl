@@ -54,7 +54,7 @@ interface DryRunResult {
   diff: DiffEntry[];
 }
 
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "researchers" | "briefs" | "seed" | "repair" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "researchers" | "areas" | "briefs" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -275,12 +275,20 @@ export default function AdminPage() {
       activeColor: "border-emerald-400",
     },
     {
-      key: "researchers" as OpenSection,
-      icon: "🔬",
-      title: "ฐานนักวิจัย/นักบริการวิชาการ (Phase 1)",
-      desc: "expertise 20 tags + custom · ใช้สำหรับ AI matching engine กับโจทย์วิจัย",
+      key: "areas" as OpenSection,
+      icon: "📚",
+      title: "สาขางานวิจัยที่ต้องการ (Catalog)",
+      desc: "curate สาขางานวิจัย/บริการวิชาการที่กลุ่มต้องการ · 4 categories · 3 demand levels",
       color: "border-cyan-300 bg-cyan-50",
       activeColor: "border-cyan-400",
+    },
+    {
+      key: "researchers" as OpenSection,
+      icon: "🔬",
+      title: "ฐานนักวิจัย (rpf_researchers)",
+      desc: "expertise 20 tags + custom · ใช้สำหรับ AI matching engine กับโจทย์วิจัย",
+      color: "border-teal-300 bg-teal-50",
+      activeColor: "border-teal-400",
     },
     {
       key: "briefs" as OpenSection,
@@ -352,6 +360,7 @@ export default function AdminPage() {
               {card.key === "ngor9" && <Ngor9Panel />}
               {card.key === "manage" && <ManageProjectsPanel />}
               {card.key === "team" && <TeamMembersPanel />}
+              {card.key === "areas" && <AreasPanel />}
               {card.key === "researchers" && <ResearchersPanel />}
               {card.key === "briefs" && <BriefsPanel />}
               {card.key === "tokens" && <TokensPanel />}
@@ -964,6 +973,28 @@ function BriefsPanel() {
       <a href="/admin/briefs"
         className="flex items-center justify-center gap-2 w-full rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
         📢 เปิดหน้าจัดการโจทย์ →
+      </a>
+    </div>
+  );
+}
+
+// ─── Research Areas Panel ────────────────────────────────────────────────────
+
+function AreasPanel() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600">
+        จัดการ <strong>catalog ของสาขางานวิจัย/บริการวิชาการที่ต้องการ</strong> · admin curate
+        ขึ้นมาเป็น list มาตรฐาน — researcher อ้างอิงเลือก · brief ใช้ auto-fill skills/KPIs
+      </p>
+      <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-xs text-cyan-800 space-y-1">
+        <p>📌 <strong>4 categories:</strong> 🔬 สาขาวิจัย · 🤝 บริการวิชาการ · 💡 ความถนัด · 🎯 อื่นๆ</p>
+        <p>📌 <strong>3 demand levels:</strong> 🔥 ต้องการสูง · 📈 ปานกลาง · 🟢 เพิ่มเติม</p>
+        <p>📌 แต่ละ area ผูกกับ skill tags + KPIs + plans (1/2/3) — มี seed sample 14 รายการ</p>
+      </div>
+      <a href="/admin/research-areas"
+        className="flex items-center justify-center gap-2 w-full rounded-lg bg-cyan-600 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700">
+        📚 เปิดหน้าจัดการสาขางานวิจัย →
       </a>
     </div>
   );

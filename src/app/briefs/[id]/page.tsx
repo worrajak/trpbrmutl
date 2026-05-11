@@ -345,7 +345,7 @@ export default function BriefDetailPage() {
           ) : (
             <div className="space-y-2">
               {matches.map((m, i) => {
-                const lvl = LEVEL_META[m.researcher.level];
+                const lvl = LEVEL_META[m.researcher.level] || LEVEL_META.mid;
                 const aiInfo = aiRanking?.find((a) => a.researcher_id === m.researcher.id);
                 return (
                   <div key={m.researcher.id} className={`rounded-lg ring-1 p-3 hover:bg-slate-50 transition ${
@@ -532,7 +532,7 @@ export default function BriefDetailPage() {
           <div className="space-y-2">
             {interests.map((it) => {
               if (!it.researcher) return null;
-              const lvl = LEVEL_META[it.researcher.level];
+              const lvl = LEVEL_META[it.researcher.level] || LEVEL_META.mid;
               return (
                 <div key={it.id} className="rounded-lg ring-1 ring-slate-200 p-3">
                   <div className="flex items-start justify-between gap-3">

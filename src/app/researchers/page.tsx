@@ -33,11 +33,16 @@ async function fetchResearchers(): Promise<DbResearcher[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data } = await supabase
-    .from("researchers")
+    .from("rpf_researchers")
     .select("id, name, title, faculty, email, expertise_tags, areas, level, bio, current_load")
     .eq("is_active", true)
     .order("name");
-  return (data as DbResearcher[]) || [];
+  // Normalize array fields — Supabase อาจคืน null
+  return ((data as DbResearcher[]) || []).map((r) => ({
+    ...r,
+    expertise_tags: r.expertise_tags || [],
+    areas: r.areas || [],
+  }));
 }
 
 export default async function ResearchersPage() {
@@ -121,7 +126,7 @@ export default async function ResearchersPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((r) => {
-            const lvl = LEVEL_META[r.level];
+            const lvl = LEVEL_META[r.level] || LEVEL_META.mid;
             return (
               <div key={r.id} className="rounded-xl bg-white ring-1 ring-slate-200 p-4 hover:shadow-md transition">
                 <div className="flex items-center gap-1.5 flex-wrap">

@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
       .eq("id", id)
       .maybeSingle(),
     supabase
-      .from("researchers")
+      .from("rpf_researchers")
       .select("id, name, title, faculty, level, expertise_tags, areas, current_load, email")
       .eq("is_active", true),
   ]);

@@ -88,7 +88,14 @@ export default function AdminResearchersPage() {
     try {
       const res = await fetch("/api/admin/researchers", { cache: "no-store" });
       const data = await res.json();
-      setList(data.researchers || []);
+      // Normalize array fields — Supabase อาจคืน null สำหรับ array column
+      const normalized: Researcher[] = (data.researchers || []).map((r: Researcher) => ({
+        ...r,
+        expertise_tags: r.expertise_tags || [],
+        areas: r.areas || [],
+        past_projects: r.past_projects || [],
+      }));
+      setList(normalized);
     } finally {
       setLoading(false);
     }
@@ -397,7 +404,7 @@ export default function AdminResearchersPage() {
 // ====================== Sub Components ======================
 
 function ResearcherCard({ r, onEdit, onDelete }: { r: Researcher; onEdit: () => void; onDelete: () => void }) {
-  const lvl = LEVEL_META[r.level];
+  const lvl = LEVEL_META[r.level] || LEVEL_META.mid;
   return (
     <div className={`rounded-xl bg-white ring-1 ring-slate-200 p-4 ${!r.is_active ? "opacity-50" : ""}`}>
       <div className="flex items-start justify-between gap-2">

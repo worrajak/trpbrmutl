@@ -43,26 +43,29 @@ export interface MatchScore {
   reasons: string[];
 }
 
-/** Jaccard similarity (intersection / union) */
-function jaccard(a: string[], b: string[]): { score: number; matched: string[] } {
-  if (a.length === 0 || b.length === 0) return { score: 0, matched: [] };
-  const setA = new Set(a);
-  const setB = new Set(b);
+/** Jaccard similarity (intersection / union) — tolerant null arrays */
+function jaccard(a: string[] | null | undefined, b: string[] | null | undefined): { score: number; matched: string[] } {
+  const arrA = a || [];
+  const arrB = b || [];
+  if (arrA.length === 0 || arrB.length === 0) return { score: 0, matched: [] };
+  const setA = new Set(arrA);
+  const setB = new Set(arrB);
   const matched: string[] = [];
   setA.forEach((x) => {
     if (setB.has(x)) matched.push(x);
   });
-  const unionSize = new Set([...a, ...b]).size;
+  const unionSize = new Set([...arrA, ...arrB]).size;
   return { score: matched.length / unionSize, matched };
 }
 
 /** บางที location มี substring คล้ายกับ area */
-function locationOverlap(briefLocation: string | null | undefined, researcherAreas: string[]): { score: number; matched: string[] } {
+function locationOverlap(briefLocation: string | null | undefined, researcherAreas: string[] | null | undefined): { score: number; matched: string[] } {
   if (!briefLocation) return { score: 0.5, matched: [] }; // neutral
-  if (researcherAreas.length === 0) return { score: 0, matched: [] };
+  const areas = researcherAreas || [];
+  if (areas.length === 0) return { score: 0, matched: [] };
   const loc = briefLocation.toLowerCase();
   const matched: string[] = [];
-  for (const a of researcherAreas) {
+  for (const a of areas) {
     const al = a.toLowerCase();
     if (al.includes(loc) || loc.includes(al)) matched.push(a);
   }

@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest) {
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
 
   const { data, error } = await supabase
-    .from("researchers")
+    .from("rpf_researchers")
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (body.seed_samples === true) {
     // ตรวจว่ามีของเดิมไหม — ป้องกันซ้ำ
     const { count } = await supabase
-      .from("researchers")
+      .from("rpf_researchers")
       .select("*", { count: "exact", head: true });
     if ((count || 0) > 0) {
       return NextResponse.json(
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
       bio: s.bio || null,
       is_active: true,
     }));
-    const { data, error } = await supabase.from("researchers").insert(rows).select();
+    const { data, error } = await supabase.from("rpf_researchers").insert(rows).select();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, seeded: data?.length || 0, researchers: data });
   }
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     is_active: true,
   };
 
-  const { data, error } = await supabase.from("researchers").insert(row).select().single();
+  const { data, error } = await supabase.from("rpf_researchers").insert(row).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true, researcher: data });

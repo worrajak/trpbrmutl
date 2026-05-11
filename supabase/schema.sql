@@ -284,10 +284,12 @@ CREATE TABLE IF NOT EXISTS research_briefs (
     -- Mode
     mode TEXT DEFAULT 'open'
       CHECK (mode IN ('open', 'assigned', 'mentorship')),
-    -- assigned researcher (ถ้า mode = assigned/mentorship)
-    assigned_researcher_id UUID REFERENCES researchers(id) ON DELETE SET NULL,
-    -- mentor_researcher_id (สำหรับ mentorship)
-    mentor_researcher_id UUID REFERENCES researchers(id) ON DELETE SET NULL,
+    -- assigned researcher (ถ้า mode = assigned/mentorship) — ชี้ที่ rpf_researchers
+    assigned_researcher_id UUID,
+    -- mentor_researcher_id (สำหรับ mentorship) — ชี้ที่ rpf_researchers
+    mentor_researcher_id UUID,
+    -- Link ไปยัง catalog ของสาขาวิจัยที่ต้องการ (metadata)
+    research_area_id UUID,
     -- Status
     status TEXT DEFAULT 'open'
       CHECK (status IN ('draft', 'open', 'matched', 'in_progress', 'closed', 'cancelled')),
@@ -302,11 +304,11 @@ CREATE TABLE IF NOT EXISTS research_briefs (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ตัวเชื่อม brief ↔ researchers ที่แสดงความสนใจ (mode = open)
+-- ตัวเชื่อม brief ↔ rpf_researchers ที่แสดงความสนใจ (mode = open)
 CREATE TABLE IF NOT EXISTS brief_interests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     brief_id UUID REFERENCES research_briefs(id) ON DELETE CASCADE,
-    researcher_id UUID REFERENCES researchers(id) ON DELETE CASCADE,
+    researcher_id UUID,                            -- ชี้ที่ rpf_researchers
     note TEXT,                                    -- ผู้สนใจเขียน proposal สั้น
     status TEXT DEFAULT 'submitted'
       CHECK (status IN ('submitted', 'shortlisted', 'rejected', 'accepted')),
@@ -316,11 +318,11 @@ CREATE TABLE IF NOT EXISTS brief_interests (
 
 
 -- ==========================================
--- 14. RESEARCHERS — นักวิจัย/นักบริการวิชาการ (สำหรับ AI matching engine Phase 1)
+-- 14. RPF_RESEARCHERS — นักวิจัย/นักบริการวิชาการ ของกลุ่มแผนงานใต้ร่มฯ
 -- ==========================================
--- เก็บข้อมูลนักวิจัย + ความเชี่ยวชาญ → ใช้ matching กับ research_briefs ผ่าน AI
+-- หมายเหตุ: ใช้ prefix rpf_ เพื่อไม่ทับ table 'researchers' ของระบบอื่นใน Supabase
 -- expertise_tags ใช้ slug จาก src/lib/researcher-tags.ts (preset 20 + custom)
-CREATE TABLE IF NOT EXISTS researchers (
+CREATE TABLE IF NOT EXISTS rpf_researchers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     title TEXT,                                   -- ผศ.ดร. / นาย / ผู้ช่วยศาสตราจารย์
@@ -337,8 +339,35 @@ CREATE TABLE IF NOT EXISTS researchers (
     external_link TEXT,                           -- โปรไฟล์มหาวิทยาลัย / ORCID
     current_load INT DEFAULT 0,                   -- จำนวนโครงการที่กำลังทำ
     is_active BOOLEAN DEFAULT TRUE,
-    -- ผูกกับ team_members ถ้ามีสิทธิ login (Mode B/C: researcher login เห็น matching briefs)
+    -- ผูกกับ team_members ถ้ามีสิทธิ login
     linked_team_member_id UUID REFERENCES team_members(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
+-- 15B. RPF_RESEARCH_AREAS — Catalog "สาขางานวิจัยที่ต้องการ" (admin curate)
+-- ==========================================
+-- กลุ่มแผนงานใต้ร่มฯ ใช้ประกาศชัดเจนว่าอยากได้สาขาไหน
+-- 4 categories:
+--   research          — สาขาวิจัยหลัก
+--   academic_service  — งานบริการวิชาการ
+--   expertise         — ความถนัดเฉพาะทาง
+--   other             — อื่นๆ
+CREATE TABLE IF NOT EXISTS rpf_research_areas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,                           -- "เกษตรแม่นยำสำหรับพืชผลที่สูง"
+    icon TEXT,                                    -- emoji 1 ตัว
+    category TEXT NOT NULL DEFAULT 'research'
+      CHECK (category IN ('research', 'academic_service', 'expertise', 'other')),
+    description TEXT,                             -- รายละเอียด 1-2 บรรทัด
+    related_skills TEXT[] DEFAULT '{}',           -- skill slug จาก researcher-tags
+    related_kpis TEXT[] DEFAULT '{}',             -- KPI codes จาก excellence-kpi
+    related_plans INT[] DEFAULT '{}',             -- แผน 1/2/3
+    demand_level TEXT DEFAULT 'medium'
+      CHECK (demand_level IN ('high', 'medium', 'low')),
+    notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -366,9 +395,13 @@ CREATE INDEX IF NOT EXISTS idx_participants_name          ON participants(full_n
 CREATE INDEX IF NOT EXISTS idx_kpi_evidence_kpi           ON kpi_evidence(kpi_target_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_token         ON team_members(token);
 CREATE INDEX IF NOT EXISTS idx_team_members_active        ON team_members(is_active) WHERE is_active = TRUE;
-CREATE INDEX IF NOT EXISTS idx_researchers_active         ON researchers(is_active) WHERE is_active = TRUE;
-CREATE INDEX IF NOT EXISTS idx_researchers_expertise      ON researchers USING GIN (expertise_tags);
-CREATE INDEX IF NOT EXISTS idx_researchers_areas          ON researchers USING GIN (areas);
+CREATE INDEX IF NOT EXISTS idx_rpf_researchers_active     ON rpf_researchers(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_rpf_researchers_expertise  ON rpf_researchers USING GIN (expertise_tags);
+CREATE INDEX IF NOT EXISTS idx_rpf_researchers_areas      ON rpf_researchers USING GIN (areas);
+CREATE INDEX IF NOT EXISTS idx_rpf_areas_active           ON rpf_research_areas(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_rpf_areas_category         ON rpf_research_areas(category);
+CREATE INDEX IF NOT EXISTS idx_rpf_areas_demand           ON rpf_research_areas(demand_level);
+CREATE INDEX IF NOT EXISTS idx_rpf_areas_skills           ON rpf_research_areas USING GIN (related_skills);
 CREATE INDEX IF NOT EXISTS idx_briefs_status              ON research_briefs(status);
 CREATE INDEX IF NOT EXISTS idx_briefs_skills              ON research_briefs USING GIN (required_skills);
 CREATE INDEX IF NOT EXISTS idx_briefs_kpis                ON research_briefs USING GIN (target_kpis);
@@ -397,7 +430,8 @@ ALTER TABLE reward_balance      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE participants        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kpi_evidence        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_members        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE researchers         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rpf_researchers     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rpf_research_areas  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE research_briefs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brief_interests     ENABLE ROW LEVEL SECURITY;
 
@@ -470,12 +504,16 @@ DO $$ BEGIN CREATE POLICY "anon update team_members"     ON team_members     FOR
 DO $$ BEGIN CREATE POLICY "anon delete team_members"     ON team_members     FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ===========================================================================
--- RESEARCHERS policies — public read · admin gate ฝั่ง API
+-- RPF_RESEARCHERS + RPF_RESEARCH_AREAS policies — public read · admin gate ฝั่ง API
 -- ===========================================================================
-DO $$ BEGIN CREATE POLICY "anon select researchers"      ON researchers      FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "anon insert researchers"      ON researchers      FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "anon update researchers"      ON researchers      FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "anon delete researchers"      ON researchers      FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon select rpf_researchers"  ON rpf_researchers  FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert rpf_researchers"  ON rpf_researchers  FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update rpf_researchers"  ON rpf_researchers  FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete rpf_researchers"  ON rpf_researchers  FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon select rpf_areas"        ON rpf_research_areas FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert rpf_areas"        ON rpf_research_areas FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update rpf_areas"        ON rpf_research_areas FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete rpf_areas"        ON rpf_research_areas FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ===========================================================================
 -- RESEARCH_BRIEFS + BRIEF_INTERESTS policies — public read · admin/team-gate ฝั่ง API
