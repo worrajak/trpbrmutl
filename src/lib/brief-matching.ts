@@ -19,6 +19,9 @@ export interface ResearcherForMatch {
   expertise_tags: string[];
   areas: string[];
   current_load?: number;
+  title?: string | null;
+  faculty?: string | null;
+  bio?: string | null;
 }
 
 export interface BriefForMatch {
