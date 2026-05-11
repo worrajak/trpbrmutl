@@ -65,15 +65,25 @@ export default async function ResearchersPage() {
     <div className="space-y-4">
       {/* Hero */}
       <section className="rounded-2xl bg-emerald-700 p-5 sm:p-6 text-white shadow-lg shadow-emerald-500/20">
-        <p className="text-xs sm:text-sm font-medium uppercase tracking-wider text-emerald-100">
-          🔬 Researchers Catalog
-        </p>
-        <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold drop-shadow text-white">
-          นักวิจัย/นักบริการวิชาการ
-        </h1>
-        <p className="mt-2 text-sm sm:text-base text-emerald-50 max-w-3xl">
-          {list.length} คน · ฐานข้อมูลสำหรับ AI matching engine กับโจทย์วิจัยของกลุ่มแผนงานใต้ร่มพระบารมี
-        </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs sm:text-sm font-medium uppercase tracking-wider text-emerald-100">
+              🔬 Researchers Catalog
+            </p>
+            <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold drop-shadow text-white">
+              นักวิจัย/นักบริการวิชาการ
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-emerald-50 max-w-3xl">
+              {list.length} คน · ฐานข้อมูลสำหรับ AI matching engine กับโจทย์วิจัยของกลุ่มแผนงานใต้ร่มพระบารมี
+            </p>
+          </div>
+          <a
+            href="/researchers/register"
+            className="rounded-xl bg-white text-emerald-700 px-4 py-2 text-sm font-bold shadow-md hover:bg-emerald-50 hover:scale-105 transition whitespace-nowrap"
+          >
+            + ลงทะเบียนนักวิจัย
+          </a>
+        </div>
 
         {/* Stats */}
         <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">

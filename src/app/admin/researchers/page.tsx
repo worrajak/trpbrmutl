@@ -39,6 +39,7 @@ export default function AdminResearchersPage() {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<"all" | TagCategory>("all");
   const [filterLevel, setFilterLevel] = useState<"all" | "junior" | "mid" | "senior">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "pending">("all");
 
   // Create form state
   const [showCreate, setShowCreate] = useState(false);
@@ -208,6 +209,19 @@ export default function AdminResearchersPage() {
     else alert("ลบไม่สำเร็จ");
   }
 
+  async function handleApprove(r: Researcher) {
+    const res = await fetch(`/api/admin/researchers/${r.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: true }),
+    });
+    if (res.ok) {
+      setList((prev) => prev.map((x) => x.id === r.id ? { ...x, is_active: true } : x));
+    } else {
+      alert("Approve ไม่สำเร็จ");
+    }
+  }
+
   function toggleTag(slug: string, target: Partial<Researcher>) {
     const current = target.expertise_tags || [];
     const next = current.includes(slug)
@@ -232,6 +246,8 @@ export default function AdminResearchersPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return list.filter((r) => {
+      if (filterStatus === "active" && !r.is_active) return false;
+      if (filterStatus === "pending" && r.is_active) return false;
       if (filterLevel !== "all" && r.level !== filterLevel) return false;
       if (filterCategory !== "all") {
         const hasCategoryTag = r.expertise_tags.some((slug) => {
@@ -348,6 +364,15 @@ export default function AdminResearchersPage() {
           <option value="mid">🌿 Mid</option>
           <option value="junior">🌱 Junior</option>
         </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as "all" | "active" | "pending")}
+          className="rounded border px-2 py-1.5 text-sm"
+        >
+          <option value="all">Status: ทั้งหมด</option>
+          <option value="active">✅ Active</option>
+          <option value="pending">⏳ Pending (รอ approve)</option>
+        </select>
       </div>
 
       {/* Create form */}
@@ -384,7 +409,7 @@ export default function AdminResearchersPage() {
           </p>
         ) : (
           filtered.map((r) => (
-            <ResearcherCard key={r.id} r={r} onEdit={() => setEditing(r)} onDelete={() => handleDelete(r)} />
+            <ResearcherCard key={r.id} r={r} onEdit={() => setEditing(r)} onDelete={() => handleDelete(r)} onApprove={() => handleApprove(r)} />
           ))
         )}
       </div>
@@ -450,13 +475,21 @@ export default function AdminResearchersPage() {
 
 // ====================== Sub Components ======================
 
-function ResearcherCard({ r, onEdit, onDelete }: { r: Researcher; onEdit: () => void; onDelete: () => void }) {
+function ResearcherCard({ r, onEdit, onDelete, onApprove }: { r: Researcher; onEdit: () => void; onDelete: () => void; onApprove?: () => void }) {
   const lvl = LEVEL_META[r.level] || LEVEL_META.mid;
+  const isPending = !r.is_active;
   return (
-    <div className={`rounded-xl bg-white ring-1 ring-slate-200 p-4 ${!r.is_active ? "opacity-50" : ""}`}>
+    <div className={`rounded-xl bg-white ring-1 p-4 ${
+      isPending ? "ring-amber-300 bg-amber-50/30" : "ring-slate-200"
+    }`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
+            {isPending && (
+              <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900 ring-1 ring-amber-400">
+                ⏳ PENDING
+              </span>
+            )}
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${lvl.color}`}>
               {lvl.emoji} {lvl.label}
             </span>
@@ -503,6 +536,14 @@ function ResearcherCard({ r, onEdit, onDelete }: { r: Researcher; onEdit: () => 
 
       {/* Actions */}
       <div className="mt-3 flex gap-1.5 pt-2 border-t border-slate-100">
+        {isPending && onApprove && (
+          <button
+            onClick={onApprove}
+            className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+          >
+            ✓ Approve
+          </button>
+        )}
         <button onClick={onEdit} className="flex-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100">
           ✏️ แก้ไข
         </button>
