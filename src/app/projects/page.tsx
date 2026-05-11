@@ -221,7 +221,7 @@ export default function ProjectsPage() {
                             📝
                           </div>
                         )}
-                        <span className="text-[10px] text-gray-500">
+                        <span className="text-[0.65rem] text-gray-500">
                           {formatRelativeTime(p.last_report.submitted_at)}
                         </span>
                       </a>
@@ -230,7 +230,7 @@ export default function ProjectsPage() {
                         <div className="flex h-12 w-12 items-center justify-center rounded bg-gray-50 ring-1 ring-gray-100">
                           <span className="text-lg">—</span>
                         </div>
-                        <span className="text-[10px]">ยังไม่รายงาน</span>
+                        <span className="text-[0.65rem]">ยังไม่รายงาน</span>
                       </span>
                     )}
                   </td>
@@ -244,7 +244,7 @@ export default function ProjectsPage() {
                         : p.project_name}
                     </a>
                     <p className="mt-0.5">
-                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${pc}`}>
+                      <span className={`inline-block rounded px-1.5 py-0.5 text-[0.65rem] font-medium ${pc}`}>
                         {p.main_program}
                       </span>
                     </p>
@@ -290,7 +290,7 @@ export default function ProjectsPage() {
                       {formatBudget(p.budget_used)} บาท
                     </p>
                   </td>
-                  <td className="px-3 py-2 font-mono text-[10px] text-gray-400">
+                  <td className="px-3 py-2 font-mono text-[0.65rem] text-gray-400">
                     {p.erp_code || "-"}
                   </td>
                 </tr>

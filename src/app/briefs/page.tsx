@@ -136,10 +136,10 @@ export default async function BriefsPage() {
         <div className="mt-3 grid grid-cols-3 gap-2 max-w-3xl">
           {planCoverage.map(({ plan, briefCount, kpisCovered }) => (
             <div key={plan.number} className="rounded-lg bg-white/10 backdrop-blur p-2.5 ring-1 ring-white/20">
-              <p className="text-[10px] text-violet-100/85 truncate">📚 แผน {plan.number}: {plan.shortTitle}</p>
+              <p className="text-[0.65rem] text-violet-100/85 truncate">📚 แผน {plan.number}: {plan.shortTitle}</p>
               <div className="mt-1 flex items-baseline justify-between gap-1">
                 <span className="text-lg font-bold text-white">{briefCount}</span>
-                <span className="text-[10px] text-violet-100">โจทย์ · {kpisCovered} KPIs</span>
+                <span className="text-[0.65rem] text-violet-100">โจทย์ · {kpisCovered} KPIs</span>
               </div>
             </div>
           ))}
@@ -170,7 +170,7 @@ export default async function BriefsPage() {
                 <span className="text-base flex-shrink-0">{kpi.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-wrap">
-                    <code className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-mono text-amber-800">
+                    <code className="rounded bg-amber-100 px-1.5 py-0.5 text-[0.65rem] font-mono text-amber-800">
                       {kpi.code}
                     </code>
                     <span className="text-[9px] rounded-full bg-slate-100 text-slate-600 px-1.5 py-0.5">
@@ -178,7 +178,7 @@ export default async function BriefsPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-slate-800 leading-snug">{kpi.name}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-[0.65rem] text-slate-500 mt-0.5">
                     เป้า {kpi.target_team || kpi.target_university} {kpi.unit} · {kpi.responsible}
                   </p>
                 </div>
@@ -212,19 +212,19 @@ export default async function BriefsPage() {
                 className="block rounded-xl bg-white ring-1 ring-slate-200 p-4 hover:shadow-md hover:ring-violet-300 transition"
               >
                 <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${stat?.color || "bg-slate-50 text-slate-700 ring-slate-200"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${stat?.color || "bg-slate-50 text-slate-700 ring-slate-200"}`}>
                     {stat?.emoji} {stat?.label}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${mod?.color}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${mod?.color}`}>
                     {mod?.emoji} {mod?.label}
                   </span>
                   {plan && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-800 ring-1 ring-amber-200">
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] text-amber-800 ring-1 ring-amber-200">
                       📚 แผน {plan.number}
                     </span>
                   )}
                   {b.deadline && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 ring-1 ring-amber-200">
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] text-amber-700 ring-1 ring-amber-200">
                       ⏰ ปิดรับ {new Date(b.deadline).toLocaleDateString("th-TH")}
                     </span>
                   )}
@@ -237,14 +237,14 @@ export default async function BriefsPage() {
                 {/* Target KPIs (ใหม่!) — แสดงตัวชี้วัดที่โจทย์นี้ตอบ */}
                 {briefKpis.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-[10px] font-bold text-blue-700 uppercase mb-1">
+                    <p className="text-[0.65rem] font-bold text-blue-700 uppercase mb-1">
                       🎯 ตอบตัวชี้วัด ({briefKpis.length} ตัว):
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {briefKpis.map((k) => (
                         <span
                           key={k!.code}
-                          className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] ring-1 ring-blue-200"
+                          className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[0.65rem] ring-1 ring-blue-200"
                           title={`${k!.name} · เป้า ${k!.target_team || k!.target_university} ${k!.unit}`}
                         >
                           <span>{k!.icon}</span>
@@ -259,19 +259,19 @@ export default async function BriefsPage() {
                 {/* Required skills */}
                 {b.required_skills.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">เชี่ยวชาญที่ต้องการ:</p>
+                    <p className="text-[0.65rem] font-bold text-slate-500 uppercase mb-1">เชี่ยวชาญที่ต้องการ:</p>
                     <div className="flex flex-wrap gap-1">
                       {b.required_skills.slice(0, 5).map((slug) => {
                         const t = renderTag(slug);
                         return (
-                          <span key={slug} className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                          <span key={slug} className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                             <span>{t.emoji}</span>
                             <span>{t.label}</span>
                           </span>
                         );
                       })}
                       {b.required_skills.length > 5 && (
-                        <span className="text-[10px] text-slate-400">+{b.required_skills.length - 5}</span>
+                        <span className="text-[0.65rem] text-slate-400">+{b.required_skills.length - 5}</span>
                       )}
                     </div>
                   </div>

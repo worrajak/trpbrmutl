@@ -129,14 +129,14 @@ export default function MyMatchedBriefsPage() {
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${stat?.color || ""}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${stat?.color || ""}`}>
                         {stat?.emoji} {stat?.label}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${mod?.color}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${mod?.color}`}>
                         {mod?.emoji} {mod?.label}
                       </span>
                       {brief.deadline && (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 ring-1 ring-amber-200">
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] text-amber-700 ring-1 ring-amber-200">
                           ⏰ {new Date(brief.deadline).toLocaleDateString("th-TH")}
                         </span>
                       )}
@@ -151,7 +151,7 @@ export default function MyMatchedBriefsPage() {
                       <p className="text-slate-700 font-bold mb-1">
                         🎯 Match Score: <span className="text-cyan-700 text-base">{match.totalScore}</span>/100
                       </p>
-                      <div className="grid grid-cols-3 gap-1 text-[10px] text-slate-500">
+                      <div className="grid grid-cols-3 gap-1 text-[0.65rem] text-slate-500">
                         <span>🏷 ตรง: <strong>{match.skillScore}%</strong></span>
                         <span>📍 พื้นที่: <strong>{match.areaScore}%</strong></span>
                         <span>💼 ภาระงาน: <strong>{match.loadScore}%</strong></span>
@@ -161,14 +161,14 @@ export default function MyMatchedBriefsPage() {
                           {match.skillMatched.map((slug) => {
                             const t = renderTag(slug);
                             return (
-                              <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                              <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                                 <span>{t.emoji}</span>{t.label}
                               </span>
                             );
                           })}
                         </div>
                       )}
-                      <p className="mt-2 text-[10px] text-slate-600">{match.reasons.join(" · ")}</p>
+                      <p className="mt-2 text-[0.65rem] text-slate-600">{match.reasons.join(" · ")}</p>
                     </div>
 
                     <div className="mt-3 flex items-center justify-between flex-wrap gap-1 text-xs">

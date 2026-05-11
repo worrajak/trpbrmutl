@@ -267,7 +267,7 @@ export default function AdminPage() {
               >
                 {loginBusy ? "..." : "เข้าสู่ระบบ (คณะทำงาน)"}
               </button>
-              <p className="mt-3 text-[10px] text-slate-400 text-center">
+              <p className="mt-3 text-[0.65rem] text-slate-400 text-center">
                 ยังไม่มี Token? ติดต่อ super-admin เพื่อขอออก token
               </p>
             </form>
@@ -302,7 +302,7 @@ export default function AdminPage() {
               >
                 {loginBusy ? "..." : "🔬 เข้าสู่ Portal นักวิจัย"}
               </button>
-              <p className="mt-3 text-[10px] text-slate-400 text-center">
+              <p className="mt-3 text-[0.65rem] text-slate-400 text-center">
                 ยังไม่มี Token? <a href="/researchers/register" className="text-cyan-600 underline">ลงทะเบียนเป็นนักวิจัย</a> · admin จะ approve + ส่ง token
               </p>
             </form>
@@ -659,7 +659,7 @@ function SyncExcelPanel() {
               <p className="text-xs font-semibold text-orange-800 flex items-center gap-1">
                 🌐 OpenRouter — 1 key ใช้ได้ทุกโมเดล
               </p>
-              <p className="text-[10px] text-orange-600 mt-0.5">
+              <p className="text-[0.65rem] text-orange-600 mt-0.5">
                 Claude · GPT · Gemini · Llama · DeepSeek · Qwen ฯลฯ ผ่าน gateway เดียว
               </p>
             </div>
@@ -674,13 +674,13 @@ function SyncExcelPanel() {
             <p className="text-xs text-gray-500 mb-1">
               OpenRouter API Key
               <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer"
-                className="ml-2 text-[11px] text-orange-600 hover:underline">สมัคร →</a>
+                className="ml-2 text-[0.72rem] text-orange-600 hover:underline">สมัคร →</a>
             </p>
             <input type="password" className="w-full rounded border px-3 py-1.5 text-sm font-mono"
               placeholder="sk-or-v1-xxxxxxxxxxxx..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)} />
-            <p className="text-[10px] text-gray-400 mt-1">🔒 เก็บใน browser เท่านั้น (localStorage)</p>
+            <p className="text-[0.65rem] text-gray-400 mt-1">🔒 เก็บใน browser เท่านั้น (localStorage)</p>
           </div>
 
           {/* Model picker */}
@@ -688,7 +688,7 @@ function SyncExcelPanel() {
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs text-gray-500">Model</p>
               <button onClick={openOrModelsBrowser}
-                className="text-[11px] text-orange-600 hover:text-orange-800 font-medium">
+                className="text-[0.72rem] text-orange-600 hover:text-orange-800 font-medium">
                 🔄 ดู Models ทั้งหมดจาก OpenRouter (Live) →
               </button>
             </div>
@@ -696,11 +696,11 @@ function SyncExcelPanel() {
               placeholder="เช่น google/gemini-2.0-flash-exp:free"
               value={model}
               onChange={(e) => setModel(e.target.value)} />
-            <p className="text-[10px] text-gray-500 mt-1">⚡ Quick pick:</p>
+            <p className="text-[0.65rem] text-gray-500 mt-1">⚡ Quick pick:</p>
             <div className="flex flex-wrap gap-1 mt-1">
               {OPENROUTER_QUICK_MODELS.map((m) => (
                 <button key={m.id} onClick={() => setModel(m.id)}
-                  className={`text-[10px] px-2 py-1 rounded font-mono transition ${
+                  className={`text-[0.65rem] px-2 py-1 rounded font-mono transition ${
                     model === m.id
                       ? "bg-orange-600 text-white"
                       : m.id.includes(":free")
@@ -778,17 +778,17 @@ function SyncExcelPanel() {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="font-mono text-xs font-semibold">{m.id}</span>
-                              {m.is_free && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">FREE</span>}
-                              {m.has_vision && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-700">📷 Vision</span>}
-                              {!m.is_free && <span className="text-[10px] text-gray-500">{m.price}</span>}
+                              {m.is_free && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[0.65rem] text-emerald-700">FREE</span>}
+                              {m.has_vision && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[0.65rem] text-violet-700">📷 Vision</span>}
+                              {!m.is_free && <span className="text-[0.65rem] text-gray-500">{m.price}</span>}
                             </div>
-                            <p className="mt-0.5 text-[10px] text-gray-400">
+                            <p className="mt-0.5 text-[0.65rem] text-gray-400">
                               {m.provider}
                               {m.context_length > 0 && <> · {(m.context_length / 1000).toFixed(0)}k ctx</>}
                             </p>
                           </div>
                           <button onClick={() => { setModel(m.id); setShowOrModels(false); }}
-                            className="flex-shrink-0 rounded bg-orange-100 px-2 py-1 text-[10px] text-orange-700 hover:bg-orange-200">
+                            className="flex-shrink-0 rounded bg-orange-100 px-2 py-1 text-[0.65rem] text-orange-700 hover:bg-orange-200">
                             {active ? "✓ ใช้อยู่" : "ใช้ตัวนี้"}
                           </button>
                         </div>
@@ -827,7 +827,7 @@ function SyncExcelPanel() {
               <p className="font-medium text-sm text-emerald-900">
                 อ่านได้ {dryRun.total_parsed} โครงการ — จะเปลี่ยน {dryRun.diff.length} รายการ
               </p>
-              <p className="text-[11px] text-emerald-700 mt-0.5">
+              <p className="text-[0.72rem] text-emerald-700 mt-0.5">
                 + สร้างใหม่ {dryRun.will_create} ·
                 ✓ อัปเดต {dryRun.will_update} ·
                 <span className="text-gray-500"> = ไม่เปลี่ยน {dryRun.will_skip} (skip)</span>
@@ -856,13 +856,13 @@ function SyncExcelPanel() {
                     <tr key={i} className="border-t hover:bg-gray-50 align-top">
                       <td className="p-2">
                         {d.action === "create" ? (
-                          <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">+ NEW</span>
+                          <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-purple-700">+ NEW</span>
                         ) : (
-                          <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">✓ UPD</span>
+                          <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-blue-700">✓ UPD</span>
                         )}
                       </td>
                       <td className="p-2">
-                        <p className="font-mono text-[10px] text-gray-500">{d.erp_code}</p>
+                        <p className="font-mono text-[0.65rem] text-gray-500">{d.erp_code}</p>
                         <p className="text-gray-700 truncate max-w-xs" title={d.project_name}>{d.project_name}</p>
                       </td>
                       <DiffCell oldVal={d.old?.total} newVal={d.new.total} changed={d.changed?.includes("total")} />
@@ -978,7 +978,7 @@ function DiffCell({
   }
   return (
     <td className="p-2 text-right">
-      <span className="text-gray-400 line-through text-[10px]">{fmt(oldVal)}</span>
+      <span className="text-gray-400 line-through text-[0.65rem]">{fmt(oldVal)}</span>
       <br />
       <span className={`font-semibold ${color || "text-gray-900"}`}>{fmt(newVal)}</span>
     </td>
@@ -1582,7 +1582,7 @@ function RepairBudgetPanel() {
                     {scan.analysis.map((a) => (
                       <tr key={a.project_id} className="border-t hover:bg-gray-50">
                         <td className="p-2 max-w-[200px]">
-                          <p className="font-mono text-gray-500 text-[10px]">{a.project_id}</p>
+                          <p className="font-mono text-gray-500 text-[0.65rem]">{a.project_id}</p>
                           <p className="truncate text-gray-700">{a.project_name}</p>
                         </td>
                         <td className="p-2 text-right font-medium">{fmtTh(a.before.total)}</td>
@@ -1596,10 +1596,10 @@ function RepairBudgetPanel() {
                         <td className="p-2 text-right text-amber-700 font-bold">{fmtTh(a.actual_reported_sum)}</td>
                         <td className="p-2 text-center">
                           {a.is_corrupt && (
-                            <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] text-red-700">corrupt</span>
+                            <span className="rounded bg-red-100 px-2 py-0.5 text-[0.65rem] text-red-700">corrupt</span>
                           )}
                           {!a.is_corrupt && a.reported_mismatch && (
-                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">mismatch</span>
+                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[0.65rem] text-amber-700">mismatch</span>
                           )}
                         </td>
                       </tr>

@@ -48,13 +48,13 @@ export default function IntelHeader({
 }: Props) {
   return (
     <div className="space-y-2.5">
-      {/* Title row */}
-      <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex items-baseline gap-2 min-w-0">
+      {/* Title row — mobile: stack title+subtitle, desktop: inline */}
+      <div className="flex items-start justify-between gap-2 px-1 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-baseline gap-x-2 min-w-0 flex-1">
           <h1 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h1>
-          <p className="text-xs text-gray-500 truncate">{subtitle}</p>
+          <p className="text-xs text-gray-500">{subtitle}</p>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0 mt-1 sm:mt-0">
           <span className={`relative flex h-2 w-2`}>
             {isLive && (
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -65,26 +65,26 @@ export default function IntelHeader({
               }`}
             />
           </span>
-          <span className="text-[10px] text-gray-500 whitespace-nowrap">
+          <span className="text-[0.65rem] text-gray-500 whitespace-nowrap">
             {isLive ? "live" : "offline"}
             {liveText && ` · ${liveText}`}
           </span>
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* Alerts — mobile: stack title/detail, desktop: inline */}
       {alerts.map((a, i) => {
         const style = ALERT_STYLE[a.level];
         return (
           <div
             key={i}
-            className={`flex items-center justify-between gap-3 rounded-lg ${style.bg} ring-1 px-3 py-1.5 text-xs ${style.text}`}
+            className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 rounded-lg ${style.bg} ring-1 px-3 py-2 text-xs ${style.text}`}
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm">{style.icon}</span>
               <span className="font-bold">{a.title}</span>
             </div>
-            {a.detail && <span className="text-[11px] truncate">{a.detail}</span>}
+            {a.detail && <span className="text-[0.72rem] opacity-90 pl-7 sm:pl-0">{a.detail}</span>}
           </div>
         );
       })}
@@ -96,12 +96,12 @@ export default function IntelHeader({
             key={i}
             className="rounded-lg bg-white p-2.5 ring-1 ring-gray-200"
           >
-            <p className="text-[10px] text-gray-500 leading-tight">{s.label}</p>
+            <p className="text-[0.65rem] text-gray-500 leading-tight">{s.label}</p>
             <p className={`mt-0.5 text-2xl font-bold leading-tight ${s.color}`}>
               {s.value}
             </p>
             {s.sub && (
-              <p className="text-[10px] text-gray-400 leading-tight">{s.sub}</p>
+              <p className="text-[0.65rem] text-gray-400 leading-tight">{s.sub}</p>
             )}
           </div>
         ))}

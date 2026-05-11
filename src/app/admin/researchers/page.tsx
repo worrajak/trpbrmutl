@@ -525,15 +525,15 @@ function ResearcherCard({ r, onEdit, onDelete, onApprove, onApproveAndIssueToken
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             {isPending && (
-              <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900 ring-1 ring-amber-400">
+              <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[0.65rem] font-bold text-amber-900 ring-1 ring-amber-400">
                 ⏳ PENDING
               </span>
             )}
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${lvl.color}`}>
+            <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${lvl.color}`}>
               {lvl.emoji} {lvl.label}
             </span>
             {r.current_load > 0 && (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-700 ring-1 ring-blue-200">
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[0.65rem] text-blue-700 ring-1 ring-blue-200">
                 💼 {r.current_load} โครงการ
               </span>
             )}
@@ -543,7 +543,7 @@ function ResearcherCard({ r, onEdit, onDelete, onApprove, onApproveAndIssueToken
             {r.name}
           </h3>
           {r.faculty && <p className="text-xs text-slate-500">{r.faculty}</p>}
-          {r.email && <p className="text-[10px] text-slate-400 mt-0.5 truncate">📧 {r.email}</p>}
+          {r.email && <p className="text-[0.65rem] text-slate-400 mt-0.5 truncate">📧 {r.email}</p>}
         </div>
       </div>
 
@@ -555,20 +555,20 @@ function ResearcherCard({ r, onEdit, onDelete, onApprove, onApproveAndIssueToken
         {r.expertise_tags.slice(0, 5).map((slug) => {
           const t = renderTag(slug);
           return (
-            <span key={slug} className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+            <span key={slug} className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
               <span>{t.emoji}</span>
               <span>{t.label}</span>
             </span>
           );
         })}
         {r.expertise_tags.length > 5 && (
-          <span className="text-[10px] text-slate-400">+{r.expertise_tags.length - 5}</span>
+          <span className="text-[0.65rem] text-slate-400">+{r.expertise_tags.length - 5}</span>
         )}
       </div>
 
       {/* Areas */}
       {r.areas.length > 0 && (
-        <p className="mt-2 text-[10px] text-slate-500">
+        <p className="mt-2 text-[0.65rem] text-slate-500">
           📍 {r.areas.join(" · ")}
         </p>
       )}
@@ -726,11 +726,11 @@ function CreateForm({
       {/* Expertise Tags - preset 20 by category + custom */}
       <div className="mt-4">
         <label className="text-sm font-bold text-slate-800">🏷 Expertise Tags *</label>
-        <p className="text-[10px] text-slate-500">คลิกเพื่อเลือก/ยกเลิก · เพิ่ม custom tag ด้านล่างได้</p>
+        <p className="text-[0.65rem] text-slate-500">คลิกเพื่อเลือก/ยกเลิก · เพิ่ม custom tag ด้านล่างได้</p>
 
         {Object.entries(tagsByCategory).map(([catKey, tags]) => (
           <div key={catKey} className="mt-2">
-            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">
+            <p className="text-[0.65rem] uppercase font-bold text-slate-500 mb-1">
               {CATEGORY_LABEL[catKey as TagCategory]}
             </p>
             <div className="flex flex-wrap gap-1">
@@ -741,7 +741,7 @@ function CreateForm({
                     key={t.slug}
                     type="button"
                     onClick={() => toggleTag(t.slug)}
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] ring-1 transition ${
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] ring-1 transition ${
                       selected ? `${t.color} ring-2 ring-offset-1` : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"
                     }`}
                   >
@@ -775,11 +775,11 @@ function CreateForm({
         {/* Selected tags display */}
         {(form.expertise_tags?.length || 0) > 0 && (
           <div className="mt-2 flex flex-wrap gap-1 rounded bg-slate-50 p-2">
-            <span className="text-[10px] text-slate-500 self-center">เลือก:</span>
+            <span className="text-[0.65rem] text-slate-500 self-center">เลือก:</span>
             {form.expertise_tags?.map((slug) => {
               const t = renderTag(slug);
               return (
-                <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                   <span>{t.emoji}</span>
                   <span>{t.label}</span>
                   <button

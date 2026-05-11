@@ -653,7 +653,7 @@ export default function ProjectDetailPage() {
                     {tokenCode && (
                       <button
                         onClick={() => setEditingReport(r)}
-                        className="rounded bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 hover:bg-blue-100"
+                        className="rounded bg-blue-50 px-2 py-0.5 text-[0.72rem] text-blue-700 hover:bg-blue-100"
                         title="แก้ไขรายงานนี้"
                       >
                         ✏️ แก้ไข
@@ -682,7 +682,7 @@ export default function ProjectDetailPage() {
                             loading="lazy"
                             className="h-32 w-32 object-cover sm:h-40 sm:w-40"
                           />
-                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100">
+                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1 text-[0.65rem] text-white opacity-0 transition group-hover:opacity-100">
                             🔍 เปิดรูปต้นฉบับ
                           </span>
                         </a>
@@ -730,7 +730,7 @@ export default function ProjectDetailPage() {
                       <a
                         key={g.id}
                         href={`/sdgs/${g.id}`}
-                        className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+                        className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.65rem] font-medium text-white"
                         style={{ backgroundColor: g.color }}
                       >
                         {g.icon} {g.id}
@@ -895,7 +895,7 @@ function ReportBudgetEditor({
         title="คลิกเพื่อแก้ยอดเงิน"
       >
         💰 {currentAmount > 0 ? `${formatBudget(currentAmount)} บาท` : "เพิ่มยอด"}
-        <span className="text-[10px] opacity-60">✏️</span>
+        <span className="text-[0.65rem] opacity-60">✏️</span>
       </button>
     );
   }
@@ -1056,7 +1056,7 @@ function EditReportModal({
               min={0}
               className="w-40 rounded-lg border px-3 py-2 text-sm"
             />
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="mt-1 text-[0.72rem] text-gray-500">
               ระบบจะคำนวณ budget_reported ของโครงการใหม่จากยอดรวมทุกรายงาน
             </p>
           </div>
@@ -1127,7 +1127,7 @@ function EditReportModal({
               ))}
             </div>
 
-            <p className="mt-2 text-[10px] text-purple-600">
+            <p className="mt-2 text-[0.65rem] text-purple-600">
               💡 อัปโหลดรูปไปยัง Google Drive / Imgur / Dropbox แล้วใส่ลิงก์แบบ public ที่นี่
             </p>
           </div>

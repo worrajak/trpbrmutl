@@ -75,7 +75,7 @@ export default function MeResearcherPage() {
               {researcher.name}
             </h1>
             <div className="mt-2 flex items-center gap-2 flex-wrap">
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ${lvl.color}`}>
+              <span className={`rounded-full px-2 py-0.5 text-[0.72rem] font-bold ring-1 ${lvl.color}`}>
                 {lvl.emoji} {lvl.label}
               </span>
               {researcher.faculty && (
@@ -183,7 +183,7 @@ export default function MeResearcherPage() {
             </div>
           )}
         </div>
-        <p className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+        <p className="mt-4 pt-3 border-t border-slate-100 text-[0.72rem] text-slate-500">
           💡 ต้องการแก้ไข expertise tags หรือพื้นที่? · ติดต่อ admin ที่ /admin/researchers
         </p>
       </section>

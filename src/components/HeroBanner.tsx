@@ -68,7 +68,7 @@ export default function HeroBanner({
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-emerald-50/90 truncate">
+            <p className="text-[0.72rem] text-emerald-50/90 truncate">
               มทร.ล้านนา · ปี 2569 · Royal Project Foundation
             </p>
           </div>

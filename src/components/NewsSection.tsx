@@ -44,7 +44,7 @@ export default function NewsSection() {
     <section>
       <div className="mb-2 flex items-end justify-between">
         <div>
-          <p className="text-[10px] font-medium text-purple-600 uppercase tracking-wider">
+          <p className="text-[0.65rem] font-medium text-purple-600 uppercase tracking-wider">
             🗞 TRPB News
           </p>
           <h2 className="text-base sm:text-lg font-bold text-gray-800">
@@ -91,7 +91,7 @@ export default function NewsSection() {
               {item.date && (
                 <p className="text-[9px] text-gray-400">{item.date}</p>
               )}
-              <h3 className="line-clamp-2 text-[11px] sm:text-xs font-medium text-gray-800 leading-snug group-hover:text-purple-700 transition">
+              <h3 className="line-clamp-2 text-[0.72rem] sm:text-xs font-medium text-gray-800 leading-snug group-hover:text-purple-700 transition">
                 {item.title}
               </h3>
             </div>

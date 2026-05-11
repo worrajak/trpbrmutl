@@ -72,16 +72,16 @@ export default function KpiIndexPanel({ projects }: Props) {
 
   return (
     <div className="rounded-lg bg-white ring-1 ring-gray-200">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
+      {/* Header — mobile: stack, desktop: inline */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 border-b border-gray-100 px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-base">🏆</span>
-          <p className="text-xs sm:text-sm font-bold text-gray-800 truncate">
+          <p className="text-xs sm:text-sm font-bold text-gray-800">
             ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา · ปี 2569
           </p>
         </div>
         {offTrackCount > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200 whitespace-nowrap">
+          <span className="self-start sm:self-auto flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] font-medium text-amber-700 ring-1 ring-amber-200 whitespace-nowrap">
             <span>⚠</span>
             <span>มี {offTrackCount} KPI ห่างเป้า</span>
           </span>
@@ -94,7 +94,7 @@ export default function KpiIndexPanel({ projects }: Props) {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium ring-1 transition ${
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] font-medium ring-1 transition ${
               activeTab === t.key
                 ? t.color
                 : "bg-white text-gray-600 ring-gray-200 hover:bg-gray-50"
@@ -102,7 +102,7 @@ export default function KpiIndexPanel({ projects }: Props) {
           >
             <span>{t.icon}</span>
             <span>{t.key}</span>
-            <span className="ml-0.5 text-[10px] opacity-60">
+            <span className="ml-0.5 text-[0.65rem] opacity-60">
               ({EXCELLENCE_KPIS.filter((k) => k.category_label === t.key).length})
             </span>
           </button>
@@ -125,15 +125,15 @@ export default function KpiIndexPanel({ projects }: Props) {
             >
               <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dot}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-800 leading-tight truncate">
+                <p className="text-xs sm:text-sm text-gray-800 leading-snug">
                   {kpi.name}
                 </p>
-                <p className="text-[10px] text-gray-400 truncate">
+                <p className="text-[0.65rem] text-gray-400 leading-tight mt-0.5">
                   KPI {kpi.code} · เป้า {target} {kpi.unit} · {kpi.responsible}
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-[10px] text-gray-500">
+                <p className="text-[0.65rem] text-gray-500">
                   {count}/{target} {kpi.unit}
                 </p>
                 <p className={`text-xs font-bold ${progressColor}`}>
@@ -147,7 +147,7 @@ export default function KpiIndexPanel({ projects }: Props) {
       </div>
 
       {/* Tip box */}
-      <div className="border-t border-gray-100 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 flex items-start gap-2">
+      <div className="border-t border-gray-100 bg-amber-50 px-3 py-2 text-[0.72rem] text-amber-800 flex items-start gap-2">
         <span>💡</span>
         <p>
           โครงการ <strong>1 ตัวสนับสนุน KPI ได้หลายตัว</strong> · ระบบใช้
@@ -156,7 +156,7 @@ export default function KpiIndexPanel({ projects }: Props) {
       </div>
 
       {/* Source */}
-      <div className="border-t border-gray-100 px-3 py-1.5 text-[10px] text-gray-400 flex items-center justify-between">
+      <div className="border-t border-gray-100 px-3 py-1.5 text-[0.65rem] text-gray-400 flex items-center justify-between">
         <span>ที่มา: PerformanceEvaluation-System (สถช.) · KPI Analysis 2569</span>
         <a
           href="/excellence"

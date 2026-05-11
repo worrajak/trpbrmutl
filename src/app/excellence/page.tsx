@@ -166,7 +166,7 @@ export default async function ExcellencePage() {
                       </div>
                     ) : (
                       <>
-                        <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+                        <p className="text-[0.65rem] font-medium text-gray-500 uppercase tracking-wider mb-2">
                           📋 โครงการที่สนับสนุน ({linkedProjects.length})
                         </p>
                         <div className="grid gap-2 sm:grid-cols-2">
@@ -181,7 +181,7 @@ export default async function ExcellencePage() {
                                 <p className="line-clamp-2 text-xs font-medium text-gray-700 group-hover:text-amber-700 transition">
                                   {p.project_name}
                                 </p>
-                                <p className="text-[10px] text-gray-400">
+                                <p className="text-[0.65rem] text-gray-400">
                                   👤 {p.responsible || p.organization || "—"}
                                 </p>
                               </div>
@@ -196,11 +196,11 @@ export default async function ExcellencePage() {
 
                         {/* Keywords used */}
                         <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-[10px] text-gray-400">
+                          <p className="text-[0.65rem] text-gray-400">
                             🔍 Auto-match keywords:{" "}
                             {kpi.keywords.map((k, i) => (
                               <span key={i}>
-                                <code className="rounded bg-gray-100 px-1 text-[10px] text-gray-600">{k}</code>
+                                <code className="rounded bg-gray-100 px-1 text-[0.65rem] text-gray-600">{k}</code>
                                 {i < kpi.keywords.length - 1 && " · "}
                               </span>
                             ))}

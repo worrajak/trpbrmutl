@@ -239,7 +239,7 @@ export default function AdminTeamPage() {
                 required
                 className="w-full rounded border px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-[10px] text-slate-500">
+              <p className="mt-1 text-[0.65rem] text-slate-500">
                 💡 ระบบจะ suggest token อัตโนมัติเมื่อพิมพ์ชื่อ &gt; 2 ตัว
               </p>
             </div>
@@ -256,7 +256,7 @@ export default function AdminTeamPage() {
                 maxLength={8}
                 className="w-full rounded border px-3 py-2 text-sm font-mono uppercase tracking-wider"
               />
-              <p className="mt-1 text-[10px] text-slate-500">เช่น PIMOL07, WACHR42</p>
+              <p className="mt-1 text-[0.65rem] text-slate-500">เช่น PIMOL07, WACHR42</p>
             </div>
             <div>
               <label className="text-xs text-slate-600">PIN (4 ตัวเลข) *</label>
@@ -270,7 +270,7 @@ export default function AdminTeamPage() {
                 maxLength={4}
                 className="w-full rounded border px-3 py-2 text-sm font-mono tracking-[0.4em] text-center"
               />
-              <p className="mt-1 text-[10px] text-slate-500">บอกเจ้าตัวให้เปลี่ยนเองภายหลัง (TODO)</p>
+              <p className="mt-1 text-[0.65rem] text-slate-500">บอกเจ้าตัวให้เปลี่ยนเองภายหลัง (TODO)</p>
             </div>
             <div>
               <label className="text-xs text-slate-600">ตำแหน่ง</label>
@@ -371,7 +371,7 @@ export default function AdminTeamPage() {
                 <tr key={m.id} className={m.is_active ? "" : "opacity-50"}>
                   <td className="px-3 py-2">
                     <p className="font-medium text-slate-800">{m.name}</p>
-                    {m.email && <p className="text-[10px] text-slate-500">{m.email}</p>}
+                    {m.email && <p className="text-[0.65rem] text-slate-500">{m.email}</p>}
                   </td>
                   <td className="px-3 py-2 font-mono font-bold text-emerald-700">{m.token}</td>
                   <td className="px-3 py-2 text-slate-600">

@@ -35,7 +35,7 @@ export default async function FoundationPage() {
       <div className="rounded-xl bg-gradient-to-br from-amber-500 via-orange-600 to-rose-600 p-4 text-white shadow-lg shadow-amber-500/20">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-amber-100/90">
+            <p className="text-[0.65rem] font-medium uppercase tracking-wider text-amber-100/90">
               📖 Foundation · Why we exist
             </p>
             <h1 className="mt-0.5 text-xl sm:text-2xl font-bold drop-shadow">
@@ -81,7 +81,7 @@ export default async function FoundationPage() {
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-2">
                       <h3 className="text-base sm:text-lg font-bold text-slate-900">{f.name}</h3>
-                      <span className="text-[10px] text-slate-400 font-mono">L{f.level}</span>
+                      <span className="text-[0.65rem] text-slate-400 font-mono">L{f.level}</span>
                     </div>
                     <p className="mt-1 text-sm text-slate-700 leading-snug">{f.shortDesc}</p>
                     <p className="mt-1.5 text-xs text-slate-500 italic leading-relaxed">↳ {f.detail}</p>
@@ -142,7 +142,7 @@ export default async function FoundationPage() {
         </h2>
         <div className="rounded-lg bg-white ring-1 ring-gray-200 overflow-x-auto">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50 text-[10px] uppercase text-gray-500">
+            <thead className="bg-gray-50 text-[0.65rem] uppercase text-gray-500">
               <tr>
                 <th className="px-3 py-2 text-left">แผนงาน</th>
                 <th className="px-3 py-2 text-right">งบ</th>
@@ -160,7 +160,7 @@ export default async function FoundationPage() {
                       <p className="font-bold text-gray-900">
                         แผน {row.planNumber}: {row.planTitle}
                       </p>
-                      <p className="text-[10px] text-gray-400">{dbProgram}</p>
+                      <p className="text-[0.65rem] text-gray-400">{dbProgram}</p>
                     </td>
                     <td className="px-3 py-2 text-right font-mono">
                       {(row.budget / 1_000_000).toFixed(1)}M
@@ -170,7 +170,7 @@ export default async function FoundationPage() {
                         {row.rmutlKpis.map((c) => (
                           <code
                             key={c}
-                            className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-700 ring-1 ring-blue-100"
+                            className="rounded bg-blue-50 px-1.5 py-0.5 text-[0.65rem] text-blue-700 ring-1 ring-blue-100"
                           >
                             {c}
                           </code>
@@ -208,13 +208,13 @@ export default async function FoundationPage() {
                 <td className="px-3 py-2 text-right font-mono font-bold text-gray-900">
                   {(totalBudget / 1_000_000).toFixed(0)}M
                 </td>
-                <td className="px-3 py-2 text-[10px] text-gray-500">
+                <td className="px-3 py-2 text-[0.65rem] text-gray-500">
                   {Array.from(new Set(connectionRows.flatMap((r) => r.rmutlKpis))).length} unique
                 </td>
-                <td className="px-3 py-2 text-[10px] text-gray-500">
+                <td className="px-3 py-2 text-[0.65rem] text-gray-500">
                   {Array.from(new Set(connectionRows.flatMap((r) => r.sdgs))).length}/17
                 </td>
-                <td className="px-3 py-2 text-[10px] text-gray-500">
+                <td className="px-3 py-2 text-[0.65rem] text-gray-500">
                   {projects.length} โครงการ
                 </td>
               </tr>

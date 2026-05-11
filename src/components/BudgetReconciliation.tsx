@@ -57,22 +57,22 @@ export default function BudgetReconciliation({
         <div className="rounded-lg border border-gray-200 bg-white p-3">
           <p className="text-xs text-gray-500">งบประมาณรวม</p>
           <p className="text-xl font-bold text-royal-700">{fmt(total)}</p>
-          <p className="text-[10px] text-gray-400">บาท</p>
+          <p className="text-[0.65rem] text-gray-400">บาท</p>
         </div>
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
           <p className="text-xs text-blue-600">เบิกจ่ายจริง (ERP/กองคลัง)</p>
           <p className="text-xl font-bold text-blue-800">{fmt(erp)}</p>
-          <p className="text-[10px] text-blue-500">บาท · {erpPct}% ของงบ</p>
+          <p className="text-[0.65rem] text-blue-500">บาท · {erpPct}% ของงบ</p>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs text-amber-600">รายงานสะสม (หน.โครงการ)</p>
           <p className="text-xl font-bold text-amber-800">{fmt(reported)}</p>
-          <p className="text-[10px] text-amber-500">บาท · {reportedPct}% ของงบ</p>
+          <p className="text-[0.65rem] text-amber-500">บาท · {reportedPct}% ของงบ</p>
         </div>
         <div className="rounded-lg border border-green-200 bg-green-50 p-3">
           <p className="text-xs text-green-600">คงเหลือใช้จริง</p>
           <p className="text-xl font-bold text-green-800">{fmt(remaining)}</p>
-          <p className="text-[10px] text-green-500">บาท · {100 - usedPct}% ของงบ</p>
+          <p className="text-[0.65rem] text-green-500">บาท · {100 - usedPct}% ของงบ</p>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function BudgetReconciliation({
             />
           )}
         </div>
-        <div className="flex gap-3 mt-1 text-[10px] text-gray-500">
+        <div className="flex gap-3 mt-1 text-[0.65rem] text-gray-500">
           <span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-blue-500 inline-block" />ERP</span>
           {advancePayment > 0 && (
             <span className="flex items-center gap-1"><span className="h-2 w-3 rounded bg-amber-400 inline-block" />หน.ออกเอง</span>

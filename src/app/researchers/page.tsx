@@ -94,7 +94,7 @@ export default async function ResearchersPage() {
             { label: "Tags ใช้งาน", value: Object.keys(tagCount).length, emoji: "🏷" },
           ].map((s) => (
             <div key={s.label} className="rounded-xl bg-white/15 backdrop-blur p-3 ring-1 ring-white/25">
-              <p className="text-[10px] uppercase text-emerald-50/85">{s.label}</p>
+              <p className="text-[0.65rem] uppercase text-emerald-50/85">{s.label}</p>
               <p className="mt-1 text-2xl font-bold text-white drop-shadow">
                 <span className="mr-1">{s.emoji}</span>
                 {s.value}
@@ -140,11 +140,11 @@ export default async function ResearchersPage() {
             return (
               <div key={r.id} className="rounded-xl bg-white ring-1 ring-slate-200 p-4 hover:shadow-md transition">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${lvl.color}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${lvl.color}`}>
                     {lvl.emoji} {lvl.label}
                   </span>
                   {r.current_load > 0 && (
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-700 ring-1 ring-blue-200">
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[0.65rem] text-blue-700 ring-1 ring-blue-200">
                       💼 {r.current_load} active
                     </span>
                   )}
@@ -161,25 +161,25 @@ export default async function ResearchersPage() {
                   {r.expertise_tags.slice(0, 6).map((slug) => {
                     const t = renderTag(slug);
                     return (
-                      <span key={slug} className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                      <span key={slug} className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                         <span>{t.emoji}</span>
                         <span>{t.label}</span>
                       </span>
                     );
                   })}
                   {r.expertise_tags.length > 6 && (
-                    <span className="text-[10px] text-slate-400">+{r.expertise_tags.length - 6}</span>
+                    <span className="text-[0.65rem] text-slate-400">+{r.expertise_tags.length - 6}</span>
                   )}
                 </div>
 
                 {/* Areas */}
                 {r.areas.length > 0 && (
-                  <p className="mt-2 text-[10px] text-slate-500">📍 {r.areas.slice(0, 3).join(" · ")}</p>
+                  <p className="mt-2 text-[0.65rem] text-slate-500">📍 {r.areas.slice(0, 3).join(" · ")}</p>
                 )}
 
                 {/* Contact */}
                 {r.email && (
-                  <p className="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400 truncate">
+                  <p className="mt-3 pt-2 border-t border-slate-100 text-[0.65rem] text-slate-400 truncate">
                     📧 {r.email}
                   </p>
                 )}

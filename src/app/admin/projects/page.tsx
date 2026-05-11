@@ -378,7 +378,7 @@ export default function AdminProjectsPage() {
               filtered.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-gray-50">
                   <td className="px-2 py-2 text-gray-500">{r.fiscal_year || "-"}</td>
-                  <td className="px-2 py-2 font-mono text-[10px] text-gray-500">
+                  <td className="px-2 py-2 font-mono text-[0.65rem] text-gray-500">
                     {r.erp_code ? r.erp_code.slice(-6) : "-"}
                   </td>
                   <td className="px-2 py-2">
@@ -390,7 +390,7 @@ export default function AdminProjectsPage() {
                     >
                       {r.project_name}
                     </a>
-                    <p className="text-[10px] text-gray-400">{r.main_program || "-"}</p>
+                    <p className="text-[0.65rem] text-gray-400">{r.main_program || "-"}</p>
                   </td>
                   <td className="px-2 py-2">{r.responsible || <span className="text-gray-300">—</span>}</td>
                   <td className="px-2 py-2 text-right font-mono">
@@ -406,7 +406,7 @@ export default function AdminProjectsPage() {
                     {session.canEdit && (
                       <button
                         onClick={() => setEditing(r)}
-                        className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100"
+                        className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[0.72rem] text-blue-700 hover:bg-blue-100"
                       >
                         ✏️ แก้ไข
                       </button>
@@ -414,12 +414,12 @@ export default function AdminProjectsPage() {
                     {session.canDelete ? (
                       <button
                         onClick={() => setDeleting(r)}
-                        className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-700 hover:bg-red-100"
+                        className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[0.72rem] text-red-700 hover:bg-red-100"
                       >
                         🗑 ลบ
                       </button>
                     ) : (
-                      <span className="text-[10px] text-slate-300" title="คณะทำงานไม่มีสิทธิลบ">🔒</span>
+                      <span className="text-[0.65rem] text-slate-300" title="คณะทำงานไม่มีสิทธิลบ">🔒</span>
                     )}
                   </td>
                 </tr>
@@ -449,7 +449,7 @@ export default function AdminProjectsPage() {
                   ✕
                 </button>
               </div>
-              <p className="mt-1 text-[11px] text-white/80 font-mono">{editing.id}</p>
+              <p className="mt-1 text-[0.72rem] text-white/80 font-mono">{editing.id}</p>
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm">
@@ -510,7 +510,7 @@ export default function AdminProjectsPage() {
                     placeholder="เช่น 010012"
                     className="w-full rounded border px-3 py-2 font-mono"
                   />
-                  <p className="mt-1 text-[10px] text-gray-400">
+                  <p className="mt-1 text-[0.65rem] text-gray-400">
                     💡 ใส่เพื่อ link กับยอดเบิกจาก Excel ERP (sync-excel จะใช้ field นี้ match)
                   </p>
                 </div>
@@ -570,7 +570,7 @@ export default function AdminProjectsPage() {
                     }
                     className="w-full rounded border px-3 py-2 font-mono"
                   />
-                  <p className="mt-1 text-[10px] text-gray-400">
+                  <p className="mt-1 text-[0.65rem] text-gray-400">
                     💡 ปกติ = งบรวม − เบิกจ่าย (sync-excel จะคำนวณให้อัตโนมัติ)
                   </p>
                 </div>

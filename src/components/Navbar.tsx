@@ -53,7 +53,7 @@ export default function Navbar() {
             <Logo className="h-12 w-auto" />
             <div>
               <p className="text-lg font-bold text-white leading-tight">ใต้ร่มพระบารมี</p>
-              <p className="text-[10px] text-gold-300">ระบบติดตามโครงการ | มทร.ล้านนา</p>
+              <p className="text-[0.65rem] text-gold-300">ระบบติดตามโครงการ | มทร.ล้านนา</p>
             </div>
           </a>
 
@@ -75,7 +75,7 @@ export default function Navbar() {
                 }`}
               >
                 <span>ℹ เกี่ยวกับ</span>
-                <span className={`text-[10px] transition-transform ${aboutOpen ? "rotate-180" : ""}`}>▼</span>
+                <span className={`text-[0.65rem] transition-transform ${aboutOpen ? "rotate-180" : ""}`}>▼</span>
               </button>
               {aboutOpen && (
                 <div className="absolute right-0 top-full mt-1 min-w-[180px] rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden z-50">
@@ -122,7 +122,7 @@ export default function Navbar() {
               </a>
             ))}
             {/* About section in mobile */}
-            <p className="mt-2 px-3 text-[10px] uppercase font-bold text-gold-300">ℹ เกี่ยวกับ</p>
+            <p className="mt-2 px-3 text-[0.65rem] uppercase font-bold text-gold-300">ℹ เกี่ยวกับ</p>
             {aboutLinks.map((l) => (
               <a key={l.href} href={l.href}
                 onClick={() => setOpen(false)}

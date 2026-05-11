@@ -309,7 +309,7 @@ export default function SyncExcelPage() {
                       key={m.id}
                       type="button"
                       onClick={() => setModel(m.id)}
-                      className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                      className={`rounded-full border px-2.5 py-1 text-[0.72rem] transition ${
                         active
                           ? "border-purple-500 bg-purple-50 text-purple-700 ring-1 ring-purple-300"
                           : isFree

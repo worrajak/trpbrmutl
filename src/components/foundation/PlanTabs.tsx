@@ -90,7 +90,7 @@ function PlanContent({ plan, projectCount }: { plan: Plan; projectCount: number 
         </p>
         <div className="rounded-lg ring-1 ring-slate-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-[11px] uppercase text-slate-600">
+            <thead className="bg-slate-100 text-[0.72rem] uppercase text-slate-600">
               <tr>
                 <th className="px-3 py-2 text-left w-8">#</th>
                 <th className="px-3 py-2 text-left">ตัวชี้วัด</th>

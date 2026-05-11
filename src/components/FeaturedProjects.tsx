@@ -120,12 +120,12 @@ export default function FeaturedProjects({ projects, limit = 6 }: Props) {
                   ) : (
                     <span className={`h-1.5 w-1.5 rounded-full ${status.color}`} />
                   )}
-                  <span className="text-[10px] font-medium text-white">
+                  <span className="text-[0.65rem] font-medium text-white">
                     {status.label}
                   </span>
                 </div>
 
-                <p className="text-[10px] font-medium text-white/70 uppercase tracking-wider">
+                <p className="text-[0.65rem] font-medium text-white/70 uppercase tracking-wider">
                   {p.main_program || "ใต้ร่มพระบารมี"}
                 </p>
                 {/* Floating SDG color dots */}
@@ -150,14 +150,14 @@ export default function FeaturedProjects({ projects, limit = 6 }: Props) {
                 <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-gray-800 group-hover:text-violet-700 transition leading-snug">
                   {p.project_name}
                 </h3>
-                <p className="mt-1 text-[10px] text-gray-500 truncate">
+                <p className="mt-1 text-[0.65rem] text-gray-500 truncate">
                   👤 {p.responsible || p.organization || "—"}
                 </p>
 
                 {/* Budget bar */}
                 <div className="mt-2">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-[10px] text-gray-400">งบประมาณ</span>
+                    <span className="text-[0.65rem] text-gray-400">งบประมาณ</span>
                     <span className="text-xs font-bold text-gray-700">
                       {fmt(budgetTotal)}
                     </span>

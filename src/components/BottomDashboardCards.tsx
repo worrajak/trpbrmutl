@@ -73,7 +73,7 @@ export default function BottomDashboardCards({ projects }: Props) {
         </div>
         <div className="divide-y divide-gray-50">
           {topUsed.length === 0 ? (
-            <div className="px-3 py-2 text-[11px] text-gray-400 text-center">
+            <div className="px-3 py-2 text-[0.72rem] text-gray-400 text-center">
               ไม่มีข้อมูล
             </div>
           ) : (
@@ -87,7 +87,7 @@ export default function BottomDashboardCards({ projects }: Props) {
                   {p.project_name}
                 </span>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[0.65rem] text-gray-400">
                     {fmt(Number(p.budget_used || 0))}/{fmt(Number(p.budget_total || 0))}
                   </span>
                   <span className="text-emerald-700 font-bold">
@@ -98,7 +98,7 @@ export default function BottomDashboardCards({ projects }: Props) {
             ))
           )}
         </div>
-        <div className="border-t border-gray-100 px-3 py-1 text-[10px] text-gray-400">
+        <div className="border-t border-gray-100 px-3 py-1 text-[0.65rem] text-gray-400">
           ที่มา: budget_used (ERP) / budget_total
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function BottomDashboardCards({ projects }: Props) {
         </div>
         <div className="divide-y divide-gray-50">
           {lowUsed.length === 0 ? (
-            <div className="px-3 py-2 text-[11px] text-gray-400 text-center">
+            <div className="px-3 py-2 text-[0.72rem] text-gray-400 text-center">
               ไม่มีข้อมูล
             </div>
           ) : (
@@ -127,7 +127,7 @@ export default function BottomDashboardCards({ projects }: Props) {
                   {p.project_name}
                 </span>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[0.65rem] text-gray-400">
                     {fmt(Number(p.budget_used || 0))}/{fmt(Number(p.budget_total || 0))}
                   </span>
                   <span className="text-red-700 font-bold">
@@ -138,7 +138,7 @@ export default function BottomDashboardCards({ projects }: Props) {
             ))
           )}
         </div>
-        <div className="border-t border-gray-100 px-3 py-1 text-[10px] text-gray-400">
+        <div className="border-t border-gray-100 px-3 py-1 text-[0.65rem] text-gray-400">
           อาจติดที่กระบวนการ ERP / รอเอกสาร
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function BottomDashboardCards({ projects }: Props) {
         </div>
         <div className="divide-y divide-gray-50">
           {topSdgs.length === 0 ? (
-            <div className="px-3 py-2 text-[11px] text-gray-400 text-center">
+            <div className="px-3 py-2 text-[0.72rem] text-gray-400 text-center">
               ยังไม่มีโครงการที่ tag SDG
             </div>
           ) : (
@@ -203,7 +203,7 @@ export default function BottomDashboardCards({ projects }: Props) {
             })
           )}
         </div>
-        <div className="border-t border-gray-100 px-3 py-1 text-[10px] text-gray-400">
+        <div className="border-t border-gray-100 px-3 py-1 text-[0.65rem] text-gray-400">
           ที่มา: projects.sdg_tags
         </div>
       </div>

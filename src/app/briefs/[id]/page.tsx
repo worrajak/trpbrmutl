@@ -273,11 +273,11 @@ export default function BriefDetailPage() {
         {/* Meta */}
         <div className="mt-4 grid sm:grid-cols-3 gap-3">
           <div className="rounded-lg bg-white/15 backdrop-blur p-3 ring-1 ring-white/20">
-            <p className="text-[10px] uppercase text-violet-50/85">พื้นที่</p>
+            <p className="text-[0.65rem] uppercase text-violet-50/85">พื้นที่</p>
             <p className="text-sm font-bold text-white mt-0.5">📍 {brief.location || "—"}</p>
           </div>
           <div className="rounded-lg bg-white/15 backdrop-blur p-3 ring-1 ring-white/20">
-            <p className="text-[10px] uppercase text-violet-50/85">งบประมาณ</p>
+            <p className="text-[0.65rem] uppercase text-violet-50/85">งบประมาณ</p>
             <p className="text-sm font-bold text-white mt-0.5">
               💰 {brief.budget_min || brief.budget_max
                 ? `${fmt(Number(brief.budget_min || 0))}-${fmt(Number(brief.budget_max || 0))} บาท`
@@ -285,7 +285,7 @@ export default function BriefDetailPage() {
             </p>
           </div>
           <div className="rounded-lg bg-white/15 backdrop-blur p-3 ring-1 ring-white/20">
-            <p className="text-[10px] uppercase text-violet-50/85">กลุ่มเป้าหมาย</p>
+            <p className="text-[0.65rem] uppercase text-violet-50/85">กลุ่มเป้าหมาย</p>
             <p className="text-sm font-bold text-white mt-0.5">👥 {brief.target_audience || "—"}</p>
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function BriefDetailPage() {
                 <h3 className="text-base font-bold text-amber-900">
                   📋 ตัวชี้วัดของแผน {plan.number}: {plan.shortTitle}
                 </h3>
-                <p className="text-[11px] text-amber-700 mt-0.5">
+                <p className="text-[0.72rem] text-amber-700 mt-0.5">
                   จาก ง.8 · งบรวมแผน {(plan.budget / 1_000_000).toFixed(1)}M บาท · ตัวชี้วัด {plan.kpis.length} ตัว
                 </p>
               </div>
@@ -353,7 +353,7 @@ export default function BriefDetailPage() {
                 href={plan.pdfPath}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded bg-red-50 ring-1 ring-red-200 px-2.5 py-1 text-[11px] font-medium text-red-700 hover:bg-red-100"
+                className="rounded bg-red-50 ring-1 ring-red-200 px-2.5 py-1 text-[0.72rem] font-medium text-red-700 hover:bg-red-100"
               >
                 📄 ดู ง.8 เต็ม
               </a>
@@ -383,7 +383,7 @@ export default function BriefDetailPage() {
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-[10px] text-amber-700">
+            <p className="mt-2 text-[0.65rem] text-amber-700">
               ⭐ = ตัวชี้วัดเน้น "การมีส่วนร่วม" และ "พื้นที่เรียนรู้" — โครงการนี้ควรตอบที่เกี่ยวข้อง
             </p>
           </div>
@@ -397,7 +397,7 @@ export default function BriefDetailPage() {
             <div>
               <h3 className="text-base font-bold text-slate-800">🔍 Match นักวิจัย</h3>
               {apiKey && (
-                <p className="text-[10px] text-slate-500 mt-0.5">
+                <p className="text-[0.65rem] text-slate-500 mt-0.5">
                   🤖 AI Model: <code className="font-mono bg-slate-100 px-1 rounded">{model}</code>
                 </p>
               )}
@@ -445,23 +445,23 @@ export default function BriefDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-slate-900">#{i + 1} {m.researcher.name}</span>
-                          <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ring-1 ${lvl.color}`}>
+                          <span className={`rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold ring-1 ${lvl.color}`}>
                             {lvl.emoji} {lvl.label}
                           </span>
                           {aiInfo && (
-                            <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800 ring-1 ring-purple-300">
+                            <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-purple-800 ring-1 ring-purple-300">
                               🤖 {aiInfo.fitness_label}
                             </span>
                           )}
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[0.72rem] text-slate-500">
                           🏷 ตรง: {m.skillScore}% · 📍 พื้นที่: {m.areaScore}% · 💼 ภาระงาน: {m.loadScore}%
                         </p>
-                        <p className="mt-0.5 text-[11px] text-slate-600">
+                        <p className="mt-0.5 text-[0.72rem] text-slate-600">
                           {m.reasons.join(" · ")}
                         </p>
                         {aiInfo && (
-                          <div className="mt-2 rounded bg-white ring-1 ring-purple-100 p-2 text-[11px] space-y-1">
+                          <div className="mt-2 rounded bg-white ring-1 ring-purple-100 p-2 text-[0.72rem] space-y-1">
                             <div>
                               <span className="font-bold text-purple-700">AI Reasons:</span>
                               <ul className="ml-3 list-disc text-slate-700">
@@ -487,7 +487,7 @@ export default function BriefDetailPage() {
                         <button
                           onClick={() => generateNgor9(m.researcher.id)}
                           disabled={aiNgor9Busy || !apiKey}
-                          className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50 mt-1"
+                          className="rounded bg-emerald-600 px-2 py-1 text-[0.65rem] font-medium text-white hover:bg-emerald-700 disabled:opacity-50 mt-1"
                           title="ให้ AI ร่าง ง9 จาก brief นี้"
                         >
                           {aiNgor9Busy ? "⏳" : "📄 AI Draft ง9"}
@@ -548,13 +548,13 @@ export default function BriefDetailPage() {
               <div className="grid sm:grid-cols-2 gap-2">
                 <div className="rounded bg-blue-50 ring-1 ring-blue-200 p-2">
                   <p className="text-xs font-bold text-blue-800">📈 KPI เชิงปริมาณ</p>
-                  <ul className="mt-1 text-[11px] text-blue-900 space-y-0.5 ml-3 list-disc">
+                  <ul className="mt-1 text-[0.72rem] text-blue-900 space-y-0.5 ml-3 list-disc">
                     {draft.kpi.quantitative?.map((q, i) => <li key={i}>{q}</li>)}
                   </ul>
                 </div>
                 <div className="rounded bg-rose-50 ring-1 ring-rose-200 p-2">
                   <p className="text-xs font-bold text-rose-800">🎯 KPI เชิงคุณภาพ</p>
-                  <ul className="mt-1 text-[11px] text-rose-900 space-y-0.5 ml-3 list-disc">
+                  <ul className="mt-1 text-[0.72rem] text-rose-900 space-y-0.5 ml-3 list-disc">
                     {draft.kpi.qualitative?.map((q, i) => <li key={i}>{q}</li>)}
                   </ul>
                 </div>
@@ -566,18 +566,18 @@ export default function BriefDetailPage() {
                   <div className="mt-1 grid grid-cols-3 gap-2 text-xs text-amber-900">
                     <div>
                       <p className="font-bold">{draft.budget_breakdown.compensation_pct}%</p>
-                      <p className="text-[10px]">ค่าตอบแทน</p>
+                      <p className="text-[0.65rem]">ค่าตอบแทน</p>
                     </div>
                     <div>
                       <p className="font-bold">{draft.budget_breakdown.supplies_pct}%</p>
-                      <p className="text-[10px]">ค่าวัสดุ</p>
+                      <p className="text-[0.65rem]">ค่าวัสดุ</p>
                     </div>
                     <div>
                       <p className="font-bold">{draft.budget_breakdown.operating_pct}%</p>
-                      <p className="text-[10px]">ค่าใช้สอย</p>
+                      <p className="text-[0.65rem]">ค่าใช้สอย</p>
                     </div>
                   </div>
-                  <p className="mt-2 text-[11px] text-amber-800 italic">{draft.budget_breakdown.rationale}</p>
+                  <p className="mt-2 text-[0.72rem] text-amber-800 italic">{draft.budget_breakdown.rationale}</p>
                 </div>
               )}
 
@@ -629,10 +629,10 @@ export default function BriefDetailPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-slate-900">{it.researcher.name}</span>
-                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ring-1 ${lvl.color}`}>
+                        <span className={`rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold ring-1 ${lvl.color}`}>
                           {lvl.emoji} {lvl.label}
                         </span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[0.65rem] text-slate-400">
                           {new Date(it.submitted_at).toLocaleDateString("th-TH")}
                         </span>
                       </div>
@@ -640,7 +640,7 @@ export default function BriefDetailPage() {
                       {it.note && <p className="mt-2 text-xs text-slate-700 leading-relaxed">{it.note}</p>}
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-center ${
+                      <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold text-center ${
                         it.status === "accepted" ? "bg-emerald-100 text-emerald-800"
                         : it.status === "shortlisted" ? "bg-blue-100 text-blue-800"
                         : it.status === "rejected" ? "bg-red-100 text-red-800"
@@ -652,13 +652,13 @@ export default function BriefDetailPage() {
                         <div className="flex gap-1">
                           <button
                             onClick={() => changeInterestStatus(it.id, "shortlisted")}
-                            className="rounded bg-blue-50 px-2 py-0.5 text-[10px] text-blue-700 hover:bg-blue-100"
+                            className="rounded bg-blue-50 px-2 py-0.5 text-[0.65rem] text-blue-700 hover:bg-blue-100"
                           >
                             shortlist
                           </button>
                           <button
                             onClick={() => changeInterestStatus(it.id, "rejected")}
-                            className="rounded bg-red-50 px-2 py-0.5 text-[10px] text-red-700 hover:bg-red-100"
+                            className="rounded bg-red-50 px-2 py-0.5 text-[0.65rem] text-red-700 hover:bg-red-100"
                           >
                             reject
                           </button>
@@ -667,7 +667,7 @@ export default function BriefDetailPage() {
                       {canManage && it.status === "shortlisted" && (
                         <button
                           onClick={() => changeInterestStatus(it.id, "accepted")}
-                          className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700 hover:bg-emerald-100"
+                          className="rounded bg-emerald-50 px-2 py-0.5 text-[0.65rem] text-emerald-700 hover:bg-emerald-100"
                         >
                           accept
                         </button>

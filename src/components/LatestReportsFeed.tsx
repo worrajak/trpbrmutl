@@ -78,11 +78,11 @@ export default function LatestReportsFeed({ limit = 8 }: { limit?: number }) {
                   className="h-full w-full object-cover transition group-hover:scale-105"
                 />
                 {r.images.length > 1 && (
-                  <span className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                  <span className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[0.65rem] text-white">
                     +{r.images.length - 1}
                   </span>
                 )}
-                <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.65rem] text-white">
                   {formatRelativeTime(r.submitted_at)}
                 </span>
               </div>
@@ -91,16 +91,16 @@ export default function LatestReportsFeed({ limit = 8 }: { limit?: number }) {
                   {r.projects?.project_name || "โครงการ"}
                 </p>
                 {r.activities && (
-                  <p className="mt-0.5 line-clamp-1 text-[10px] text-gray-500">
+                  <p className="mt-0.5 line-clamp-1 text-[0.65rem] text-gray-500">
                     #{r.activities.activity_order} {r.activities.activity_name}
                   </p>
                 )}
                 {r.report_description && (
-                  <p className="mt-1 line-clamp-2 text-[11px] text-gray-600">
+                  <p className="mt-1 line-clamp-2 text-[0.72rem] text-gray-600">
                     {r.report_description}
                   </p>
                 )}
-                <p className="mt-1 text-[10px] text-gray-400">
+                <p className="mt-1 text-[0.65rem] text-gray-400">
                   โดย {r.submitted_by}
                 </p>
               </div>

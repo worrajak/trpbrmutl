@@ -461,7 +461,7 @@ export default function ReportForm({
                       }}
                     >
                       <span className="text-lg leading-none">{g.icon}</span>
-                      <span className="text-[10px] font-bold mt-0.5">{g.id}</span>
+                      <span className="text-[0.65rem] font-bold mt-0.5">{g.id}</span>
                     </button>
                   );
                 })}
@@ -517,7 +517,7 @@ export default function ReportForm({
                           >
                             ลบ
                           </button>
-                          <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                          <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.65rem] text-white">
                             {(img.size / 1024).toFixed(0)} KB
                           </span>
                         </>
@@ -532,7 +532,7 @@ export default function ReportForm({
                             <>
                               <span className="text-3xl">📷</span>
                               <span className="text-xs">แตะเพื่อเลือกรูป</span>
-                              <span className="text-[10px] text-orange-400">
+                              <span className="text-[0.65rem] text-orange-400">
                                 รูปที่ {i + 1}
                               </span>
                             </>
@@ -548,7 +548,7 @@ export default function ReportForm({
                         </label>
                       )}
                       {errMsg && (
-                        <div className="absolute inset-x-0 bottom-0 bg-red-50 px-2 py-1 text-[10px] text-red-700">
+                        <div className="absolute inset-x-0 bottom-0 bg-red-50 px-2 py-1 text-[0.65rem] text-red-700">
                           {errMsg}
                         </div>
                       )}

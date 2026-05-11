@@ -513,7 +513,7 @@ export default function AdminBriefsPage() {
           <button className="w-full rounded bg-violet-700 py-2 text-white hover:bg-violet-800">
             เข้าสู่ระบบ
           </button>
-          <p className="mt-3 text-[10px] text-slate-400 text-center">
+          <p className="mt-3 text-[0.65rem] text-slate-400 text-center">
             หรือ login เป็นคณะทำงานที่ /admin
           </p>
         </form>
@@ -603,7 +603,7 @@ export default function AdminBriefsPage() {
                         </button>
                       ))}
                     </div>
-                    <p className="mt-1.5 text-[11px] text-amber-700">
+                    <p className="mt-1.5 text-[0.72rem] text-amber-700">
                       {aiGenForm.count === 1 ? (
                         <>1 brief · review preview ก่อน save</>
                       ) : (
@@ -634,7 +634,7 @@ export default function AdminBriefsPage() {
                             }`}
                           >
                             <p className="text-xs font-bold">แผน {p.number}: {p.shortTitle}</p>
-                            <p className={`text-[10px] mt-0.5 ${aiGenForm.plan_number === p.number ? "text-purple-100" : "text-slate-500"}`}>
+                            <p className={`text-[0.65rem] mt-0.5 ${aiGenForm.plan_number === p.number ? "text-purple-100" : "text-slate-500"}`}>
                               {p.kpis.length} KPI · งบรวม {(p.budget / 1_000_000).toFixed(1)}M
                             </p>
                           </button>
@@ -655,7 +655,7 @@ export default function AdminBriefsPage() {
                           min={50000}
                           step={10000}
                         />
-                        <p className="text-[10px] text-slate-500 mt-0.5">
+                        <p className="text-[0.65rem] text-slate-500 mt-0.5">
                           {aiGenForm.count === 1
                             ? "AI จะออกแบบงบ ≤ ตัวเลขนี้"
                             : `🚀 Batch ${aiGenForm.count} briefs · เฉลี่ย ${Math.floor(aiGenForm.budget_remaining / aiGenForm.count).toLocaleString()} บาท/brief · AI ปรับตามความเหมาะสม (ไม่เกิน pool รวม)`}
@@ -747,7 +747,7 @@ export default function AdminBriefsPage() {
                         />
                       </div>
                       {batchProgress.errors.length > 0 && (
-                        <div className="rounded bg-red-50 p-2 text-[11px] text-red-700">
+                        <div className="rounded bg-red-50 p-2 text-[0.72rem] text-red-700">
                           <p className="font-bold mb-1">⚠ Errors ({batchProgress.errors.length}):</p>
                           {batchProgress.errors.map((e, i) => (
                             <p key={i}>• {e}</p>
@@ -767,7 +767,7 @@ export default function AdminBriefsPage() {
                   {/* Result preview */}
                   <div className="rounded-lg bg-emerald-50 ring-1 ring-emerald-200 p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="rounded-full bg-emerald-600 text-white px-2 py-0.5 text-[10px] font-bold">🤖 AI GENERATED</span>
+                      <span className="rounded-full bg-emerald-600 text-white px-2 py-0.5 text-[0.65rem] font-bold">🤖 AI GENERATED</span>
                       <span className="text-xs text-emerald-700">demand: {aiGenResult.brief.demand_level}</span>
                     </div>
                     <h2 className="text-base font-bold text-slate-900 leading-snug">{aiGenResult.brief.title}</h2>
@@ -815,15 +815,15 @@ export default function AdminBriefsPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded bg-blue-50 ring-1 ring-blue-200 p-3 text-center">
                       <p className="text-2xl font-bold text-blue-700">{aiGenResult.participants.researchers}</p>
-                      <p className="text-[10px] text-blue-800 uppercase">อาจารย์/บุคลากร</p>
+                      <p className="text-[0.65rem] text-blue-800 uppercase">อาจารย์/บุคลากร</p>
                     </div>
                     <div className="rounded bg-violet-50 ring-1 ring-violet-200 p-3 text-center">
                       <p className="text-2xl font-bold text-violet-700">{aiGenResult.participants.students}</p>
-                      <p className="text-[10px] text-violet-800 uppercase">นักศึกษา</p>
+                      <p className="text-[0.65rem] text-violet-800 uppercase">นักศึกษา</p>
                     </div>
                     <div className="rounded bg-emerald-50 ring-1 ring-emerald-200 p-3 text-center">
                       <p className="text-2xl font-bold text-emerald-700">{aiGenResult.participants.villagers}</p>
-                      <p className="text-[10px] text-emerald-800 uppercase">ชาวบ้าน/ผู้เข้าร่วม</p>
+                      <p className="text-[0.65rem] text-emerald-800 uppercase">ชาวบ้าน/ผู้เข้าร่วม</p>
                     </div>
                   </div>
                   <p className="text-xs text-slate-600 italic">{aiGenResult.participants.rationale}</p>
@@ -831,20 +831,20 @@ export default function AdminBriefsPage() {
                   {/* KPI mapping */}
                   <div className="grid sm:grid-cols-3 gap-2">
                     <div className="rounded bg-blue-50 ring-1 ring-blue-200 p-3">
-                      <p className="text-[10px] font-bold text-blue-800 uppercase mb-1">📊 Output</p>
-                      <ul className="text-[11px] text-blue-900 space-y-0.5 ml-3 list-disc">
+                      <p className="text-[0.65rem] font-bold text-blue-800 uppercase mb-1">📊 Output</p>
+                      <ul className="text-[0.72rem] text-blue-900 space-y-0.5 ml-3 list-disc">
                         {aiGenResult.kpi_mapping.output.map((o, i) => <li key={i}>{o}</li>)}
                       </ul>
                     </div>
                     <div className="rounded bg-violet-50 ring-1 ring-violet-200 p-3">
-                      <p className="text-[10px] font-bold text-violet-800 uppercase mb-1">📈 Outcome</p>
-                      <ul className="text-[11px] text-violet-900 space-y-0.5 ml-3 list-disc">
+                      <p className="text-[0.65rem] font-bold text-violet-800 uppercase mb-1">📈 Outcome</p>
+                      <ul className="text-[0.72rem] text-violet-900 space-y-0.5 ml-3 list-disc">
                         {aiGenResult.kpi_mapping.outcome.map((o, i) => <li key={i}>{o}</li>)}
                       </ul>
                     </div>
                     <div className="rounded bg-emerald-50 ring-1 ring-emerald-200 p-3">
-                      <p className="text-[10px] font-bold text-emerald-800 uppercase mb-1">🌱 Impact</p>
-                      <ul className="text-[11px] text-emerald-900 space-y-0.5 ml-3 list-disc">
+                      <p className="text-[0.65rem] font-bold text-emerald-800 uppercase mb-1">🌱 Impact</p>
+                      <ul className="text-[0.72rem] text-emerald-900 space-y-0.5 ml-3 list-disc">
                         {aiGenResult.kpi_mapping.impact.map((o, i) => <li key={i}>{o}</li>)}
                       </ul>
                     </div>
@@ -861,7 +861,7 @@ export default function AdminBriefsPage() {
                       <div className="text-center"><p className="font-bold text-amber-700">{aiGenResult.budget_breakdown.operating_pct}%</p><p className="text-amber-800">ค่าใช้สอย</p></div>
                       <div className="text-center"><p className="font-bold text-amber-700">{aiGenResult.budget_breakdown.supplies_pct}%</p><p className="text-amber-800">ค่าวัสดุ</p></div>
                     </div>
-                    <p className="mt-2 text-[11px] text-amber-800 italic">{aiGenResult.budget_breakdown.rationale}</p>
+                    <p className="mt-2 text-[0.72rem] text-amber-800 italic">{aiGenResult.budget_breakdown.rationale}</p>
                   </div>
 
                   {/* AI Notes */}
@@ -1004,7 +1004,7 @@ export default function AdminBriefsPage() {
                   <option key={k} value={k}>{v.emoji} {v.label}</option>
                 ))}
               </select>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[0.65rem] text-slate-500 mt-0.5">
                 {BRIEF_MODE_META[form.mode || "open"]?.desc}
               </p>
             </div>
@@ -1071,7 +1071,7 @@ export default function AdminBriefsPage() {
             <label className="text-sm font-bold text-slate-800">🏷 เชี่ยวชาญที่ต้องการ ({(form.required_skills || []).length} เลือก)</label>
             {Object.entries(tagsByCategory).map(([cat, tags]) => (
               <div key={cat} className="mt-1.5">
-                <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{CATEGORY_LABEL[cat as TagCategory]}</p>
+                <p className="text-[0.65rem] uppercase font-bold text-slate-500 mb-1">{CATEGORY_LABEL[cat as TagCategory]}</p>
                 <div className="flex flex-wrap gap-1">
                   {tags.map((t) => {
                     const sel = (form.required_skills || []).includes(t.slug);
@@ -1080,7 +1080,7 @@ export default function AdminBriefsPage() {
                         key={t.slug}
                         type="button"
                         onClick={() => toggleSkill(t.slug)}
-                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] ring-1 ${
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] ring-1 ${
                           sel ? `${t.color} ring-2 ring-offset-1` : "bg-white text-slate-500 ring-slate-200"
                         }`}
                       >
@@ -1097,7 +1097,7 @@ export default function AdminBriefsPage() {
           {/* Target KPIs */}
           <div>
             <label className="text-sm font-bold text-slate-800">🎯 ตอบ KPI ({(form.target_kpis || []).length} เลือก)</label>
-            <p className="text-[10px] text-slate-500">เลือก KPI ที่โจทย์นี้สนับสนุน</p>
+            <p className="text-[0.65rem] text-slate-500">เลือก KPI ที่โจทย์นี้สนับสนุน</p>
             <div className="mt-1.5 max-h-48 overflow-y-auto rounded border border-slate-200 p-2 space-y-1">
               {EXCELLENCE_KPIS.map((kpi) => {
                 const sel = (form.target_kpis || []).includes(kpi.code);
@@ -1115,7 +1115,7 @@ export default function AdminBriefsPage() {
                       className="mt-0.5"
                     />
                     <span className="flex-1">
-                      <code className="rounded bg-white px-1 text-[10px] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
+                      <code className="rounded bg-white px-1 text-[0.65rem] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
                       <span>{kpi.icon} {kpi.name}</span>
                     </span>
                   </label>
@@ -1172,14 +1172,14 @@ export default function AdminBriefsPage() {
                             alert("เปลี่ยน status ไม่สำเร็จ");
                           }
                         }}
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 cursor-pointer ${stat?.color || ""}`}
+                        className={`rounded px-1.5 py-0.5 text-[0.65rem] font-bold ring-1 cursor-pointer ${stat?.color || ""}`}
                         title="คลิกเพื่อเปลี่ยน status (draft = ซ่อนจากหน้า public)"
                       >
                         {Object.entries(BRIEF_STATUS_META).map(([k, v]) => (
                           <option key={k} value={k}>{v.emoji} {v.label}</option>
                         ))}
                       </select>
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${mod?.color}`}>
+                      <span className={`rounded px-1.5 py-0.5 text-[0.65rem] font-bold ring-1 ${mod?.color}`}>
                         {mod?.emoji} {mod?.label}
                       </span>
                     </div>
@@ -1187,7 +1187,7 @@ export default function AdminBriefsPage() {
                       {b.title}
                     </Link>
                     <p className="mt-1 text-xs text-slate-600 line-clamp-2">{b.problem_statement}</p>
-                    <p className="mt-1 text-[10px] text-slate-500">
+                    <p className="mt-1 text-[0.65rem] text-slate-500">
                       {b.location && `📍 ${b.location} · `}
                       🏷 {b.required_skills.length} skills · 🎯 {b.target_kpis.length} KPIs
                     </p>
@@ -1195,19 +1195,19 @@ export default function AdminBriefsPage() {
                   <div className="flex flex-col gap-1 flex-shrink-0">
                     <Link
                       href={`/briefs/${b.id}`}
-                      className="rounded border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] text-violet-700 hover:bg-violet-100 text-center"
+                      className="rounded border border-violet-200 bg-violet-50 px-2 py-1 text-[0.65rem] text-violet-700 hover:bg-violet-100 text-center"
                     >
                       👀 ดู / Match
                     </Link>
                     <button
                       onClick={() => setEditing(b)}
-                      className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] text-blue-700 hover:bg-blue-100"
+                      className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[0.65rem] text-blue-700 hover:bg-blue-100"
                     >
                       ✏️ แก้ไข
                     </button>
                     <button
                       onClick={() => handleDelete(b)}
-                      className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] text-red-700 hover:bg-red-100"
+                      className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[0.65rem] text-red-700 hover:bg-red-100"
                     >
                       🗑 ลบ
                     </button>
@@ -1232,7 +1232,7 @@ export default function AdminBriefsPage() {
             <div className="bg-blue-700 text-white px-5 py-3 rounded-t-2xl flex items-center justify-between">
               <div>
                 <h3 className="font-bold">✏️ แก้ไขโจทย์วิจัย</h3>
-                <p className="text-[10px] text-blue-100 mt-0.5 font-mono">{editing.id}</p>
+                <p className="text-[0.65rem] text-blue-100 mt-0.5 font-mono">{editing.id}</p>
               </div>
               <button onClick={() => !savingEdit && setEditing(null)} className="text-white/80 hover:text-white text-xl">✕</button>
             </div>
@@ -1352,7 +1352,7 @@ export default function AdminBriefsPage() {
                 <label className="text-sm font-bold text-slate-800">🏷 เชี่ยวชาญที่ต้องการ ({editing.required_skills.length})</label>
                 {Object.entries(tagsByCategory).map(([cat, tags]) => (
                   <div key={cat} className="mt-1.5">
-                    <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{CATEGORY_LABEL[cat as TagCategory]}</p>
+                    <p className="text-[0.65rem] uppercase font-bold text-slate-500 mb-1">{CATEGORY_LABEL[cat as TagCategory]}</p>
                     <div className="flex flex-wrap gap-1">
                       {tags.map((t) => {
                         const sel = editing.required_skills.includes(t.slug);
@@ -1361,7 +1361,7 @@ export default function AdminBriefsPage() {
                             key={t.slug}
                             type="button"
                             onClick={() => toggleEditSkill(t.slug)}
-                            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] ring-1 ${
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] ring-1 ${
                               sel ? `${t.color} ring-2 ring-offset-1` : "bg-white text-slate-500 ring-slate-200"
                             }`}
                           >
@@ -1387,7 +1387,7 @@ export default function AdminBriefsPage() {
                       }`}>
                         <input type="checkbox" checked={sel} onChange={() => toggleEditKpi(kpi.code)} className="mt-0.5" />
                         <span className="flex-1">
-                          <code className="rounded bg-white px-1 text-[10px] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
+                          <code className="rounded bg-white px-1 text-[0.65rem] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
                           {kpi.icon} {kpi.name}
                         </span>
                       </label>
@@ -1404,7 +1404,7 @@ export default function AdminBriefsPage() {
                   </p>
                   <div className="space-y-1">
                     {PLANS.find((p) => p.number === editing.plan_number)?.kpis.map((k) => (
-                      <div key={k.id} className="flex items-start gap-2 text-[11px] text-amber-900">
+                      <div key={k.id} className="flex items-start gap-2 text-[0.72rem] text-amber-900">
                         {k.highlight && <span className="text-amber-600">⭐</span>}
                         <span className="flex-1">{k.id}. {k.name}</span>
                         <span className="font-bold whitespace-nowrap">เป้า {k.target} {k.unit}</span>

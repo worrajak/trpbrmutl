@@ -319,13 +319,13 @@ export default function AdminResearchAreasPage() {
             <label className="text-sm font-bold text-slate-800">🏷 Skills ที่เกี่ยวข้อง ({(form.related_skills || []).length} เลือก)</label>
             {Object.entries(skillsByCategory).map(([cat, tags]) => (
               <div key={cat} className="mt-1.5">
-                <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{SKILL_CATEGORY_LABEL[cat as TagCategory]}</p>
+                <p className="text-[0.65rem] uppercase font-bold text-slate-500 mb-1">{SKILL_CATEGORY_LABEL[cat as TagCategory]}</p>
                 <div className="flex flex-wrap gap-1">
                   {tags.map((t) => {
                     const sel = (form.related_skills || []).includes(t.slug);
                     return (
                       <button key={t.slug} type="button" onClick={() => toggleSkill(t.slug)}
-                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] ring-1 ${
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] ring-1 ${
                           sel ? `${t.color} ring-2 ring-offset-1` : "bg-white text-slate-500 ring-slate-200"
                         }`}>
                         <span>{t.emoji}</span>
@@ -350,7 +350,7 @@ export default function AdminResearchAreasPage() {
                   }`}>
                     <input type="checkbox" checked={sel} onChange={() => toggleKpi(kpi.code)} className="mt-0.5" />
                     <span className="flex-1">
-                      <code className="rounded bg-white px-1 text-[10px] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
+                      <code className="rounded bg-white px-1 text-[0.65rem] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
                       {kpi.icon} {kpi.name}
                     </span>
                   </label>
@@ -394,10 +394,10 @@ export default function AdminResearchAreasPage() {
                   <span className="text-3xl flex-shrink-0">{a.icon || cat.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1 flex-wrap mb-1">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${cat.color}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${cat.color}`}>
                         {cat.emoji} {cat.label}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${dem.color}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${dem.color}`}>
                         {dem.emoji} {dem.label}
                       </span>
                     </div>
@@ -410,28 +410,28 @@ export default function AdminResearchAreasPage() {
                         {a.related_skills.slice(0, 4).map((slug) => {
                           const t = renderTag(slug);
                           return (
-                            <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                            <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                               <span>{t.emoji}</span>
                               <span>{t.label}</span>
                             </span>
                           );
                         })}
-                        {a.related_skills.length > 4 && <span className="text-[10px] text-slate-400">+{a.related_skills.length - 4}</span>}
+                        {a.related_skills.length > 4 && <span className="text-[0.65rem] text-slate-400">+{a.related_skills.length - 4}</span>}
                       </div>
                     )}
 
                     {/* KPIs + Plans */}
-                    <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
+                    <div className="mt-2 flex items-center gap-2 text-[0.65rem] text-slate-500">
                       {a.related_plans.length > 0 && <span>📚 แผน {a.related_plans.join(", ")}</span>}
                       {a.related_kpis.length > 0 && <span>🎯 {a.related_kpis.length} KPI</span>}
                     </div>
 
                     {/* Actions */}
                     <div className="mt-3 pt-2 border-t border-slate-100 flex gap-1">
-                      <button className="flex-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] text-blue-700 hover:bg-blue-100" disabled>
+                      <button className="flex-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[0.65rem] text-blue-700 hover:bg-blue-100" disabled>
                         ✏️ แก้ไข (TODO)
                       </button>
-                      <button onClick={() => handleDelete(a)} className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] text-red-700 hover:bg-red-100">
+                      <button onClick={() => handleDelete(a)} className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[0.65rem] text-red-700 hover:bg-red-100">
                         🗑
                       </button>
                     </div>

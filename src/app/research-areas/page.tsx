@@ -126,7 +126,7 @@ export default async function ResearchAreasPage() {
                     <div className="flex items-start gap-3">
                       <span className="text-3xl flex-shrink-0">{a.icon || meta.emoji}</span>
                       <div className="flex-1 min-w-0">
-                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${dem.color}`}>
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${dem.color}`}>
                           {dem.emoji} {dem.label}
                         </span>
                         <h3 className="mt-1.5 text-sm font-bold text-slate-900 leading-snug">{a.name}</h3>
@@ -140,18 +140,18 @@ export default async function ResearchAreasPage() {
                             {a.related_skills.slice(0, 4).map((slug) => {
                               const t = renderTag(slug);
                               return (
-                                <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                                <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                                   <span>{t.emoji}</span>
                                   <span>{t.label}</span>
                                 </span>
                               );
                             })}
-                            {a.related_skills.length > 4 && <span className="text-[10px] text-slate-400">+{a.related_skills.length - 4}</span>}
+                            {a.related_skills.length > 4 && <span className="text-[0.65rem] text-slate-400">+{a.related_skills.length - 4}</span>}
                           </div>
                         )}
 
                         {/* Plans + KPIs */}
-                        <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
+                        <div className="mt-2 flex items-center gap-2 text-[0.65rem] text-slate-500 flex-wrap">
                           {a.related_plans.length > 0 && <span>📚 แผน {a.related_plans.join(", ")}</span>}
                           {a.related_kpis.length > 0 && (
                             <span className="flex items-center gap-1">
@@ -165,7 +165,7 @@ export default async function ResearchAreasPage() {
                         </div>
 
                         {a.notes && (
-                          <p className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 italic">💡 {a.notes}</p>
+                          <p className="mt-2 pt-2 border-t border-slate-100 text-[0.65rem] text-slate-500 italic">💡 {a.notes}</p>
                         )}
                       </div>
                     </div>

@@ -273,7 +273,7 @@ export default function RegisterResearcherPage() {
           </h2>
           {Object.entries(tagsByCategory).map(([cat, tags]) => (
             <div key={cat} className="mb-3">
-              <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">
+              <p className="text-[0.65rem] uppercase font-bold text-slate-500 mb-1">
                 {CATEGORY_LABEL[cat as TagCategory]}
               </p>
               <div className="flex flex-wrap gap-1">
@@ -284,7 +284,7 @@ export default function RegisterResearcherPage() {
                       key={t.slug}
                       type="button"
                       onClick={() => toggleTag(t.slug)}
-                      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] ring-1 ${
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] ring-1 ${
                         sel ? `${t.color} ring-2 ring-offset-1` : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"
                       }`}
                     >
@@ -316,11 +316,11 @@ export default function RegisterResearcherPage() {
           {/* Selected display */}
           {form.expertise_tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1 rounded bg-slate-50 p-2">
-              <span className="text-[10px] text-slate-500 self-center">เลือก:</span>
+              <span className="text-[0.65rem] text-slate-500 self-center">เลือก:</span>
               {form.expertise_tags.map((slug) => {
                 const t = renderTag(slug);
                 return (
-                  <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] ring-1 ${t.color}`}>
+                  <span key={slug} className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[0.65rem] ring-1 ${t.color}`}>
                     <span>{t.emoji}</span>
                     <span>{t.label}</span>
                     <button type="button" onClick={() => removeFromArray("expertise_tags", slug)} className="ml-0.5 hover:text-red-600">✕</button>

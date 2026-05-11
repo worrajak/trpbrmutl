@@ -66,7 +66,7 @@ export default function ExcellenceKpiShowcase({ projects }: Props) {
           {Object.entries(groups).map(([catLabel, kpis]) => (
             <div key={catLabel}>
               <div className="mb-2 flex items-center gap-2">
-                <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-[10px] font-bold text-slate-700">
+                <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-[0.65rem] font-bold text-slate-700">
                   {catLabel}
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent" />
@@ -131,7 +131,7 @@ export default function ExcellenceKpiShowcase({ projects }: Props) {
                         </h4>
 
                         {/* Target line */}
-                        <p className="mt-1 text-[10px] text-gray-500">
+                        <p className="mt-1 text-[0.65rem] text-gray-500">
                           เป้า:{" "}
                           <strong className="text-gray-700">
                             {target}
@@ -168,7 +168,7 @@ export default function ExcellenceKpiShowcase({ projects }: Props) {
 
         {/* Legend */}
         <div className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-white/60 backdrop-blur-sm p-3 ring-1 ring-slate-100">
-          <p className="text-[10px] text-slate-600">
+          <p className="text-[0.65rem] text-slate-600">
             <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 mr-1.5" />
             <strong className="text-slate-800">Auto-classify</strong> โดยจับคำในชื่อโครงการ ·
             admin สามารถ override ได้ที่{" "}
@@ -176,7 +176,7 @@ export default function ExcellenceKpiShowcase({ projects }: Props) {
               /admin/projects
             </Link>
           </p>
-          <p className="text-[10px] text-slate-400 hidden sm:block">
+          <p className="text-[0.65rem] text-slate-400 hidden sm:block">
             Source: PerformanceEvaluation-System (สถช.)
           </p>
         </div>

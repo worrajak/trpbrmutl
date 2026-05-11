@@ -472,12 +472,12 @@ export default function UploadNgor9Page() {
               <p className="text-xs font-medium text-gray-700">
                 รายละเอียดที่บันทึก
                 {savedCounts.mode === "merge" && (
-                  <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800">
+                  <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[0.65rem] text-amber-800">
                     🔄 อัปเดตโครงการเดิม
                   </span>
                 )}
                 {savedCounts.mode === "insert" && (
-                  <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">
+                  <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[0.65rem] text-emerald-800">
                     ➕ โครงการใหม่
                   </span>
                 )}
@@ -519,10 +519,10 @@ export default function UploadNgor9Page() {
               {savedCounts.warnings.length > 0 && (
                 <div className="mt-2 rounded border border-amber-300 bg-amber-50 p-2">
                   {savedCounts.warnings.map((w, i) => (
-                    <p key={i} className="text-[11px] text-amber-800">{w}</p>
+                    <p key={i} className="text-[0.72rem] text-amber-800">{w}</p>
                   ))}
                   {savedProjectId && (
-                    <p className="mt-1 text-[11px] text-amber-700">
+                    <p className="mt-1 text-[0.72rem] text-amber-700">
                       → เปิด <a href={`/projects/${savedProjectId}`} className="underline" target="_blank" rel="noreferrer">ดูโครงการ</a>
                       {" หรือ "}
                       <a href="/admin/projects" className="underline">แก้ไข/ลบโครงการ</a>
@@ -606,7 +606,7 @@ export default function UploadNgor9Page() {
                 type="button"
                 onClick={handleTestKey}
                 disabled={!apiKey || testingKey}
-                className="rounded border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                className="rounded border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[0.72rem] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
               >
                 {testingKey ? "⏳ กำลังตรวจ..." : "🔌 ทดสอบ Key"}
               </button>
@@ -637,7 +637,7 @@ export default function UploadNgor9Page() {
                 {keyTest.ok ? (
                   <>
                     <p className="font-medium">✓ Key ใช้งานได้</p>
-                    <ul className="mt-1 space-y-0.5 text-[11px]">
+                    <ul className="mt-1 space-y-0.5 text-[0.72rem]">
                       {keyTest.label && <li>• Label: <code className="font-mono">{keyTest.label}</code></li>}
                       {typeof keyTest.usage === "number" && (
                         <li>• ใช้ไปแล้ว: <strong>${keyTest.usage.toFixed(4)}</strong></li>
@@ -676,7 +676,7 @@ export default function UploadNgor9Page() {
               <button
                 type="button"
                 onClick={openOrModelsBrowser}
-                className="rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-medium text-orange-700 hover:bg-orange-100"
+                className="rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.72rem] font-medium text-orange-700 hover:bg-orange-100"
               >
                 🔄 ดู Models ทั้งหมด (Live)
               </button>
@@ -697,7 +697,7 @@ export default function UploadNgor9Page() {
                     key={m.id}
                     type="button"
                     onClick={() => setModel(m.id)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                    className={`rounded-full border px-2.5 py-1 text-[0.72rem] transition ${
                       active
                         ? "border-royal-500 bg-royal-50 text-royal-700 ring-1 ring-royal-300"
                         : isFree
@@ -765,7 +765,7 @@ export default function UploadNgor9Page() {
                         {opt.badge}
                       </span>
                     </div>
-                    <p className="text-[11px] leading-snug text-gray-500">{opt.desc}</p>
+                    <p className="text-[0.72rem] leading-snug text-gray-500">{opt.desc}</p>
                   </button>
                 );
               })}
@@ -896,18 +896,18 @@ export default function UploadNgor9Page() {
                         className="w-full rounded border px-2 py-1 text-sm" />
                       <div className="flex gap-2">
                         <div className="w-28">
-                          <label className="text-[10px] text-gray-400">งบ (บาท)</label>
+                          <label className="text-[0.65rem] text-gray-400">งบ (บาท)</label>
                           <input type="number" value={act.budget}
                             onChange={(e) => updateActivity(idx, "budget", Number(e.target.value))}
                             className="w-full rounded border px-2 py-1 text-xs" />
                         </div>
                         <div className="flex-1">
-                          <label className="text-[10px] text-gray-400">เดือนที่ทำ (คลิกเลือก)</label>
+                          <label className="text-[0.65rem] text-gray-400">เดือนที่ทำ (คลิกเลือก)</label>
                           <div className="flex flex-wrap gap-1">
                             {[10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((m) => (
                               <button key={m} type="button"
                                 onClick={() => toggleMonth(idx, m)}
-                                className={`rounded px-1.5 py-0.5 text-[10px] ${
+                                className={`rounded px-1.5 py-0.5 text-[0.65rem] ${
                                   act.planned_months.includes(m)
                                     ? "bg-blue-500 text-white"
                                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -1027,7 +1027,7 @@ export default function UploadNgor9Page() {
             <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm">
               {/* Source NGOR9 info */}
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                <p className="text-[11px] font-medium text-emerald-700">🆕 ข้อมูลจาก ง9 ที่กำลังจะบันทึก:</p>
+                <p className="text-[0.72rem] font-medium text-emerald-700">🆕 ข้อมูลจาก ง9 ที่กำลังจะบันทึก:</p>
                 <p className="mt-1 font-medium text-emerald-900">{parsed.project_name}</p>
                 <p className="text-xs text-emerald-700">
                   ผู้รับผิดชอบ: {parsed.responsible || "—"} · งบ: {Number(parsed.budget_total || 0).toLocaleString()} · ปี {fiscalYear}
@@ -1040,13 +1040,13 @@ export default function UploadNgor9Page() {
               {/* Strategy selectors — ส่งผลต่อ "อัปเดตเข้าโครงการนี้" ทุกปุ่ม */}
               {matchCandidates.length > 0 && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
-                  <p className="text-[11px] font-medium text-blue-800">
+                  <p className="text-[0.72rem] font-medium text-blue-800">
                     ⚙ วิธีจัดการกับข้อมูลเดิมเมื่อ &quot;อัปเดต&quot;:
                   </p>
 
                   {/* Activities strategy */}
                   <div>
-                    <p className="text-[11px] text-blue-700 mb-1">
+                    <p className="text-[0.72rem] text-blue-700 mb-1">
                       <strong>กิจกรรม / แผน Gantt</strong>
                       <span className="text-blue-500 ml-1">
                         (ของเดิม {matchCandidates[0].existing_activities} · ง9 {parsed.activities?.length || 0})
@@ -1062,7 +1062,7 @@ export default function UploadNgor9Page() {
                           key={opt.id}
                           onClick={() => setActivitiesStrategy(opt.id)}
                           type="button"
-                          className={`rounded border-2 px-2 py-1.5 text-left text-[10px] transition ${
+                          className={`rounded border-2 px-2 py-1.5 text-left text-[0.65rem] transition ${
                             activitiesStrategy === opt.id
                               ? "border-blue-500 bg-white shadow-sm"
                               : "border-blue-200 bg-blue-50 opacity-70 hover:opacity-100"
@@ -1077,7 +1077,7 @@ export default function UploadNgor9Page() {
 
                   {/* KPIs strategy */}
                   <div>
-                    <p className="text-[11px] text-blue-700 mb-1">
+                    <p className="text-[0.72rem] text-blue-700 mb-1">
                       <strong>ตัวชี้วัด KPI</strong>
                       <span className="text-blue-500 ml-1">
                         (ของเดิม {matchCandidates[0].existing_kpis} · ง9 {(parsed.kpi.quantitative?.length || 0) + (parsed.kpi.qualitative?.length || 0) + (parsed.kpi.time_target ? 1 : 0) + (parsed.kpi.budget_target ? 1 : 0)})
@@ -1093,7 +1093,7 @@ export default function UploadNgor9Page() {
                           key={opt.id}
                           onClick={() => setKpisStrategy(opt.id)}
                           type="button"
-                          className={`rounded border-2 px-2 py-1.5 text-left text-[10px] transition ${
+                          className={`rounded border-2 px-2 py-1.5 text-left text-[0.65rem] transition ${
                             kpisStrategy === opt.id
                               ? "border-blue-500 bg-white shadow-sm"
                               : "border-blue-200 bg-blue-50 opacity-70 hover:opacity-100"
@@ -1106,7 +1106,7 @@ export default function UploadNgor9Page() {
                     </div>
                   </div>
 
-                  <p className="text-[10px] text-blue-600 bg-blue-100 rounded p-1.5">
+                  <p className="text-[0.65rem] text-blue-600 bg-blue-100 rounded p-1.5">
                     💡 แนะนำ <strong>เพิ่มต่อท้าย</strong> ถ้าของเดิมจาก Excel มี Gantt Chart ดีแล้ว · เลือก <strong>แทนที่</strong> เฉพาะตอนของเดิมเป็น placeholder ที่ไม่ตรง
                   </p>
                 </div>
@@ -1129,11 +1129,11 @@ export default function UploadNgor9Page() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           {isTop && (
-                            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[0.65rem] font-medium text-white">
                               แนะนำ
                             </span>
                           )}
-                          <span className="text-[10px] font-mono text-gray-400">
+                          <span className="text-[0.65rem] font-mono text-gray-400">
                             score: {(m.score * 100).toFixed(0)}%
                           </span>
                         </div>
@@ -1143,7 +1143,7 @@ export default function UploadNgor9Page() {
                           {m.erp_code && (
                             <>
                               {" "}
-                              · ERP: <code className="font-mono text-[10px]">{m.erp_code}</code>
+                              · ERP: <code className="font-mono text-[0.65rem]">{m.erp_code}</code>
                             </>
                           )}
                         </p>
@@ -1164,7 +1164,7 @@ export default function UploadNgor9Page() {
                             {m.signals.map((s, si) => (
                               <span
                                 key={si}
-                                className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600"
+                                className="rounded bg-gray-100 px-1.5 py-0.5 text-[0.65rem] text-gray-600"
                               >
                                 {s}
                               </span>
@@ -1176,7 +1176,7 @@ export default function UploadNgor9Page() {
                         {Math.abs(m.budget_total - Number(parsed.budget_total || 0)) > 1 &&
                           Number(parsed.budget_total || 0) > 0 && (
                             <div className="mt-2 rounded border border-gray-300 bg-white p-2">
-                              <p className="text-[11px] font-medium text-gray-700">
+                              <p className="text-[0.72rem] font-medium text-gray-700">
                                 ⚠ งบประมาณต่างกัน — ใช้ของไหน?
                               </p>
                               <div className="mt-1 flex flex-col gap-1">
@@ -1190,7 +1190,7 @@ export default function UploadNgor9Page() {
                                   <span>
                                     เก็บของเดิม{" "}
                                     <strong className="text-blue-700">{m.budget_total.toLocaleString()}</strong>
-                                    <span className="text-gray-400 text-[10px]"> (ปกติมาจาก Excel/ERP - แม่นกว่า)</span>
+                                    <span className="text-gray-400 text-[0.65rem]"> (ปกติมาจาก Excel/ERP - แม่นกว่า)</span>
                                   </span>
                                 </label>
                                 <label className="flex cursor-pointer items-center gap-2 text-xs">
@@ -1205,7 +1205,7 @@ export default function UploadNgor9Page() {
                                     <strong className="text-emerald-700">
                                       {Number(parsed.budget_total || 0).toLocaleString()}
                                     </strong>
-                                    <span className="text-gray-400 text-[10px]"> (ถ้างบเดิมไม่สมเหตุสมผล)</span>
+                                    <span className="text-gray-400 text-[0.65rem]"> (ถ้างบเดิมไม่สมเหตุสมผล)</span>
                                   </span>
                                 </label>
                               </div>
@@ -1226,7 +1226,7 @@ export default function UploadNgor9Page() {
                           href={`/projects/${m.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="whitespace-nowrap rounded border border-gray-300 px-3 py-1.5 text-center text-[11px] text-gray-600 hover:bg-gray-50"
+                          className="whitespace-nowrap rounded border border-gray-300 px-3 py-1.5 text-center text-[0.72rem] text-gray-600 hover:bg-gray-50"
                         >
                           🔗 ดูของเดิม
                         </a>
@@ -1239,7 +1239,7 @@ export default function UploadNgor9Page() {
 
             {/* Footer */}
             <div className="flex-shrink-0 border-t bg-gray-50 px-5 py-3">
-              <p className="mb-2 text-[11px] text-gray-500">
+              <p className="mb-2 text-[0.72rem] text-gray-500">
                 หรือถ้าไม่ใช่โครงการเดียวกัน:
               </p>
               <div className="flex gap-2">
@@ -1380,20 +1380,20 @@ export default function UploadNgor9Page() {
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="font-mono text-xs font-semibold">{m.id}</span>
                               {m.is_free && (
-                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">
+                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[0.65rem] text-emerald-700">
                                   FREE
                                 </span>
                               )}
                               {m.has_vision && (
-                                <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-700">
+                                <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[0.65rem] text-violet-700">
                                   📷 Vision
                                 </span>
                               )}
                               {!m.is_free && (
-                                <span className="text-[10px] text-gray-500">{m.price}</span>
+                                <span className="text-[0.65rem] text-gray-500">{m.price}</span>
                               )}
                             </div>
-                            <p className="mt-0.5 text-[10px] text-gray-400">
+                            <p className="mt-0.5 text-[0.65rem] text-gray-400">
                               {m.provider}
                               {m.context_length > 0 && (
                                 <> · {(m.context_length / 1000).toFixed(0)}k ctx</>
@@ -1405,7 +1405,7 @@ export default function UploadNgor9Page() {
                               setModel(m.id);
                               setShowOrModels(false);
                             }}
-                            className="flex-shrink-0 rounded bg-orange-100 px-2 py-1 text-[10px] text-orange-700 hover:bg-orange-200"
+                            className="flex-shrink-0 rounded bg-orange-100 px-2 py-1 text-[0.65rem] text-orange-700 hover:bg-orange-200"
                           >
                             {active ? "✓ ใช้อยู่" : "ใช้ตัวนี้"}
                           </button>
@@ -1417,7 +1417,7 @@ export default function UploadNgor9Page() {
             </div>
 
             {/* Footer hint */}
-            <div className="flex-shrink-0 border-t bg-gray-50 px-4 py-2 text-[10px] text-gray-500">
+            <div className="flex-shrink-0 border-t bg-gray-50 px-4 py-2 text-[0.65rem] text-gray-500">
               💡 Tip: PDF parsing ใช้ <code className="font-mono">file-parser</code> plugin · models ที่มี <span className="text-violet-700">📷 Vision</span> จะอ่าน PDF ได้แม่นกว่า
             </div>
           </div>

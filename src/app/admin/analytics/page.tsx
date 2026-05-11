@@ -191,14 +191,14 @@ export default function AnalyticsPage() {
                     key={d.date}
                     className="flex flex-1 flex-col items-center"
                   >
-                    <span className="mb-1 text-[10px] text-gray-500">
+                    <span className="mb-1 text-[0.65rem] text-gray-500">
                       {d.count}
                     </span>
                     <div
                       className="w-full rounded-t bg-royal-500 transition-all"
                       style={{ height: `${h}px` }}
                     />
-                    <span className="mt-1 text-[10px] text-gray-400">
+                    <span className="mt-1 text-[0.65rem] text-gray-400">
                       {d.date.slice(5)}
                     </span>
                   </div>

@@ -228,11 +228,11 @@ export default function AiSettingsBar({
     <div className="space-y-2">
       {/* Source indicator */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium text-slate-500 uppercase">
+        <span className="text-[0.65rem] font-medium text-slate-500 uppercase">
           🤖 OpenRouter Settings
         </span>
         <span
-          className={`text-[10px] px-2 py-0.5 rounded-full ring-1 ${
+          className={`text-[0.65rem] px-2 py-0.5 rounded-full ring-1 ${
             source === "server"
               ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
               : source === "browser"
@@ -256,7 +256,7 @@ export default function AiSettingsBar({
         <div className="flex-1">
           <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
             <span>🔑 API Key</span>
-            <button type="button" onClick={() => setShowKey(!showKey)} className="text-[10px] text-slate-500 hover:text-slate-700">
+            <button type="button" onClick={() => setShowKey(!showKey)} className="text-[0.65rem] text-slate-500 hover:text-slate-700">
               {showKey ? "🙈 ซ่อน" : "👁 แสดง"}
             </button>
           </label>
@@ -291,7 +291,7 @@ export default function AiSettingsBar({
             {keyTest.is_free_tier && <span className="ml-1 text-amber-700">(Free)</span>}
           </span>
           {keyTest.limit != null && (
-            <span className="text-[10px] text-emerald-700">
+            <span className="text-[0.65rem] text-emerald-700">
               💰 ${keyTest.usage?.toFixed(4) || "0"} / ${keyTest.limit?.toFixed(2)}
             </span>
           )}
@@ -342,7 +342,7 @@ export default function AiSettingsBar({
       </div>
 
       {!compact && (
-        <p className="text-[10px] text-slate-500 leading-relaxed">
+        <p className="text-[0.65rem] text-slate-500 leading-relaxed">
           💡 <strong>Server</strong>: share ทุก device + admin ทุกคน · <strong>Browser</strong>: เครื่องนี้เท่านั้น (auto-save) ·
           ระบบโหลด Server ก่อน → fallback Browser
         </p>
@@ -401,8 +401,8 @@ export default function AiSettingsBar({
                       {m.has_vision && <span className="rounded-full bg-blue-100 text-blue-800 px-1.5 py-0.5 text-[9px] font-bold">👁 VISION</span>}
                       {m.id === model && <span className="rounded-full bg-purple-600 text-white px-1.5 py-0.5 text-[9px] font-bold">✓ SELECTED</span>}
                     </div>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{m.id}</p>
-                    <p className="text-[10px] text-slate-600 mt-1">{m.provider} · {m.price} · ctx {(m.context_length / 1000).toFixed(0)}K</p>
+                    <p className="text-[0.65rem] text-slate-500 font-mono mt-0.5 truncate">{m.id}</p>
+                    <p className="text-[0.65rem] text-slate-600 mt-1">{m.provider} · {m.price} · ctx {(m.context_length / 1000).toFixed(0)}K</p>
                   </button>
                 ))
               )}

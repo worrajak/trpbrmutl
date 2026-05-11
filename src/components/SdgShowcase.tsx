@@ -79,7 +79,7 @@ export default function SdgShowcase({ countPerSdg, totalProjects }: SdgShowcaseP
 
               <div className="relative h-full flex flex-col items-center justify-center p-1 text-white">
                 <span className="text-2xl sm:text-3xl drop-shadow-md">{g.icon}</span>
-                <p className="mt-0.5 text-[9px] sm:text-[10px] font-bold opacity-90">
+                <p className="mt-0.5 text-[9px] sm:text-[0.65rem] font-bold opacity-90">
                   SDG {g.id}
                 </p>
                 <p className="text-[8px] sm:text-[9px] leading-tight text-center px-1 line-clamp-2 opacity-80 hidden sm:block">
@@ -89,7 +89,7 @@ export default function SdgShowcase({ countPerSdg, totalProjects }: SdgShowcaseP
 
               {/* Active badge - count */}
               {isActive && (
-                <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-white text-[10px] font-bold shadow-md ring-2 ring-current"
+                <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-white text-[0.65rem] font-bold shadow-md ring-2 ring-current"
                   style={{ color: g.color }}
                 >
                   {count}

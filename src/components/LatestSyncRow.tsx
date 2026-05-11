@@ -26,17 +26,17 @@ export default function LatestSyncRow({
         <span>🕐</span>
         <span>{title}</span>
       </p>
-      <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
+      <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
         {sources.map((s, i) => (
-          <div key={i} className="flex items-center justify-between gap-2 text-xs">
+          <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2 text-xs">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-sm">{s.icon}</span>
-              <span className="text-gray-700 truncate">
+              <span className="text-gray-700">
                 {s.name}
                 {s.detail && <span className="text-gray-400 ml-1">{s.detail}</span>}
               </span>
             </div>
-            <span className="flex items-center gap-1 text-[11px] text-gray-500 whitespace-nowrap flex-shrink-0">
+            <span className="flex items-center gap-1 text-[0.72rem] text-gray-500 whitespace-nowrap flex-shrink-0 pl-7 sm:pl-0">
               {s.timestamp}
               {s.warning && <span className="text-amber-500">⚠</span>}
             </span>
