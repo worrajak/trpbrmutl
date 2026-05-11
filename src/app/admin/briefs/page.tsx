@@ -159,7 +159,9 @@ export default function AdminBriefsPage() {
         budget_max: aiGenResult.budget_breakdown.total,
         fiscal_year: aiGenResult.brief.fiscal_year,
         mode: "open",
-        status: "draft",
+        // AI Generate save เป็น "open" → แสดงบน public /briefs ทันที
+        // (admin เปลี่ยนเป็น draft/closed ภายหลังได้)
+        status: "open",
         created_by: createdBy,
         created_by_token: createdByToken,
         notes: `🤖 AI Generated · งบรวม ${aiGenResult.budget_breakdown.total.toLocaleString()} บาท · กิจกรรม ${aiGenResult.activities.length} · วัสดุ ${aiGenResult.materials.length} · ผู้ร่วม ${aiGenResult.participants.researchers + aiGenResult.participants.students + aiGenResult.participants.villagers} คน\n\n${aiGenResult.ai_notes.join("\n• ")}`,
@@ -853,9 +855,29 @@ export default function AdminBriefsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${stat?.color || ""}`}>
-                        {stat?.emoji} {stat?.label}
-                      </span>
+                      {/* Status dropdown — เปลี่ยนได้ทันที */}
+                      <select
+                        value={b.status}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          const res = await fetch(`/api/admin/briefs/${b.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ status: newStatus }),
+                          });
+                          if (res.ok) {
+                            setList((prev) => prev.map((x) => x.id === b.id ? { ...x, status: newStatus } : x));
+                          } else {
+                            alert("เปลี่ยน status ไม่สำเร็จ");
+                          }
+                        }}
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 cursor-pointer ${stat?.color || ""}`}
+                        title="คลิกเพื่อเปลี่ยน status (draft = ซ่อนจากหน้า public)"
+                      >
+                        {Object.entries(BRIEF_STATUS_META).map(([k, v]) => (
+                          <option key={k} value={k}>{v.emoji} {v.label}</option>
+                        ))}
+                      </select>
                       <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${mod?.color}`}>
                         {mod?.emoji} {mod?.label}
                       </span>
