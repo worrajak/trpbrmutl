@@ -7,6 +7,7 @@ import { BRIEF_STATUS_META, BRIEF_MODE_META } from "@/lib/brief-matching";
 import { EXCELLENCE_KPIS } from "@/lib/excellence-kpi";
 import { PLANS } from "@/lib/foundation";
 import type { GeneratedBrief } from "@/lib/ai-brief-generator-prompts";
+import AiSettingsBar from "@/components/AiSettingsBar";
 
 const OR_STORAGE = "rpf_openrouter_settings";
 
@@ -359,19 +360,13 @@ export default function AdminBriefsPage() {
             <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm">
               {!aiGenResult ? (
                 <>
-                  {/* Model display + override */}
-                  <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3 flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-700">🤖 AI Model:</span>
-                    <input
-                      type="text"
-                      value={model}
-                      onChange={(e) => setModel(e.target.value)}
-                      placeholder="anthropic/claude-sonnet-4.5"
-                      className="flex-1 rounded border px-2 py-1 text-xs font-mono"
+                  {/* AI Settings (shared component) */}
+                  <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3">
+                    <AiSettingsBar
+                      defaultModel={model}
+                      compact
+                      onChange={(s) => { setApiKey(s.api_key); setModel(s.model); }}
                     />
-                    <span className="text-[10px] text-slate-500 whitespace-nowrap">
-                      {apiKey ? `🔑 ${apiKey.slice(0, 12)}...` : "⚠ ไม่มี key"}
-                    </span>
                   </div>
 
                   {/* Form */}
