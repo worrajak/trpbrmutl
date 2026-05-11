@@ -260,6 +260,35 @@ CREATE TABLE IF NOT EXISTS team_members (
 );
 
 
+-- ==========================================
+-- 14. RESEARCHERS — นักวิจัย/นักบริการวิชาการ (สำหรับ AI matching engine Phase 1)
+-- ==========================================
+-- เก็บข้อมูลนักวิจัย + ความเชี่ยวชาญ → ใช้ matching กับ research_briefs ผ่าน AI
+-- expertise_tags ใช้ slug จาก src/lib/researcher-tags.ts (preset 20 + custom)
+CREATE TABLE IF NOT EXISTS researchers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    title TEXT,                                   -- ผศ.ดร. / นาย / ผู้ช่วยศาสตราจารย์
+    faculty TEXT,                                 -- คณะ
+    department TEXT,                              -- สาขาวิชา
+    email TEXT,
+    phone TEXT,
+    expertise_tags TEXT[] NOT NULL DEFAULT '{}',  -- ['precision-ag', 'iot', ...]
+    areas TEXT[] DEFAULT '{}',                    -- ['เชียงใหม่', 'หมู่บ้านสันป่าตอง']
+    past_projects TEXT[] DEFAULT '{}',            -- ชื่อโครงการเก่า (string array)
+    level TEXT DEFAULT 'mid'
+      CHECK (level IN ('junior', 'mid', 'senior')),
+    bio TEXT,                                     -- ข้อมูลย่อ 1-2 บรรทัด
+    external_link TEXT,                           -- โปรไฟล์มหาวิทยาลัย / ORCID
+    current_load INT DEFAULT 0,                   -- จำนวนโครงการที่กำลังทำ
+    is_active BOOLEAN DEFAULT TRUE,
+    -- ผูกกับ team_members ถ้ามีสิทธิ login (Mode B/C: researcher login เห็น matching briefs)
+    linked_team_member_id UUID REFERENCES team_members(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 -- =============================================================================
 --  INDEXES
 -- =============================================================================
@@ -282,6 +311,9 @@ CREATE INDEX IF NOT EXISTS idx_participants_name          ON participants(full_n
 CREATE INDEX IF NOT EXISTS idx_kpi_evidence_kpi           ON kpi_evidence(kpi_target_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_token         ON team_members(token);
 CREATE INDEX IF NOT EXISTS idx_team_members_active        ON team_members(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_researchers_active         ON researchers(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_researchers_expertise      ON researchers USING GIN (expertise_tags);
+CREATE INDEX IF NOT EXISTS idx_researchers_areas          ON researchers USING GIN (areas);
 -- GIN index สำหรับค้นหา sdg_tags แบบ array-contains
 CREATE INDEX IF NOT EXISTS idx_projects_sdg_tags          ON projects USING GIN (sdg_tags);
 CREATE INDEX IF NOT EXISTS idx_reports_sdg_tags           ON activity_reports USING GIN (sdg_tags);
@@ -305,6 +337,7 @@ ALTER TABLE reward_balance      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE participants        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kpi_evidence        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_members        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE researchers         ENABLE ROW LEVEL SECURITY;
 
 -- Public read
 DO $$ BEGIN
@@ -373,6 +406,14 @@ DO $$ BEGIN CREATE POLICY "anon select team_members"     ON team_members     FOR
 DO $$ BEGIN CREATE POLICY "anon insert team_members"     ON team_members     FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon update team_members"     ON team_members     FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon delete team_members"     ON team_members     FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ===========================================================================
+-- RESEARCHERS policies — public read · admin gate ฝั่ง API
+-- ===========================================================================
+DO $$ BEGIN CREATE POLICY "anon select researchers"      ON researchers      FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert researchers"      ON researchers      FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update researchers"      ON researchers      FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete researchers"      ON researchers      FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
 -- =============================================================================

@@ -54,7 +54,7 @@ interface DryRunResult {
   diff: DiffEntry[];
 }
 
-type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "seed" | "repair" | null;
+type OpenSection = "tokens" | "analytics" | "sync" | "ngor9" | "manage" | "team" | "researchers" | "seed" | "repair" | null;
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก", "/projects": "โครงการย่อย",
@@ -275,6 +275,14 @@ export default function AdminPage() {
       activeColor: "border-emerald-400",
     },
     {
+      key: "researchers" as OpenSection,
+      icon: "🔬",
+      title: "ฐานนักวิจัย/นักบริการวิชาการ (Phase 1)",
+      desc: "expertise 20 tags + custom · ใช้สำหรับ AI matching engine กับโจทย์วิจัย",
+      color: "border-cyan-300 bg-cyan-50",
+      activeColor: "border-cyan-400",
+    },
+    {
       key: "tokens" as OpenSection,
       icon: "🔑",
       title: "จัดการ Token / RPF Coin",
@@ -336,6 +344,7 @@ export default function AdminPage() {
               {card.key === "ngor9" && <Ngor9Panel />}
               {card.key === "manage" && <ManageProjectsPanel />}
               {card.key === "team" && <TeamMembersPanel />}
+              {card.key === "researchers" && <ResearchersPanel />}
               {card.key === "tokens" && <TokensPanel />}
               {card.key === "analytics" && <AnalyticsPanel />}
               {card.key === "seed" && <SeedActivitiesPanel />}
@@ -922,6 +931,28 @@ function ManageProjectsPanel() {
       <a href="/admin/projects"
         className="flex items-center justify-center gap-2 w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
         🗂 เปิดหน้าจัดการโครงการ →
+      </a>
+    </div>
+  );
+}
+
+// ─── Researchers Panel ───────────────────────────────────────────────────────
+
+function ResearchersPanel() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600">
+        จัดการ <strong>ฐานนักวิจัย/นักบริการวิชาการ</strong> · ใส่ความเชี่ยวชาญ
+        (20 preset tags + custom) · พื้นที่ทำงาน · level
+      </p>
+      <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-xs text-cyan-800 space-y-1">
+        <p>📌 <strong>Phase 1 (foundation):</strong> ฐานข้อมูลนักวิจัย — ปัจจุบัน</p>
+        <p>📅 <strong>Phase 2 (next):</strong> Brief library + manual matching · researcher login เห็น brief ที่ตรง expertise</p>
+        <p>🤖 <strong>Phase 3 (AI):</strong> auto-match + generate ง9 ตาม KPI/งบ template</p>
+      </div>
+      <a href="/admin/researchers"
+        className="flex items-center justify-center gap-2 w-full rounded-lg bg-cyan-600 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700">
+        🔬 เปิดหน้าจัดการนักวิจัย →
       </a>
     </div>
   );
