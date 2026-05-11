@@ -3,8 +3,21 @@
 @tailwind utilities;
 
 @layer base {
+  /* Base font scale — เพิ่ม ~2pt (1.5px) จากค่า default 16px
+   * Tailwind ใช้ rem-based units → ทุก text-xs/sm/base/lg ขยายตาม proportionally
+   * Mobile (≤640px) คงเดิม 16px ป้องกัน layout overflow + browser zoom min */
+  html {
+    font-size: 17.5px;
+  }
+  @media (max-width: 640px) {
+    html {
+      font-size: 16.5px;
+    }
+  }
   body {
     @apply bg-gray-50 text-gray-900;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 }
 
