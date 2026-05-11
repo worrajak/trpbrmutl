@@ -117,6 +117,39 @@ export default function AdminResearchersPage() {
     await loadList();
   }
 
+  async function handleSeedFromProjects(dryRun: boolean) {
+    if (!dryRun && !confirm("เพิ่มนักวิจัยจากโครงการที่กำลังดำเนินงาน?\n(ระบบจะข้าม name ที่มีอยู่แล้ว · default level=mid)")) return;
+    const res = await fetch("/api/admin/researchers/seed-from-projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dry_run: dryRun }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert("Seed ล้มเหลว: " + data.error);
+      return;
+    }
+    if (dryRun) {
+      const previewLines = (data.preview || []).map((p: { name: string; faculty: string | null; current_load: number }) =>
+        `• ${p.name} · ${p.faculty || "—"} · ${p.current_load} โครงการ`
+      ).join("\n");
+      alert(
+        `📊 PREVIEW (dry-run)\n\n` +
+        `Scanned ${data.total_projects_scanned} active projects\n` +
+        `พบ unique persons: ${data.total_unique_persons}\n` +
+        `จะเพิ่มใหม่: ${data.will_insert} (ข้ามที่มีอยู่ ${data.skipped_existing})\n\n` +
+        `ตัวอย่าง 10 คนแรก:\n${previewLines}\n\n` +
+        `กด '✅ Seed จริง' เพื่อ insert จริง`
+      );
+    } else {
+      alert(
+        `✅ เพิ่มนักวิจัย ${data.inserted} คน · ข้ามของเดิม ${data.skipped_existing} คน\n` +
+        `(จาก ${data.total_projects_scanned} active projects · ${data.total_unique_persons} persons)`
+      );
+      await loadList();
+    }
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -253,6 +286,20 @@ export default function AdminResearchersPage() {
           <a href="/admin" className="rounded border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">
             ← กลับ /admin
           </a>
+          <button
+            onClick={() => handleSeedFromProjects(true)}
+            className="rounded border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+            title="ดูตัวอย่างก่อน insert จริง"
+          >
+            👁 Preview จากโครงการ
+          </button>
+          <button
+            onClick={() => handleSeedFromProjects(false)}
+            className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+            title="ดึงหัวหน้าโครงการจาก active projects → สร้างเป็น researcher"
+          >
+            🌱 Seed จากโครงการจริง
+          </button>
           {list.length === 0 && (
             <button
               onClick={handleSeed}
