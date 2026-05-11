@@ -10,6 +10,7 @@ import {
   type MatchScore,
 } from "@/lib/brief-matching";
 import { EXCELLENCE_KPIS } from "@/lib/excellence-kpi";
+import { PLANS } from "@/lib/foundation";
 
 const OR_STORAGE = "rpf_openrouter_settings";
 
@@ -312,9 +313,9 @@ export default function BriefDetailPage() {
           )}
         </div>
 
-        {/* Target KPIs */}
+        {/* Target KPIs (RMUTL excellence) */}
         <div className="rounded-lg bg-white ring-1 ring-slate-200 p-4">
-          <h3 className="text-sm font-bold text-slate-800 mb-2">🎯 ตอบ KPI</h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-2">🎯 ตอบ KPI มทร./EdPEx</h3>
           {brief.target_kpis.length === 0 ? (
             <p className="text-xs text-slate-400">— ไม่ได้ระบุ —</p>
           ) : (
@@ -332,6 +333,62 @@ export default function BriefDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Plan KPIs reference (จาก ง.8) — แสดงทุกครั้งที่ brief ผูกกับแผน */}
+      {brief.plan_number && (() => {
+        const plan = PLANS.find((p) => p.number === brief.plan_number);
+        if (!plan) return null;
+        return (
+          <div className="rounded-lg bg-amber-50 ring-1 ring-amber-300 p-4">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+              <div>
+                <h3 className="text-base font-bold text-amber-900">
+                  📋 ตัวชี้วัดของแผน {plan.number}: {plan.shortTitle}
+                </h3>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  จาก ง.8 · งบรวมแผน {(plan.budget / 1_000_000).toFixed(1)}M บาท · ตัวชี้วัด {plan.kpis.length} ตัว
+                </p>
+              </div>
+              <a
+                href={plan.pdfPath}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded bg-red-50 ring-1 ring-red-200 px-2.5 py-1 text-[11px] font-medium text-red-700 hover:bg-red-100"
+              >
+                📄 ดู ง.8 เต็ม
+              </a>
+            </div>
+            <div className="rounded ring-1 ring-amber-200 overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-amber-100 text-amber-900">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left w-8">#</th>
+                    <th className="px-2 py-1.5 text-left">ตัวชี้วัด</th>
+                    <th className="px-2 py-1.5 text-right w-16">เป้า</th>
+                    <th className="px-2 py-1.5 text-left w-16">หน่วย</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-100 bg-white">
+                  {plan.kpis.map((k) => (
+                    <tr key={k.id} className={k.highlight ? "bg-amber-50" : ""}>
+                      <td className="px-2 py-1.5 text-amber-700">{k.id}</td>
+                      <td className="px-2 py-1.5 text-slate-800 leading-snug">
+                        {k.highlight && <span className="mr-1 text-amber-600">⭐</span>}
+                        {k.name}
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-bold text-slate-900">{k.target.toLocaleString()}</td>
+                      <td className="px-2 py-1.5 text-slate-600">{k.unit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-[10px] text-amber-700">
+              ⭐ = ตัวชี้วัดเน้น "การมีส่วนร่วม" และ "พื้นที่เรียนรู้" — โครงการนี้ควรตอบที่เกี่ยวข้อง
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Match candidates (admin/team) */}
       {canManage && brief.status !== "closed" && brief.status !== "cancelled" && (

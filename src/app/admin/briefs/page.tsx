@@ -38,6 +38,8 @@ export default function AdminBriefsPage() {
   const [loading, setLoading] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<Brief | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<Partial<Brief>>({
@@ -254,6 +256,61 @@ export default function AdminBriefsPage() {
     const res = await fetch(`/api/admin/briefs/${b.id}`, { method: "DELETE" });
     if (res.ok) setList((prev) => prev.filter((x) => x.id !== b.id));
     else alert("ลบไม่สำเร็จ");
+  }
+
+  async function handleSaveEdit() {
+    if (!editing) return;
+    setSavingEdit(true);
+    setError("");
+    try {
+      const payload = {
+        title: editing.title,
+        problem_statement: editing.problem_statement,
+        location: editing.location,
+        target_audience: editing.target_audience,
+        target_kpis: editing.target_kpis,
+        plan_number: editing.plan_number,
+        required_skills: editing.required_skills,
+        budget_min: editing.budget_min ? Number(editing.budget_min) : null,
+        budget_max: editing.budget_max ? Number(editing.budget_max) : null,
+        fiscal_year: editing.fiscal_year,
+        mode: editing.mode,
+        status: editing.status,
+        deadline: editing.deadline,
+        notes: editing.notes,
+      };
+      const res = await fetch(`/api/admin/briefs/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
+      setEditing(null);
+      await load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  function toggleEditSkill(slug: string) {
+    if (!editing) return;
+    const cur = editing.required_skills;
+    setEditing({
+      ...editing,
+      required_skills: cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug],
+    });
+  }
+
+  function toggleEditKpi(code: string) {
+    if (!editing) return;
+    const cur = editing.target_kpis;
+    setEditing({
+      ...editing,
+      target_kpis: cur.includes(code) ? cur.filter((s) => s !== code) : [...cur, code],
+    });
   }
 
   function toggleSkill(slug: string) {
@@ -896,8 +953,14 @@ export default function AdminBriefsPage() {
                       href={`/briefs/${b.id}`}
                       className="rounded border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] text-violet-700 hover:bg-violet-100 text-center"
                     >
-                      ดู / Match
+                      👀 ดู / Match
                     </Link>
+                    <button
+                      onClick={() => setEditing(b)}
+                      className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] text-blue-700 hover:bg-blue-100"
+                    >
+                      ✏️ แก้ไข
+                    </button>
                     <button
                       onClick={() => handleDelete(b)}
                       className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] text-red-700 hover:bg-red-100"
@@ -911,6 +974,236 @@ export default function AdminBriefsPage() {
           })
         )}
       </div>
+
+      {/* ===== Edit Modal ===== */}
+      {editing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => !savingEdit && setEditing(null)}
+        >
+          <div
+            className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-blue-700 text-white px-5 py-3 rounded-t-2xl flex items-center justify-between">
+              <div>
+                <h3 className="font-bold">✏️ แก้ไขโจทย์วิจัย</h3>
+                <p className="text-[10px] text-blue-100 mt-0.5 font-mono">{editing.id}</p>
+              </div>
+              <button onClick={() => !savingEdit && setEditing(null)} className="text-white/80 hover:text-white text-xl">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-3 text-sm">
+              <div>
+                <label className="text-xs text-slate-600">ชื่อโจทย์ *</label>
+                <input
+                  type="text"
+                  value={editing.title}
+                  onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                  className="w-full rounded border px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-600">Problem Statement *</label>
+                <textarea
+                  value={editing.problem_statement}
+                  onChange={(e) => setEditing({ ...editing, problem_statement: e.target.value })}
+                  rows={5}
+                  className="w-full rounded border px-3 py-2 leading-relaxed"
+                />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-600">พื้นที่</label>
+                  <input
+                    type="text"
+                    value={editing.location || ""}
+                    onChange={(e) => setEditing({ ...editing, location: e.target.value })}
+                    className="w-full rounded border px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600">กลุ่มเป้าหมาย</label>
+                  <input
+                    type="text"
+                    value={editing.target_audience || ""}
+                    onChange={(e) => setEditing({ ...editing, target_audience: e.target.value })}
+                    className="w-full rounded border px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-slate-600">Status</label>
+                  <select
+                    value={editing.status}
+                    onChange={(e) => setEditing({ ...editing, status: e.target.value })}
+                    className="w-full rounded border px-3 py-2"
+                  >
+                    {Object.entries(BRIEF_STATUS_META).map(([k, v]) => (
+                      <option key={k} value={k}>{v.emoji} {v.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600">Mode</label>
+                  <select
+                    value={editing.mode}
+                    onChange={(e) => setEditing({ ...editing, mode: e.target.value as "open" | "assigned" | "mentorship" })}
+                    className="w-full rounded border px-3 py-2"
+                  >
+                    {Object.entries(BRIEF_MODE_META).map(([k, v]) => (
+                      <option key={k} value={k}>{v.emoji} {v.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600">Plan</label>
+                  <select
+                    value={editing.plan_number || ""}
+                    onChange={(e) => setEditing({ ...editing, plan_number: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full rounded border px-3 py-2"
+                  >
+                    <option value="">(ไม่ระบุ)</option>
+                    {PLANS.map((p) => (
+                      <option key={p.number} value={p.number}>แผน {p.number}: {p.shortTitle}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-slate-600">งบประมาณต่ำสุด</label>
+                  <input
+                    type="number"
+                    value={String(editing.budget_min ?? "")}
+                    onChange={(e) => setEditing({ ...editing, budget_min: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full rounded border px-3 py-2 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600">งบประมาณสูงสุด</label>
+                  <input
+                    type="number"
+                    value={String(editing.budget_max ?? "")}
+                    onChange={(e) => setEditing({ ...editing, budget_max: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full rounded border px-3 py-2 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600">Deadline</label>
+                  <input
+                    type="date"
+                    value={editing.deadline || ""}
+                    onChange={(e) => setEditing({ ...editing, deadline: e.target.value })}
+                    className="w-full rounded border px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Required skills */}
+              <div>
+                <label className="text-sm font-bold text-slate-800">🏷 เชี่ยวชาญที่ต้องการ ({editing.required_skills.length})</label>
+                {Object.entries(tagsByCategory).map(([cat, tags]) => (
+                  <div key={cat} className="mt-1.5">
+                    <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{CATEGORY_LABEL[cat as TagCategory]}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {tags.map((t) => {
+                        const sel = editing.required_skills.includes(t.slug);
+                        return (
+                          <button
+                            key={t.slug}
+                            type="button"
+                            onClick={() => toggleEditSkill(t.slug)}
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] ring-1 ${
+                              sel ? `${t.color} ring-2 ring-offset-1` : "bg-white text-slate-500 ring-slate-200"
+                            }`}
+                          >
+                            <span>{t.emoji}</span>
+                            <span>{t.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Target KPIs (RMUTL excellence) */}
+              <div>
+                <label className="text-sm font-bold text-slate-800">🎯 ตอบ KPI มทร./EdPEx ({editing.target_kpis.length})</label>
+                <div className="mt-1.5 max-h-48 overflow-y-auto rounded border border-slate-200 p-2 space-y-1">
+                  {EXCELLENCE_KPIS.map((kpi) => {
+                    const sel = editing.target_kpis.includes(kpi.code);
+                    return (
+                      <label key={kpi.code} className={`flex items-start gap-2 rounded px-2 py-1 cursor-pointer text-xs ${
+                        sel ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-slate-50"
+                      }`}>
+                        <input type="checkbox" checked={sel} onChange={() => toggleEditKpi(kpi.code)} className="mt-0.5" />
+                        <span className="flex-1">
+                          <code className="rounded bg-white px-1 text-[10px] mr-1 font-mono ring-1 ring-slate-200">{kpi.code}</code>
+                          {kpi.icon} {kpi.name}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Plan KPIs reference (display-only) — KPIs ของแผนตาม ง.8 */}
+              {editing.plan_number && (
+                <div className="rounded-lg bg-amber-50 ring-1 ring-amber-200 p-3">
+                  <p className="text-xs font-bold text-amber-900 mb-2">
+                    📋 ตัวชี้วัดของแผน {editing.plan_number} (ง.8) — สำหรับอ้างอิง
+                  </p>
+                  <div className="space-y-1">
+                    {PLANS.find((p) => p.number === editing.plan_number)?.kpis.map((k) => (
+                      <div key={k.id} className="flex items-start gap-2 text-[11px] text-amber-900">
+                        {k.highlight && <span className="text-amber-600">⭐</span>}
+                        <span className="flex-1">{k.id}. {k.name}</span>
+                        <span className="font-bold whitespace-nowrap">เป้า {k.target} {k.unit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs text-slate-600">หมายเหตุ</label>
+                <textarea
+                  value={editing.notes || ""}
+                  onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
+                  rows={3}
+                  className="w-full rounded border px-3 py-2"
+                />
+              </div>
+
+              {error && (
+                <div className="rounded bg-red-50 ring-1 ring-red-200 p-2 text-xs text-red-700">{error}</div>
+              )}
+            </div>
+
+            <div className="flex flex-shrink-0 gap-2 border-t bg-slate-50 px-5 py-3 rounded-b-2xl">
+              <button
+                onClick={() => setEditing(null)}
+                disabled={savingEdit}
+                className="flex-1 rounded border bg-white py-2 text-sm hover:bg-slate-100 disabled:opacity-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {savingEdit ? "⏳ กำลังบันทึก..." : "💾 บันทึก"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
