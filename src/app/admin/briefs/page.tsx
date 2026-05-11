@@ -153,8 +153,9 @@ export default function AdminBriefsPage() {
       }));
 
     const count = Math.min(Math.max(aiGenForm.count, 1), 5);
+    const totalBudgetPool = aiGenForm.budget_remaining;
 
-    // ===== Single mode (count=1) — preview เก่า =====
+    // ===== Single mode (count=1) — preview เก่า · งบ = budget_remaining ทั้งหมด =====
     if (count === 1) {
       try {
         const res = await fetch("/api/admin/briefs/ai-generate", {
@@ -162,6 +163,7 @@ export default function AdminBriefsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...aiGenForm,
+            budget_remaining: totalBudgetPool, // single mode: ใช้งบเต็ม
             api_key: apiKey,
             model,
             prioritize_kpis: allUncovered.length > 0 ? allUncovered : undefined,
@@ -206,7 +208,10 @@ export default function AdminBriefsPage() {
 
     const errors: string[] = [];
 
-    // Sequential loop — เพื่อให้ AI brief ที่ N เห็น brief 1...N-1 ที่เพิ่ง gen
+    // Budget accounting — งบรวม pool · ตามลำดับ avg ลดลง
+    let remainingPool = totalBudgetPool;
+
+    // Sequential loop — แต่ละ brief เห็น brief ก่อนหน้า + งบที่เหลือจริง
     for (let idx = 0; idx < count; idx++) {
       const chunkPriority = chunks[idx] || allUncovered;
       const presetTheme = shuffledThemes[idx % shuffledThemes.length];
@@ -214,17 +219,29 @@ export default function AdminBriefsPage() {
         ? `${aiGenForm.theme} · มุมเฉพาะ: ${presetTheme.name}`
         : presetTheme.name;
 
+      // คำนวณงบ avg สำหรับ brief นี้ = remaining pool / brief ที่เหลือ
+      const remainingBriefs = count - idx;
+      const avgBudget = Math.floor(remainingPool / remainingBriefs);
+
       try {
         const res = await fetch("/api/admin/briefs/ai-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...aiGenForm,
+            budget_remaining: avgBudget, // งบเป้าหมาย per brief นี้
             theme: themeStr,
             api_key: apiKey,
             model,
             prioritize_kpis: chunkPriority.length > 0 ? chunkPriority : undefined,
             avoid_titles: avoidTitles,
+            batch_context: {
+              current: idx + 1,
+              total: count,
+              total_budget_pool: totalBudgetPool,
+              remaining_pool: remainingPool,
+              remaining_briefs: remainingBriefs,
+            },
           }),
         });
         if (!res.ok) {
@@ -236,8 +253,10 @@ export default function AdminBriefsPage() {
 
         setBatchProgress((prev) => prev ? { ...prev, done: prev.done + 1 } : null);
 
-        // เพิ่ม title ที่เพิ่ง gen ลงใน avoid_titles ของ call ถัดไป
+        // อัปเดต avoid_titles + budget pool
         avoidTitles.push(generated.brief.title);
+        const usedBudget = Math.min(generated.budget_breakdown.total, remainingPool);
+        remainingPool -= usedBudget;
 
         // Auto-save draft
         const row = {
@@ -248,14 +267,14 @@ export default function AdminBriefsPage() {
           target_kpis: generated.kpi_mapping.rmutl_kpi_codes,
           plan_number: aiGenForm.plan_number,
           required_skills: generated.required_skills,
-          budget_min: Math.round(generated.budget_breakdown.total * 0.8),
-          budget_max: generated.budget_breakdown.total,
+          budget_min: Math.round(usedBudget * 0.8),
+          budget_max: usedBudget,
           fiscal_year: generated.brief.fiscal_year,
           mode: "open",
           status: "draft",
           created_by: createdBy,
           created_by_token: createdByToken,
-          notes: `🤖 AI Batch (${idx + 1}/${count}) · ธีม: ${presetTheme.name} · งบ ${generated.budget_breakdown.total.toLocaleString()} · KPIs: ${generated.kpi_mapping.rmutl_kpi_codes.join(", ")}`,
+          notes: `🤖 AI Batch (${idx + 1}/${count}) · ธีม: ${presetTheme.name} · งบ ${usedBudget.toLocaleString()} (เหลือใน pool ${remainingPool.toLocaleString()}) · KPIs: ${generated.kpi_mapping.rmutl_kpi_codes.join(", ")}`,
         };
         const saveRes = await fetch("/api/admin/briefs", {
           method: "POST",
@@ -625,7 +644,9 @@ export default function AdminBriefsPage() {
 
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-slate-700">💰 งบคงเหลือ (บาท) *</label>
+                        <label className="text-xs font-bold text-slate-700">
+                          💰 งบประมาณ{aiGenForm.count > 1 ? "รวม (Pool)" : ""} (บาท) *
+                        </label>
                         <input
                           type="number"
                           value={aiGenForm.budget_remaining}
@@ -634,7 +655,11 @@ export default function AdminBriefsPage() {
                           min={50000}
                           step={10000}
                         />
-                        <p className="text-[10px] text-slate-500 mt-0.5">AI จะออกแบบงบรวม ≤ ตัวเลขนี้</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          {aiGenForm.count === 1
+                            ? "AI จะออกแบบงบ ≤ ตัวเลขนี้"
+                            : `🚀 Batch ${aiGenForm.count} briefs · เฉลี่ย ${Math.floor(aiGenForm.budget_remaining / aiGenForm.count).toLocaleString()} บาท/brief · AI ปรับตามความเหมาะสม (ไม่เกิน pool รวม)`}
+                        </p>
                       </div>
                       <div>
                         <label className="text-xs font-bold text-slate-700">📅 ปีงบประมาณ</label>

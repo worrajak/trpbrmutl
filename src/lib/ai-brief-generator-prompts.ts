@@ -38,7 +38,7 @@ export const AI_BRIEF_GENERATOR_SYSTEM = `คุณคือผู้เชี�
 
 export interface GenerateBriefInput {
   plan_number: 1 | 2 | 3;
-  budget_remaining: number;        // งบคงเหลือที่ admin กรอก
+  budget_remaining: number;        // งบเป้าหมาย "ต่อ 1 brief" (ใน batch = avg ที่หารแล้ว)
   location?: string | null;         // พื้นที่ (optional)
   target_audience?: string | null;  // กลุ่มเป้าหมาย (optional)
   theme?: string | null;            // ธีมที่ต้องการ (optional · เช่น "เกษตรอัจฉริยะ")
@@ -47,6 +47,14 @@ export interface GenerateBriefInput {
   prioritize_kpis?: Array<{ code: string; name: string; unit: string; target: number }>;
   // ✨ ห้ามตั้งชื่อใกล้กับ briefs เหล่านี้ (สำหรับ batch mode + uniqueness)
   avoid_titles?: string[];
+  // ✨ Batch context — บอก AI ว่ากำลัง gen brief ที่ N จาก batch
+  batch_context?: {
+    current: number;        // brief ปัจจุบันที่ N
+    total: number;          // จำนวน briefs ในรอบ
+    total_budget_pool: number;  // งบรวมทั้ง batch
+    remaining_pool: number;     // งบที่เหลือใน pool หลัง brief ก่อนๆ
+    remaining_briefs: number;   // brief ที่เหลือต้อง gen
+  };
 }
 
 /**
@@ -72,7 +80,8 @@ export function buildGenerateBriefUserPrompt(input: GenerateBriefInput): string 
 
 **แผนงาน:** ${plan.number}. ${plan.title}
 **งบรวมแผน:** ${plan.budget.toLocaleString()} บาท
-**งบคงเหลือ (สำหรับโครงการนี้):** ${input.budget_remaining.toLocaleString()} บาท
+**งบเป้าหมายสำหรับ brief นี้:** ~${input.budget_remaining.toLocaleString()} บาท (±20%)
+${input.batch_context ? `**Batch context:** brief ที่ ${input.batch_context.current}/${input.batch_context.total} · งบ pool รวม ${input.batch_context.total_budget_pool.toLocaleString()} · เหลือ ${input.batch_context.remaining_pool.toLocaleString()} สำหรับ ${input.batch_context.remaining_briefs} briefs ที่เหลือ` : ""}
 **ปีงบประมาณ:** ${input.fiscal_year}
 **พื้นที่:** ${input.location || "พื้นที่ใต้ร่มพระบารมี (ไม่ระบุชัดเจน — ให้แนะนำ)"}
 **กลุ่มเป้าหมาย:** ${input.target_audience || "ตามความเหมาะสม"}
