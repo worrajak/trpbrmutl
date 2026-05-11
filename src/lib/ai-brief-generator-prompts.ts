@@ -43,6 +43,8 @@ export interface GenerateBriefInput {
   target_audience?: string | null;  // กลุ่มเป้าหมาย (optional)
   theme?: string | null;            // ธีมที่ต้องการ (optional · เช่น "เกษตรอัจฉริยะ")
   fiscal_year: number;
+  // ✨ ใหม่: ตัวชี้วัดที่ยังไม่มีโจทย์ตอบ — AI จะ prioritize เลือกจาก list นี้ก่อน
+  prioritize_kpis?: Array<{ code: string; name: string; unit: string; target: number }>;
 }
 
 export function buildGenerateBriefUserPrompt(input: GenerateBriefInput): string {
@@ -74,6 +76,12 @@ ${plan.rmutlStrategies.flatMap((s) => s.kpiCodes.map((c) => {
 ## SDGs ที่ตอบ
 ${plan.sdgs.map((s) => `- SDG ${s}`).join(" · ")}
 
+${input.prioritize_kpis && input.prioritize_kpis.length > 0 ? `
+## ⭐ PRIORITY KPIs — ตัวชี้วัดที่ยังไม่มีโจทย์อื่นตอบ (ออกแบบให้ตอบเหล่านี้ก่อน!)
+${input.prioritize_kpis.map((k) => `- ${k.code}: ${k.name} (เป้า ${k.target} ${k.unit})`).join("\n")}
+
+**สำคัญ:** kpi_mapping.rmutl_kpi_codes ต้องมี code อย่างน้อย 1-3 ตัวจาก list นี้
+` : ""}
 ---
 
 ## Output Schema (JSON เท่านั้น)

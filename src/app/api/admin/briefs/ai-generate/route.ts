@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     target_audience: body.target_audience || null,
     theme: body.theme || null,
     fiscal_year: body.fiscal_year || 2569,
+    prioritize_kpis: body.prioritize_kpis,
   });
 
   let raw: string;

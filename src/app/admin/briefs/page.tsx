@@ -125,11 +125,31 @@ export default function AdminBriefsPage() {
     setAiGenBusy(true);
     setAiGenError("");
     setAiGenResult(null);
+
+    // คำนวณ uncovered KPIs จาก briefs ปัจจุบัน → ส่งให้ AI prioritize
+    const coveredCodes = new Set<string>();
+    for (const b of list) {
+      for (const c of b.target_kpis || []) coveredCodes.add(c);
+    }
+    const prioritizeKpis = EXCELLENCE_KPIS
+      .filter((k) => !coveredCodes.has(k.code))
+      .map((k) => ({
+        code: k.code,
+        name: k.name,
+        unit: k.unit,
+        target: k.target_team || k.target_university || 0,
+      }));
+
     try {
       const res = await fetch("/api/admin/briefs/ai-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...aiGenForm, api_key: apiKey, model }),
+        body: JSON.stringify({
+          ...aiGenForm,
+          api_key: apiKey,
+          model,
+          prioritize_kpis: prioritizeKpis.length > 0 ? prioritizeKpis : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI generate ล้มเหลว");
@@ -518,6 +538,17 @@ export default function AdminBriefsPage() {
                       <li>คำนวณ <strong>ผู้ร่วมโครงการ</strong>: อาจารย์, นศ., ชาวบ้าน</li>
                       <li>จัดสรรงบ ค่าตอบแทน/ใช้สอย/วัสดุ ≤ {aiGenForm.budget_remaining.toLocaleString()} บาท</li>
                     </ul>
+                    {(() => {
+                      const covered = new Set<string>();
+                      for (const b of list) for (const c of (b.target_kpis || [])) covered.add(c);
+                      const uncovered = EXCELLENCE_KPIS.filter((k) => !covered.has(k.code)).length;
+                      if (uncovered === 0) return null;
+                      return (
+                        <p className="mt-2 pt-2 border-t border-purple-200 text-purple-900">
+                          ⚡ <strong>Smart Mode:</strong> AI จะ <strong>prioritize</strong> ตัวชี้วัดที่ยังไม่มีโจทย์อื่นตอบ ({uncovered} ตัว) — เพื่อให้ KPIs ครอบคลุมมากขึ้น
+                        </p>
+                      );
+                    })()}
                   </div>
 
                   {aiGenError && (
