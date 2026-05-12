@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callOpenRouterText } from "@/lib/openrouter";
 import { extractJSON } from "@/lib/ngor9-prompt";
+import { getSupabase } from "@/lib/supabase";
 import {
   AI_BRIEF_GENERATOR_SYSTEM,
   buildGenerateBriefUserPrompt,
@@ -50,6 +51,20 @@ export async function POST(req: NextRequest) {
 
   const model = body.model || "anthropic/claude-sonnet-4.5";
 
+  // Fetch existing skill catalog → ป้อนให้ AI ใช้ซ้ำ (ลดชื่อซ้ำ/สะกดเพี้ยน)
+  // ดึงเฉพาะ active + เรียงตาม usage_count desc → top 80 ส่งให้ AI
+  const supabase = getSupabase();
+  let existingCatalog: Array<{ name: string; usage_count?: number; demand_level?: string }> = [];
+  if (supabase) {
+    const { data: catalog } = await supabase
+      .from("rpf_research_areas")
+      .select("name, usage_count, demand_level")
+      .eq("is_active", true)
+      .order("usage_count", { ascending: false })
+      .limit(80);
+    existingCatalog = (catalog as typeof existingCatalog | null) || [];
+  }
+
   const userPrompt = buildGenerateBriefUserPrompt({
     plan_number: body.plan_number,
     budget_remaining: body.budget_remaining,
@@ -59,6 +74,7 @@ export async function POST(req: NextRequest) {
     fiscal_year: body.fiscal_year || 2569,
     prioritize_kpis: body.prioritize_kpis,
     avoid_titles: body.avoid_titles,
+    existing_skill_catalog: existingCatalog,
   });
 
   let raw: string;

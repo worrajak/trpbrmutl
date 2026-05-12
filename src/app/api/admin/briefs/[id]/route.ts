@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { syncBriefSkillsToCatalog, decrementBriefSkillsInCatalog } from "@/lib/sync-brief-skills";
 
 /**
  * /api/admin/briefs/[id]
@@ -72,6 +73,18 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   }
   updates.updated_at = new Date().toISOString();
 
+  // ถ้า required_skills เปลี่ยน → ต้อง decrement old + sync new
+  // (ดึง row เก่ามาก่อนเพื่อรู้ skill list เดิม)
+  let oldSkills: string[] = [];
+  if (Object.prototype.hasOwnProperty.call(updates, "required_skills")) {
+    const { data: oldRow } = await supabase
+      .from("research_briefs")
+      .select("required_skills")
+      .eq("id", id)
+      .maybeSingle();
+    oldSkills = (oldRow as { required_skills: string[] } | null)?.required_skills || [];
+  }
+
   const { data, error } = await supabase
     .from("research_briefs")
     .update(updates)
@@ -82,7 +95,26 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "ไม่พบ brief" }, { status: 404 });
 
-  return NextResponse.json({ success: true, brief: data });
+  // Sync catalog: ลบ skill เก่าออก + เพิ่ม skill ใหม่เข้า (เฉพาะที่ต่างกัน)
+  let skillSync: { added: string[]; updated: string[]; errors: string[] } | null = null;
+  if (Object.prototype.hasOwnProperty.call(updates, "required_skills")) {
+    const newSkills = (updates.required_skills as string[]) || [];
+    const oldSet = new Set(oldSkills.map((s) => s.trim().toLowerCase()));
+    const newSet = new Set(newSkills.map((s) => s.trim().toLowerCase()));
+
+    const removed = oldSkills.filter((s) => !newSet.has(s.trim().toLowerCase()));
+    const added = newSkills.filter((s) => !oldSet.has(s.trim().toLowerCase()));
+
+    if (removed.length > 0) await decrementBriefSkillsInCatalog(supabase, removed);
+    if (added.length > 0) {
+      skillSync = await syncBriefSkillsToCatalog(supabase, added, {
+        brief_id: id,
+        brief_title: (data as { title: string }).title,
+      });
+    }
+  }
+
+  return NextResponse.json({ success: true, brief: data, skill_sync: skillSync });
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
@@ -91,6 +123,14 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
 
   const id = params.id;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  // ดึง required_skills ก่อนลบ → ใช้ decrement catalog
+  const { data: oldRow } = await supabase
+    .from("research_briefs")
+    .select("required_skills")
+    .eq("id", id)
+    .maybeSingle();
+  const oldSkills = (oldRow as { required_skills: string[] } | null)?.required_skills || [];
 
   const { data, error } = await supabase
     .from("research_briefs")
@@ -101,6 +141,11 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data || data.length === 0) {
     return NextResponse.json({ error: "ไม่พบ brief หรือ RLS block" }, { status: 404 });
+  }
+
+  // Decrement catalog usage_count (และลบ auto-imported ที่ count → 0)
+  if (oldSkills.length > 0) {
+    await decrementBriefSkillsInCatalog(supabase, oldSkills);
   }
 
   return NextResponse.json({ success: true, deleted: data[0] });

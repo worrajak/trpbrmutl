@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { syncBriefSkillsToCatalog } from "@/lib/sync-brief-skills";
 
 /**
  * /api/admin/briefs
@@ -75,5 +76,14 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase.from("research_briefs").insert(row).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ success: true, brief: data });
+  // Auto-sync required_skills → rpf_research_areas catalog (non-blocking errors)
+  let skillSync: { added: string[]; updated: string[]; errors: string[] } | null = null;
+  if (Array.isArray(row.required_skills) && row.required_skills.length > 0) {
+    skillSync = await syncBriefSkillsToCatalog(supabase, row.required_skills, {
+      brief_id: (data as { id: string } | null)?.id,
+      brief_title: row.title,
+    });
+  }
+
+  return NextResponse.json({ success: true, brief: data, skill_sync: skillSync });
 }

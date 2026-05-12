@@ -382,6 +382,10 @@ CREATE TABLE IF NOT EXISTS rpf_research_areas (
       CHECK (demand_level IN ('high', 'medium', 'low')),
     notes TEXT,
     is_active BOOLEAN DEFAULT TRUE,
+    -- Auto-sync จาก brief AI generator
+    usage_count INT DEFAULT 0,                    -- จำนวน brief ที่อ้างอิง skill นี้
+    auto_imported BOOLEAN DEFAULT FALSE,          -- true = สร้างจาก brief, false = manual
+    first_brief_id UUID,                          -- brief แรกที่ทำให้เกิด area นี้
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

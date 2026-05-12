@@ -55,6 +55,8 @@ export interface GenerateBriefInput {
     remaining_pool: number;     // งบที่เหลือใน pool หลัง brief ก่อนๆ
     remaining_briefs: number;   // brief ที่เหลือต้อง gen
   };
+  // ✨ Catalog ของ skill ที่มีอยู่แล้ว — AI ควรเลือกใช้ก่อน insert ใหม่ (ลดชื่อซ้ำ/สะกดเพี้ยน)
+  existing_skill_catalog?: Array<{ name: string; usage_count?: number; demand_level?: string }>;
 }
 
 /**
@@ -120,6 +122,21 @@ ${input.avoid_titles.map((t) => `- ${t}`).join("\n")}
 - ห้ามใช้ keyword ร่วม > 2 คำกับ titles ข้างบน (เช่น "โรงเรือนอัจฉริยะ + แปรรูปกาแฟ" ใช้ซ้ำได้สูงสุด 1 keyword)
 - เลือก <strong>ธีมใหม่/ต่างกัน</strong>: เกษตร / หัตถกรรม / EdTech / พลังงาน / ภูมิปัญญา / ฯลฯ
 - เปลี่ยน <strong>พืช/ผลิตภัณฑ์/พื้นที่</strong> ที่ไม่ซ้ำกับ titles ข้างบน
+` : ""}
+
+${input.existing_skill_catalog && input.existing_skill_catalog.length > 0 ? `
+## 📚 Skill catalog ที่มีอยู่แล้ว (ใช้ซ้ำก่อนสร้างใหม่!)
+${input.existing_skill_catalog
+  .slice(0, 80)  // จำกัดแค่ 80 ตัว ป้องกัน prompt ใหญ่เกิน
+  .map((s) => `- ${s.name}${s.usage_count ? ` (ใช้แล้ว ${s.usage_count} brief)` : ""}`)
+  .join("\n")}
+
+**กฎสำคัญสำหรับ required_skills:**
+1. ✅ **เลือกชื่อจาก catalog ข้างบนก่อน** ถ้ามีคำที่ตรงหรือใกล้เคียงความหมาย
+2. ❌ ห้ามสร้างชื่อใหม่ที่มีความหมายซ้ำกับ catalog (เช่น ถ้ามี "EdTech" แล้ว → อย่าใส่ "Educational Technology")
+3. 🆕 สร้าง skill ใหม่ได้ <strong>เฉพาะกรณีไม่มีคำใน catalog ที่ตรงกับความเชี่ยวชาญที่ต้องการ</strong>
+4. ตั้งชื่อภาษาไทยเป็นหลัก (ยกเว้นเทคโนโลยีเฉพาะ เช่น IoT, GIS)
+5. ตอบ 4-7 skills ต่อ brief
 ` : ""}
 ---
 
