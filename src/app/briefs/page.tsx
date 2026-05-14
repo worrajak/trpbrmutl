@@ -29,6 +29,8 @@ interface DbBrief {
   status: string;
   deadline: string | null;
   created_at: string;
+  verification_status?: "pending" | "verified" | "flagged" | null;
+  min_credibility?: number | null;
 }
 
 async function fetchBriefs(): Promise<DbBrief[]> {
@@ -36,7 +38,7 @@ async function fetchBriefs(): Promise<DbBrief[]> {
   if (!supabase) return [];
   const { data } = await supabase
     .from("research_briefs")
-    .select("id, title, problem_statement, location, target_kpis, plan_number, required_skills, budget_min, budget_max, fiscal_year, mode, status, deadline, created_at")
+    .select("id, title, problem_statement, location, target_kpis, plan_number, required_skills, budget_min, budget_max, fiscal_year, mode, status, deadline, created_at, verification_status, min_credibility")
     .in("status", ["open", "matched", "in_progress"])
     .order("created_at", { ascending: false });
   return ((data as DbBrief[]) || []).map((b) => ({
@@ -226,6 +228,29 @@ export default async function BriefsPage() {
                   {b.deadline && (
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] text-amber-700 ring-1 ring-amber-200">
                       ⏰ ปิดรับ {new Date(b.deadline).toLocaleDateString("th-TH")}
+                    </span>
+                  )}
+                  {/* Verification badge — แหล่งข้อมูล */}
+                  {b.verification_status === "flagged" && (
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[0.65rem] font-bold text-red-800 ring-1 ring-red-300" title="แหล่งข้อมูลต้อง verify">
+                      ⚠ แหล่งต้อง verify
+                    </span>
+                  )}
+                  {b.verification_status === "verified" && (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.65rem] font-bold text-emerald-800 ring-1 ring-emerald-300" title="แหล่งข้อมูลตรวจสอบแล้ว">
+                      ✓ ตรวจสอบแล้ว
+                    </span>
+                  )}
+                  {typeof b.min_credibility === "number" && b.min_credibility >= 1 && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ring-1 ${
+                        b.min_credibility >= 4 ? "bg-blue-50 text-blue-800 ring-blue-200"
+                        : b.min_credibility >= 3 ? "bg-amber-50 text-amber-800 ring-amber-200"
+                        : "bg-orange-50 text-orange-800 ring-orange-200"
+                      }`}
+                      title="คะแนนความน่าเชื่อต่ำสุดของแหล่งข้อมูล (1-5)"
+                    >
+                      ⛓ {b.min_credibility}/5
                     </span>
                   )}
                 </div>

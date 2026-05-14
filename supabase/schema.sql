@@ -300,6 +300,14 @@ CREATE TABLE IF NOT EXISTS research_briefs (
     notes TEXT,
     -- AI generated ng9 draft (เมื่อ Phase 3)
     ai_ngor9_draft JSONB,
+    -- ⛓ Source attribution chain — ทุก claim ต้องมี "ใครรายงาน · ผ่านใคร · ต้นทาง · เกรดน่าเชื่อ"
+    --   structure: [{ claim, reporter, reporter_role, via, origin, evidence_type, credibility, needs_verification }]
+    source_chain JSONB DEFAULT '[]'::jsonb,
+    -- สถานะ verification ของแหล่ง — pending=รอตรวจ · verified=ตรวจแล้ว · flagged=น่าสงสัย
+    verification_status TEXT DEFAULT 'pending'
+      CHECK (verification_status IN ('pending', 'verified', 'flagged')),
+    -- Min credibility ใน source_chain (auto-compute) — ใช้ filter/แสดง warning
+    min_credibility INT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -390,6 +398,31 @@ CREATE TABLE IF NOT EXISTS rpf_research_areas (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
+--  REPORTER TRUST — ความน่าเชื่อสะสมของผู้รายงาน (placeholder · ยังไม่ wire)
+--   ใช้ระบบ "สายของแหล่งข้อมูล + เครดิตผู้รายงาน"
+--   trust_score 1-10 (default 5) · บวกเมื่อ verify ผ่าน · ลบเมื่อ flag
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS reporter_trust (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_name TEXT NOT NULL,                    -- ชื่อผู้รายงาน (free-text · case-insensitive lookup)
+    reporter_role TEXT,                             -- researcher/staff/villager/document/external
+    linked_researcher_id UUID,                      -- FK → rpf_researchers (optional)
+    linked_team_member_id UUID,                     -- FK → team_members (optional)
+    trust_score NUMERIC(3,1) DEFAULT 5.0
+      CHECK (trust_score >= 0 AND trust_score <= 10),
+    reports_total INT DEFAULT 0,
+    reports_verified INT DEFAULT 0,                 -- รายงานที่ตรวจสอบยืนยันได้
+    reports_flagged INT DEFAULT 0,                  -- รายงานที่พบขัดแย้ง/น่าสงสัย
+    notes TEXT,                                     -- บันทึก admin (เช่น เหตุผลที่ flag)
+    last_seen TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Unique index แบบ case-insensitive (ใช้ unique index เพราะ UNIQUE constraint ไม่รองรับ function)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reporter_trust_name_lower
+  ON reporter_trust (LOWER(reporter_name));
+
 
 -- =============================================================================
 --  INDEXES
@@ -425,6 +458,10 @@ CREATE INDEX IF NOT EXISTS idx_briefs_skills              ON research_briefs USI
 CREATE INDEX IF NOT EXISTS idx_briefs_kpis                ON research_briefs USING GIN (target_kpis);
 CREATE INDEX IF NOT EXISTS idx_brief_interests_brief      ON brief_interests(brief_id);
 CREATE INDEX IF NOT EXISTS idx_brief_interests_researcher ON brief_interests(researcher_id);
+CREATE INDEX IF NOT EXISTS idx_briefs_verification        ON research_briefs(verification_status);
+CREATE INDEX IF NOT EXISTS idx_briefs_min_credibility     ON research_briefs(min_credibility);
+CREATE INDEX IF NOT EXISTS idx_reporter_trust_score       ON reporter_trust(trust_score DESC);
+CREATE INDEX IF NOT EXISTS idx_reporter_trust_role        ON reporter_trust(reporter_role);
 -- GIN index สำหรับค้นหา sdg_tags แบบ array-contains
 CREATE INDEX IF NOT EXISTS idx_projects_sdg_tags          ON projects USING GIN (sdg_tags);
 CREATE INDEX IF NOT EXISTS idx_reports_sdg_tags           ON activity_reports USING GIN (sdg_tags);
@@ -453,6 +490,7 @@ ALTER TABLE app_settings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rpf_research_areas  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE research_briefs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brief_interests     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reporter_trust      ENABLE ROW LEVEL SECURITY;
 
 -- Public read
 DO $$ BEGIN
@@ -553,6 +591,11 @@ DO $$ BEGIN CREATE POLICY "anon select brief_interests"  ON brief_interests  FOR
 DO $$ BEGIN CREATE POLICY "anon insert brief_interests"  ON brief_interests  FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon update brief_interests"  ON brief_interests  FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "anon delete brief_interests"  ON brief_interests  FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE POLICY "anon select reporter_trust"   ON reporter_trust   FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon insert reporter_trust"   ON reporter_trust   FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon update reporter_trust"   ON reporter_trust   FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "anon delete reporter_trust"   ON reporter_trust   FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 
 -- =============================================================================

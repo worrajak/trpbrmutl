@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
 import { syncBriefSkillsToCatalog } from "@/lib/sync-brief-skills";
+import { summarizeSourceChain, type SourceChainItem } from "@/lib/ai-brief-generator-prompts";
 
 /**
  * /api/admin/briefs
@@ -50,6 +51,18 @@ export async function POST(req: NextRequest) {
   if (!title) return NextResponse.json({ error: "ต้องระบุชื่อโจทย์" }, { status: 400 });
   if (!problem) return NextResponse.json({ error: "ต้องระบุ problem_statement" }, { status: 400 });
 
+  // Source attribution chain — auto-compute verification_status + min_credibility
+  const sourceChain: SourceChainItem[] = Array.isArray(body.source_chain)
+    ? (body.source_chain as SourceChainItem[])
+    : [];
+  const sourceSummary = summarizeSourceChain(sourceChain);
+
+  // Allow client to override status (e.g. admin already verified manually)
+  const verificationOverride = body.verification_status as string | undefined;
+  const verificationStatus = ["pending", "verified", "flagged"].includes(verificationOverride || "")
+    ? (verificationOverride as "pending" | "verified" | "flagged")
+    : sourceSummary.verification_status;
+
   const row = {
     title,
     problem_statement: problem,
@@ -71,6 +84,9 @@ export async function POST(req: NextRequest) {
     created_by: (body.created_by as string) || null,
     created_by_token: (body.created_by_token as string) || null,
     notes: (body.notes as string) || null,
+    source_chain: sourceChain,
+    verification_status: verificationStatus,
+    min_credibility: sourceSummary.min_credibility,
   };
 
   const { data, error } = await supabase.from("research_briefs").insert(row).select().single();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
 import { syncBriefSkillsToCatalog, decrementBriefSkillsInCatalog } from "@/lib/sync-brief-skills";
+import { summarizeSourceChain, type SourceChainItem } from "@/lib/ai-brief-generator-prompts";
 
 /**
  * /api/admin/briefs/[id]
@@ -19,6 +20,7 @@ const PATCHABLE = new Set([
   "budget_min", "budget_max", "fiscal_year",
   "mode", "assigned_researcher_id", "mentor_researcher_id",
   "status", "deadline", "notes", "ai_ngor9_draft",
+  "source_chain", "verification_status",
 ]);
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
@@ -71,6 +73,18 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "ไม่มีฟิลด์ที่อนุญาต" }, { status: 400 });
   }
+
+  // ถ้า source_chain ถูกแก้ → recompute min_credibility (verification_status ปล่อยให้ user override ได้)
+  if (Object.prototype.hasOwnProperty.call(updates, "source_chain")) {
+    const sc = (updates.source_chain as SourceChainItem[]) || [];
+    const summary = summarizeSourceChain(sc);
+    updates.min_credibility = summary.min_credibility;
+    // ถ้า user ไม่ได้ส่ง verification_status มาด้วย → ใช้ค่าที่คำนวณ (อาจ flag ใหม่)
+    if (!Object.prototype.hasOwnProperty.call(updates, "verification_status")) {
+      updates.verification_status = summary.verification_status;
+    }
+  }
+
   updates.updated_at = new Date().toISOString();
 
   // ถ้า required_skills เปลี่ยน → ต้อง decrement old + sync new

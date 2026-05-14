@@ -11,6 +11,7 @@ import {
 } from "@/lib/brief-matching";
 import { EXCELLENCE_KPIS } from "@/lib/excellence-kpi";
 import { PLANS } from "@/lib/foundation";
+import SourceChainPanel from "@/components/SourceChainPanel";
 
 const OR_STORAGE = "rpf_openrouter_settings";
 
@@ -55,6 +56,9 @@ interface Brief {
   status: string;
   deadline: string | null;
   notes: string | null;
+  source_chain?: import("@/lib/ai-brief-generator-prompts").SourceChainItem[] | null;
+  verification_status?: "pending" | "verified" | "flagged" | null;
+  min_credibility?: number | null;
   created_at: string;
 }
 
@@ -290,6 +294,13 @@ export default function BriefDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* ⛓ Source attribution chain — สายของแหล่งข้อมูล */}
+      <SourceChainPanel
+        chain={brief.source_chain}
+        verificationStatus={brief.verification_status}
+        minCredibility={brief.min_credibility}
+      />
 
       {/* Required skills + KPIs */}
       <div className="grid sm:grid-cols-2 gap-3">

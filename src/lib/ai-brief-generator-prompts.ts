@@ -30,6 +30,17 @@ export const AI_BRIEF_GENERATOR_SYSTEM = `คุณคือผู้เชี�
    - ค่าใช้สอย 25-35% (เดินทาง/ที่พัก/อาหาร/รับเสด็จ)
    - ค่าวัสดุ 35-50% (อุปกรณ์/วัตถุดิบ)
 
+⛓ **กฎสำคัญ — สายของแหล่งข้อมูล (source attribution chain):**
+ทุกข้อความใน "problem_statement" ต้องตอบได้ 3 คำถาม:
+  (a) **ใครเป็นคนรายงาน?** (ผู้รายงานตรง — researcher / staff / villager / document)
+  (b) **เขาได้ข้อมูลมาจากใคร?** (สายของคนกลาง · ถ้าเห็นเองก็ว่า [])
+  (c) **ต้นทางคือใคร? น่าเชื่อแค่ไหน?** (origin + credibility 1-5)
+
+- ห้ามอ้างเองโดยไม่มีแหล่ง — ถ้าไม่มีข้อมูลให้เขียนชัดว่า "AI ประมาณการ" + needs_verification=true
+- ทุก claim ใน source_chain ต้องมาจากข้อความใน problem_statement
+- credibility scale: 5=เห็นด้วยตา+พยาน 2+ คน · 4=สัมภาษณ์ตรง+เอกสาร · 3=เอกสารทางการ · 2=คนเล่าต่อ · 1=ไม่ระบุที่มา
+- ถ้า credibility ต่ำสุด ≤ 2 → flag ระบบจะแจ้ง admin verify
+
 ตอบเป็น JSON เท่านั้น`;
 
 // ============================================================================
@@ -196,6 +207,18 @@ ${input.existing_skill_catalog
     "rationale": "เหตุผลการจัดสรร..."
   },
   "required_skills": ["slug จาก preset 20 tags ที่เกี่ยวข้อง"],
+  "source_chain": [
+    {
+      "claim": "ข้อความที่อ้างใน problem_statement (1 ประโยค)",
+      "reporter": "ใครเป็นคนรายงาน · เช่น 'อ.X จากการลงพื้นที่' หรือ 'ผู้นำชุมชน Y'",
+      "reporter_role": "direct_observer | interviewer | document | secondary | ai_estimate",
+      "via": ["คนกลางที่ส่งต่อ (ถ้ามี) — เช่น 'รายงานผ่าน อบต.'"],
+      "origin": "ต้นทางดั้งเดิม · เช่น 'การลงพื้นที่สำรวจ ม.ค. 2569' หรือ 'รายงาน คตป. 2568'",
+      "evidence_type": "direct_observation | interview | document | secondary | ai_inference",
+      "credibility": 1-5,
+      "needs_verification": true|false
+    }
+  ],
   "ai_notes": [
     "ข้อสังเกต / ความเสี่ยง / ข้อแนะนำ"
   ]
@@ -208,6 +231,8 @@ ${input.existing_skill_catalog
 - duration_months ใส่เลขเดือนจริง: ต.ค.=10 ... ก.ย.=9
 - กิจกรรม 3-5 ตัว — ไม่มาก/ไม่น้อยเกินไป
 - วัสดุ 4-8 รายการ — ระบุชัดเจน
+- **source_chain ต้องมีอย่างน้อย 2-4 รายการ** (claim หลักใน problem_statement)
+- ถ้าไม่มีข้อมูลจริง → ระบุ reporter_role="ai_estimate" + credibility=1-2 + needs_verification=true
 
 ตอบ JSON เท่านั้น`;
 }
@@ -259,7 +284,44 @@ export interface GeneratedBrief {
     rationale: string;
   };
   required_skills: string[];
+  source_chain?: SourceChainItem[];
   ai_notes: string[];
+}
+
+/**
+ * Source attribution chain — สำหรับทุก claim ใน problem_statement
+ * ตอบ 3 คำถาม: ใครเป็นคนรายงาน · ผ่านใคร · ต้นทางคือใคร + เกรดน่าเชื่อ
+ */
+export interface SourceChainItem {
+  claim: string;
+  reporter: string;
+  reporter_role: "direct_observer" | "interviewer" | "document" | "secondary" | "ai_estimate";
+  via: string[];
+  origin: string;
+  evidence_type: "direct_observation" | "interview" | "document" | "secondary" | "ai_inference";
+  credibility: 1 | 2 | 3 | 4 | 5;
+  needs_verification: boolean;
+}
+
+/**
+ * คำนวณ min_credibility + verification_status จาก source_chain
+ *  - min credibility ≤ 2 → flagged (ต้อง verify ก่อน)
+ *  - min credibility 3-4 → pending (รอ admin review)
+ *  - min credibility 5 + ไม่มี needs_verification → verified ได้เลย (แต่ admin override ได้)
+ */
+export function summarizeSourceChain(chain: SourceChainItem[] | undefined): {
+  min_credibility: number | null;
+  verification_status: "pending" | "verified" | "flagged";
+  any_needs_verification: boolean;
+} {
+  if (!chain || chain.length === 0) {
+    return { min_credibility: null, verification_status: "pending", any_needs_verification: false };
+  }
+  const minCred = Math.min(...chain.map((s) => s.credibility || 1));
+  const anyFlag = chain.some((s) => s.needs_verification === true);
+  const status: "pending" | "verified" | "flagged" =
+    minCred <= 2 || anyFlag ? "flagged" : "pending";
+  return { min_credibility: minCred, verification_status: status, any_needs_verification: anyFlag };
 }
 
 export function validateGeneratedBrief(obj: unknown): { valid: boolean; errors: string[]; data?: GeneratedBrief } {
@@ -278,6 +340,26 @@ export function validateGeneratedBrief(obj: unknown): { valid: boolean; errors: 
   if (!o.participants || typeof o.participants !== "object") errors.push("ขาด participants");
   if (!o.budget_breakdown || typeof o.budget_breakdown !== "object") errors.push("ขาด budget_breakdown");
 
+  // source_chain — ไม่ require แต่ถ้ามีต้องเป็น array ของ object ที่ครบ field
+  if (o.source_chain !== undefined && o.source_chain !== null) {
+    if (!Array.isArray(o.source_chain)) {
+      errors.push("source_chain ต้องเป็น array (ถ้ามี)");
+    } else {
+      o.source_chain.forEach((item: unknown, i: number) => {
+        if (!item || typeof item !== "object") {
+          errors.push(`source_chain[${i}] ต้องเป็น object`);
+          return;
+        }
+        const s = item as Record<string, unknown>;
+        if (!s.claim) errors.push(`source_chain[${i}].claim ขาด`);
+        if (!s.reporter) errors.push(`source_chain[${i}].reporter ขาด`);
+        if (typeof s.credibility !== "number" || s.credibility < 1 || s.credibility > 5) {
+          errors.push(`source_chain[${i}].credibility ต้องเป็นเลข 1-5`);
+        }
+      });
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -292,6 +374,7 @@ export function generatedToBriefRow(
   budgetMin: number,
   createdBy?: string
 ): Record<string, unknown> {
+  const sourceSummary = summarizeSourceChain(generated.source_chain);
   return {
     title: generated.brief.title,
     problem_statement: generated.brief.problem_statement,
@@ -307,5 +390,8 @@ export function generatedToBriefRow(
     status: "draft",
     created_by: createdBy || "AI Brief Generator",
     notes: `AI generated · งบรวม ${generated.budget_breakdown.total.toLocaleString()} บาท · กิจกรรม ${generated.activities.length} · วัสดุ ${generated.materials.length} รายการ · ผู้ร่วม ${generated.participants.researchers + generated.participants.students + generated.participants.villagers} คน`,
+    source_chain: generated.source_chain || [],
+    verification_status: sourceSummary.verification_status,
+    min_credibility: sourceSummary.min_credibility,
   };
 }
