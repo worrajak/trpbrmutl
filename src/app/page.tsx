@@ -1,138 +1,67 @@
+/**
+ * Home dashboard — decision-first
+ *
+ * ออกแบบรอบ "การตัดสินใจของแอดมิน/ทีมงาน" ไม่ใช่ "data dump"
+ *
+ * 3 คำถามที่ตอบใน 5 วินาที:
+ *   Q1. งบประมาณเร่งใช้แค่ไหน?
+ *   Q2. KPI ไหนยังไม่ตอบ?
+ *   Q3. โครงการไหนเสี่ยง?
+ *
+ * Pyramid layered:
+ *   TIER 0 — Insight sentence (1 ประโยค)
+ *   TIER 1 — 3 หัวข้อใหญ่ (ทุกตัวมีของเปรียบเทียบ)
+ *   TIER 2 — Action items (top 3 risky · ไม่ใช่ทุกตัว)
+ *   TIER 3 — Drill-down links → หน้า detail
+ */
 import {
   fetchProjects,
   fetchActivities,
-  fetchKpiTargets,
-  computeKpiOverview,
-  computeBudgetSummary,
 } from "@/lib/supabase-data";
-import IntelHeader from "@/components/IntelHeader";
-import LatestSyncRow from "@/components/LatestSyncRow";
-import KpiIndexPanel from "@/components/KpiIndexPanel";
-import BottomDashboardCards from "@/components/BottomDashboardCards";
-import SdgShowcase from "@/components/SdgShowcase";
-import LatestReportsFeed from "@/components/LatestReportsFeed";
+import {
+  computeBudgetUrgency,
+  computeKpiGap,
+  computeRiskyProjects,
+  composeInsightSentence,
+} from "@/lib/dashboard-decisions";
+import InsightHeader from "@/components/dashboard/InsightHeader";
+import HealthTier1 from "@/components/dashboard/HealthTier1";
+import ActionTier2 from "@/components/dashboard/ActionTier2";
+import DrillDownTier3 from "@/components/dashboard/DrillDownTier3";
 
 export const revalidate = 60;
 
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toLocaleString("th-TH");
-}
-
-function todayThai(): string {
-  const d = new Date();
-  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-  return `${d.getDate()} ${months[d.getMonth()]} ${(d.getFullYear() + 543).toString().slice(-2)}`;
-}
-
 export default async function Home() {
-  const [projects, activities, kpis] = await Promise.all([
+  const [projects, activities] = await Promise.all([
     fetchProjects(),
     fetchActivities(),
-    fetchKpiTargets(),
   ]);
 
-  const isLive = projects.length > 0;
-  const kpiOverview = computeKpiOverview(kpis);
-  const budget = computeBudgetSummary(projects);
-  const activeCount = projects.filter(
-    (p) => p.status === "approved" || p.status === "in_progress"
-  ).length;
-  const usagePercent = budget.total > 0 ? Math.round((budget.effectiveUsed / budget.total) * 100) : 0;
-
-  // Count projects per SDG
-  const countPerSdg: Record<number, number> = {};
-  for (const p of projects) {
-    for (const tag of p.sdg_tags || []) {
-      countPerSdg[tag] = (countPerSdg[tag] || 0) + 1;
-    }
-  }
-
-  // Build alerts based on data
-  const alerts: { level: "critical" | "warning" | "info"; title: string; detail?: string }[] = [];
-  if (budget.pendingClearance > 0) {
-    alerts.push({
-      level: "warning",
-      title: `รอเคลียบิล ${fmt(budget.pendingClearance)} บาท`,
-      detail: "เบิก ERP แล้วแต่ยังไม่มีรายงานค่าใช้จ่ายตรงกัน",
-    });
-  }
-  if (budget.advancePayment > 0) {
-    alerts.push({
-      level: "info",
-      title: `หน.โครงการออกเงินก่อน ${fmt(budget.advancePayment)} บาท`,
-      detail: "รอเบิกคืนจาก ERP",
-    });
-  }
+  const fy = 2569;
+  const budget = computeBudgetUrgency(projects, fy);
+  const kpiGap = computeKpiGap(projects);
+  const risky = computeRiskyProjects(projects, activities, fy);
+  const insight = composeInsightSentence(budget, kpiGap, risky);
 
   return (
-    <div className="space-y-3">
-      {/* Intel Header — title + alerts + nav pills + 4 KPI boxes */}
-      <IntelHeader
-        title="ใต้ร่มพระบารมี Intel"
-        subtitle={`ปี 2569 · มทร.ล้านนา · ${projects.length} โครงการ`}
-        isLive={isLive}
-        liveText={todayThai()}
-        alerts={alerts}
-        stats={[
-          {
-            label: "โครงการทั้งหมด",
-            value: projects.length,
-            sub: `${activeCount} กำลังดำเนินงาน · ${activities.length} กิจกรรม`,
-            color: "text-emerald-700",
-          },
-          {
-            label: "งบประมาณรวม",
-            value: fmt(budget.total),
-            sub: "บาท · ปี 2569",
-            color: "text-blue-700",
-          },
-          {
-            label: "เบิกจ่ายแล้ว",
-            value: `${usagePercent}%`,
-            sub: `${fmt(budget.effectiveUsed)} จาก ${fmt(budget.total)}`,
-            color: usagePercent >= 70 ? "text-emerald-700" : usagePercent >= 30 ? "text-amber-700" : "text-red-700",
-          },
-          {
-            label: "KPI บรรลุ",
-            value: `${kpiOverview.verified}/${kpiOverview.total}`,
-            sub: `เกินเป้า ${kpiOverview.exceeded} · ${kpis.length} ตัว`,
-            color: "text-purple-700",
-          },
-        ]}
-      />
+    <div className="space-y-4">
+      {/* TIER 0 — 1 ประโยค "วันนี้ดีไหม?" */}
+      <InsightHeader insight={insight} />
 
-      {/* Latest sync row */}
-      <LatestSyncRow
-        sources={[
-          {
-            icon: "📊",
-            name: "Supabase",
-            detail: "(โครงการ + กิจกรรม + KPI)",
-            timestamp: `${todayThai()} · refresh ทุก 1 นาที`,
-          },
-          {
-            icon: "💰",
-            name: "Excel ERP",
-            detail: "(งบประมาณเบิกจ่าย)",
-            timestamp: "manual sync · /admin",
-            warning: budget.pendingClearance > 0,
-          },
-        ]}
-      />
+      {/* TIER 1 — 3 หัวข้อใหญ่ (5-sec scan) */}
+      <HealthTier1 budget={budget} kpiGap={kpiGap} risky={risky} />
 
-      {/* KPI Index — Excellence Plan tabs */}
-      <KpiIndexPanel projects={projects} />
+      {/* TIER 2 — Action: เร่งโครงการที่ risky */}
+      <ActionTier2 risky={risky} />
 
-      {/* Bottom dashboard - 3 cards (เร็ว/ช้า/SDG) */}
-      <BottomDashboardCards projects={projects} />
+      {/* TIER 3 — Drill-down links → หน้า detail */}
+      <DrillDownTier3 />
 
-      {/* SDG showcase - 17 goals grid */}
-      <SdgShowcase countPerSdg={countPerSdg} totalProjects={projects.length} />
-
-      {/* Latest reports */}
-      <LatestReportsFeed limit={6} />
+      {/* Footer — meta info (เล็ก ไม่ใช่ decision) */}
+      <p className="text-center text-[0.65rem] text-slate-400 pt-3">
+        ปี {fy} · {projects.length} โครงการ · {activities.length} กิจกรรม ·
+        refresh ทุก 60 วินาที · {new Date().toLocaleDateString("th-TH")}
+      </p>
     </div>
   );
 }
