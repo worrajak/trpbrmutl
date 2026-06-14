@@ -1,0 +1,1 @@
+../../../docs/ADMIN_MANUAL.md

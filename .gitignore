@@ -34,3 +34,23 @@ next-env.d.ts
 
 # backup dumps (pg_dump binary files)
 *.dump
+
+# Dropbox conflict files (per CLAUDE.md hard rule — ห้าม commit)
+*(LenovoX1's conflicted copy *)*
+*(DESKTOP-*'s conflicted copy *)*
+
+# Drive download (raw data · re-download from Drive if needed)
+drive-download-*
+
+# Unrelated sub-projects
+MarketPredict/
+
+# Obsidian vault — raw mirrors + runtime state
+RPF_Researcher_Profile_vault/0_Inbox/
+RPF_Researcher_Profile_vault/3_Resources/Refs/
+RPF_Researcher_Profile_vault/.obsidian/workspace*.json
+RPF_Researcher_Profile_vault/.obsidian/hotkeys.json
+
+# Temp/scratch
+*.tmp.*
+.playwright-mcp/

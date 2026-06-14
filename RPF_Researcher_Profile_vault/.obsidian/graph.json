@@ -1,0 +1,51 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": false,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:00_MOC",
+      "color": { "a": 1, "rgb": 14701138 }
+    },
+    {
+      "query": "path:1_Projects",
+      "color": { "a": 1, "rgb": 14908180 }
+    },
+    {
+      "query": "path:2_Areas",
+      "color": { "a": 1, "rgb": 5431380 }
+    },
+    {
+      "query": "path:3_Resources/Literature",
+      "color": { "a": 1, "rgb": 11772626 }
+    },
+    {
+      "query": "path:3_Resources/Zettel",
+      "color": { "a": 1, "rgb": 16768256 }
+    },
+    {
+      "query": "path:3_Resources/Refs",
+      "color": { "a": 1, "rgb": 10395294 }
+    },
+    {
+      "query": "path:4_Archives",
+      "color": { "a": 1, "rgb": 7368816 }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.3,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": false,
+  "centerStrength": 0.5,
+  "repelStrength": 12,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 1,
+  "close": false
+}
