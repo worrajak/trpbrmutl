@@ -21,6 +21,16 @@ export interface DBProject {
   site: string | null;
   status: string;
   sdg_tags: number[] | null;
+  // ---- คอลัมน์ใหม่ fy=2569 (backfill 2026) ----
+  initiative_id: string | null;      // 'thrust' | 'knowledge' | 'workforce'
+  faculty_id: string | null;         // อ้างอิง rpf_faculties.id
+  approval_status: {
+    approved?: boolean;
+    in_review?: boolean;
+    editing?: boolean;
+    cancelled?: boolean;
+  } | null;
+  responsible_external: string | null; // ผู้รับผิดชอบภายนอก (นอก มทร.ล้านนา)
 }
 
 /** คำนวณ budget reconciliation สำหรับโครงการเดียว */
@@ -71,12 +81,38 @@ export interface DBActivity {
 export interface DBKpiTarget {
   id: string;
   project_id: string;
+  kpi_code: string | null; // อ้างอิง rpf_kpi_catalog.code (rows เก่าเป็น null)
   kpi_name: string;
   kpi_type: string;
   target_value: number;
   actual_value: number;
   unit: string | null;
   verified: boolean;
+}
+
+// ---- ตารางอ้างอิงใหม่ fy=2569 ----
+
+export interface DBKpiCatalog {
+  code: string;              // เช่น 'KPI-39'
+  name_th: string;
+  description: string | null;
+  target_count: number | null;
+  target_unit: string | null;
+  scope: string;             // 'rmutl' | 'underroof'
+}
+
+export interface DBFaculty {
+  id: string;
+  name_th: string;
+  name_short: string | null;
+  type: string | null;
+  campus: string | null;
+}
+
+export interface DBInitiative {
+  id: string;                // 'thrust' | 'knowledge' | 'workforce'
+  number: number;
+  name_th: string;
 }
 
 export interface DBNotification {
@@ -173,6 +209,63 @@ export async function fetchKpiTargets(
   const { data, error } = await query;
   if (error) {
     console.error("fetchKpiTargets error:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
+/** kpi_targets เฉพาะ rows ที่ map กับ rpf_kpi_catalog แล้ว (kpi_code ไม่เป็น null) */
+export async function fetchKpiTargetsWithCode(): Promise<DBKpiTarget[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("kpi_targets")
+    .select("*")
+    .not("kpi_code", "is", null);
+  if (error) {
+    console.error("fetchKpiTargetsWithCode error:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function fetchKpiCatalog(): Promise<DBKpiCatalog[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("rpf_kpi_catalog")
+    .select("*")
+    .order("code");
+  if (error) {
+    console.error("fetchKpiCatalog error:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function fetchFaculties(): Promise<DBFaculty[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("rpf_faculties")
+    .select("*")
+    .order("name_th");
+  if (error) {
+    console.error("fetchFaculties error:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function fetchInitiatives(): Promise<DBInitiative[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("rpf_initiatives")
+    .select("*")
+    .order("number");
+  if (error) {
+    console.error("fetchInitiatives error:", error.message);
     return [];
   }
   return data || [];

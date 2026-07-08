@@ -5,15 +5,19 @@
  *
  * 3 คำถามที่ dashboard ต้องตอบใน 5 วินาที (สำหรับ admin/ทีมงาน):
  *   1. งบประมาณเร่งใช้แค่ไหน?  → computeBudgetUrgency
- *   2. KPI ไหนยังไม่ตอบ?         → computeKpiGap
+ *   2. KPI ตอบเป้าแค่ไหน?        → computeKpiGap (KPI-39 ใต้ร่ม + coverage catalog)
  *   3. โครงการไหนเสี่ยง?         → computeRiskyProjects
  *
  * + insight sentence 1 ประโยค → composeInsightSentence
  */
 
-import type { DBProject, DBActivity } from "./supabase-data";
+import type {
+  DBProject,
+  DBActivity,
+  DBKpiCatalog,
+  DBKpiTarget,
+} from "./supabase-data";
 import { computeBudgetReconciliation } from "./supabase-data";
-import { EXCELLENCE_KPIS, classifyProject } from "./excellence-kpi";
 
 // ============================================================================
 // Thai Fiscal Year — 1 ต.ค. (เดือน 10) ของปี (FY-1) → 30 ก.ย. (เดือน 9) ของ FY
@@ -87,63 +91,125 @@ export function computeBudgetUrgency(projects: DBProject[], fy: number = 2569): 
 }
 
 // ============================================================================
-// Q2: KPI ไหนยังไม่ตอบ?
-//   - ใช้ classifyProject แทน manual mapping → ดู KPI ที่ count = 0
+// Q2: KPI ตอบเป้าแค่ไหน? — ข้อมูลจริงจาก rpf_kpi_catalog + kpi_targets (มี kpi_code)
+//   - ตัวหลัก = KPI-39 (scope 'underroof' — เป้าของกลุ่มใต้ร่มโดยตรง):
+//       commit รวม (sum target_value ของโครงการ) vs target_count ของ catalog
+//       >=90% good · >=50% warning · <50% critical
+//   - ตัวรอง = จำนวน KPI ทั้ง catalog (7 ตัว) ที่ commit ครอบคลุม >= 50% ของเป้า
 // ============================================================================
+export const PRIMARY_KPI_CODE = "KPI-39";
+
 export interface KpiGap {
-  totalKpis: number;
-  coveredKpis: number;
-  gapCount: number;
-  gapPct: number;           // % ที่ยังไม่ตอบ
-  uncoveredTop3: Array<{ code: string; name: string; unit: string; target: number }>;
+  // ตัวหลัก — KPI-39 ใต้ร่ม
+  primaryCode: string;      // 'KPI-39'
+  primaryName: string;      // ชื่อจาก catalog
+  primaryUnit: string;      // เช่น 'องค์ความรู้'
+  primaryCommit: number;    // ผลรวม target_value ที่โครงการ commit ไว้
+  primaryTarget: number;    // target_count จาก catalog
+  primaryPct: number;       // % commit vs เป้า
+  primaryGap: number;       // เหลืออีกกี่หน่วยถึงเป้า (0 = ถึงเป้าแล้ว)
+  // ตัวรอง — ความครอบคลุมทั้ง catalog
+  totalKpis: number;        // จำนวน KPI ใน catalog (7)
+  coveredKpis: number;      // KPI ที่ commit >= 50% ของเป้า
+  gapCount: number;         // KPI ที่ commit < 50% ของเป้า
+  lowCoverageTop3: Array<{
+    code: string;
+    name: string;
+    unit: string;
+    target: number;
+    commit: number;
+    pct: number;
+  }>;
   status: "good" | "warning" | "critical";
   label: string;
 }
 
-export function computeKpiGap(projects: DBProject[]): KpiGap {
-  // นับโครงการต่อ KPI
-  const countPerKpi: Record<string, number> = {};
-  for (const p of projects) {
-    const matched = classifyProject({
-      project_name: p.project_name,
-      organization: p.organization,
-      responsible: p.responsible,
-      main_program: p.main_program,
-    });
-    for (const code of matched) {
-      countPerKpi[code] = (countPerKpi[code] || 0) + 1;
-    }
+export function computeKpiGap(
+  projects: DBProject[],
+  kpiCatalog: DBKpiCatalog[],
+  kpiTargets: DBKpiTarget[]
+): KpiGap {
+  // รวม commit ต่อ KPI code — นับเฉพาะ kpi_targets ของโครงการที่ส่งเข้ามา
+  // (page กรอง status='cancelled' ออกก่อนแล้ว)
+  const activeIds = new Set(projects.map((p) => p.id));
+  const commitPerKpi: Record<string, number> = {};
+  for (const t of kpiTargets) {
+    if (!t.kpi_code || !activeIds.has(t.project_id)) continue;
+    commitPerKpi[t.kpi_code] =
+      (commitPerKpi[t.kpi_code] || 0) + Number(t.target_value || 0);
   }
 
-  const totalKpis = EXCELLENCE_KPIS.length;
-  const uncovered = EXCELLENCE_KPIS.filter((k) => !countPerKpi[k.code]);
-  const gapCount = uncovered.length;
-  const coveredKpis = totalKpis - gapCount;
-  const gapPct = totalKpis > 0 ? Math.round((gapCount / totalKpis) * 100) : 0;
+  // ตัวหลัก: KPI-39 · fallback = ตัวแรกที่ scope 'underroof'
+  const primary =
+    kpiCatalog.find((k) => k.code === PRIMARY_KPI_CODE) ??
+    kpiCatalog.find((k) => k.scope === "underroof") ??
+    null;
+  const primaryCode = primary?.code ?? PRIMARY_KPI_CODE;
+  const primaryName = primary?.name_th ?? "";
+  const primaryUnit = primary?.target_unit ?? "";
+  const primaryTarget = primary?.target_count ?? 0;
+  const primaryCommit = commitPerKpi[primaryCode] || 0;
+  const primaryPct =
+    primaryTarget > 0 ? Math.round((primaryCommit / primaryTarget) * 100) : 0;
+  const primaryGap = Math.max(0, primaryTarget - primaryCommit);
 
-  // เลือก 3 ตัวแรก (sorted by code · stable)
-  const sorted = [...uncovered].sort((a, b) => a.code.localeCompare(b.code));
-  const uncoveredTop3 = sorted.slice(0, 3).map((k) => ({
-    code: k.code,
-    name: k.name,
-    unit: k.unit,
-    target: k.target_team || k.target_university || 0,
-  }));
+  // ตัวรอง: ความครอบคลุมทั้ง catalog (commit >= 50% ของเป้า = ครอบคลุม)
+  const totalKpis = kpiCatalog.length;
+  const perKpi = kpiCatalog.map((k) => {
+    const commit = commitPerKpi[k.code] || 0;
+    const target = k.target_count ?? 0;
+    const pct = target > 0 ? Math.round((commit / target) * 100) : 0;
+    return {
+      code: k.code,
+      name: k.name_th,
+      unit: k.target_unit || "",
+      target,
+      commit,
+      pct,
+    };
+  });
+  const coveredKpis = perKpi.filter((k) => k.pct >= 50).length;
+  const gapCount = totalKpis - coveredKpis;
+  const lowCoverageTop3 = perKpi
+    .filter((k) => k.pct < 50)
+    .sort((a, b) => a.pct - b.pct || a.code.localeCompare(b.code))
+    .slice(0, 3);
 
   let status: KpiGap["status"];
   let label: string;
-  if (gapCount === 0) {
-    status = "good";
-    label = `🟢 ตอบครบทุกตัว`;
-  } else if (gapPct <= 25) {
+  if (totalKpis === 0) {
+    // ไม่มีข้อมูล catalog (เช่น no Supabase client) — อย่าโชว์แดงหลอก
     status = "warning";
-    label = `🟡 ขาด ${gapCount} ตัว`;
+    label = `🟡 ไม่มีข้อมูล KPI catalog`;
+  } else if (primaryPct >= 90) {
+    status = "good";
+    label =
+      primaryGap > 0
+        ? `🟢 ${primaryCode} ใต้ร่ม ${primaryCommit}/${primaryTarget} (${primaryPct}%) — ขาดอีก ${primaryGap}`
+        : `🟢 ${primaryCode} ใต้ร่ม ถึงเป้า ${primaryCommit}/${primaryTarget}`;
+  } else if (primaryPct >= 50) {
+    status = "warning";
+    label = `🟡 ${primaryCode} ใต้ร่ม ${primaryCommit}/${primaryTarget} (${primaryPct}%)`;
   } else {
     status = "critical";
-    label = `🔴 ขาด ${gapCount} ตัว`;
+    label = `🔴 ${primaryCode} ใต้ร่ม ${primaryCommit}/${primaryTarget} (${primaryPct}%)`;
   }
 
-  return { totalKpis, coveredKpis, gapCount, gapPct, uncoveredTop3, status, label };
+  return {
+    primaryCode,
+    primaryName,
+    primaryUnit,
+    primaryCommit,
+    primaryTarget,
+    primaryPct,
+    primaryGap,
+    totalKpis,
+    coveredKpis,
+    gapCount,
+    lowCoverageTop3,
+    status,
+    label,
+  };
 }
 
 // ============================================================================
@@ -295,12 +361,20 @@ export function composeInsightSentence(
     });
   }
 
-  // Part 3: KPI gap
-  if (kpiGap.gapCount > 0) {
+  // Part 3: KPI — อิงตัวหลัก KPI-39 ใต้ร่ม (ข้อมูลจริงจาก catalog)
+  // ข้าม insight ถ้าไม่มี catalog (ไม่มี Supabase/ยังไม่ seed) — กันโชว์ 0/0 (0%) หลอก
+  if (kpiGap.totalKpis > 0 && kpiGap.status !== "good") {
     parts.push({
-      text: `KPI ${kpiGap.gapCount} ตัวยังไม่ตอบ`,
+      text: `${kpiGap.primaryCode} ใต้ร่ม commit ${kpiGap.primaryCommit}/${kpiGap.primaryTarget} (${kpiGap.primaryPct}%)`,
       href: "/excellence",
-      severity: kpiGap.status === "good" ? "warning" : kpiGap.status,
+      severity: kpiGap.status,
+    });
+  } else if (kpiGap.primaryGap > 0) {
+    // ใกล้เป้าแล้ว — ประโยคเชิงบวก + ชวนเร่งเก็บ evidence
+    parts.push({
+      text: `${kpiGap.primaryCode} ขาดอีก ${kpiGap.primaryGap} ${kpiGap.primaryUnit || "หน่วย"} — เร่งเก็บ evidence`,
+      href: "/excellence",
+      severity: "good",
     });
   }
 

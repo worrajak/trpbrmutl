@@ -17,6 +17,8 @@
 import {
   fetchProjects,
   fetchActivities,
+  fetchKpiCatalog,
+  fetchKpiTargetsWithCode,
 } from "@/lib/supabase-data";
 import {
   computeBudgetUrgency,
@@ -32,15 +34,19 @@ import DrillDownTier3 from "@/components/dashboard/DrillDownTier3";
 export const revalidate = 60;
 
 export default async function Home() {
-  const [projects, activities] = await Promise.all([
+  const [projects, activities, kpiCatalog, kpiTargets] = await Promise.all([
     fetchProjects(),
     fetchActivities(),
+    fetchKpiCatalog(),
+    fetchKpiTargetsWithCode(),
   ]);
 
   const fy = 2569;
-  const budget = computeBudgetUrgency(projects, fy);
-  const kpiGap = computeKpiGap(projects);
-  const risky = computeRiskyProjects(projects, activities, fy);
+  // fetchProjects ไม่กรอง status='cancelled' — ตัดออกจากทุก compute ที่นี่
+  const activeProjects = projects.filter((p) => p.status !== "cancelled");
+  const budget = computeBudgetUrgency(activeProjects, fy);
+  const kpiGap = computeKpiGap(activeProjects, kpiCatalog, kpiTargets);
+  const risky = computeRiskyProjects(activeProjects, activities, fy);
   const insight = composeInsightSentence(budget, kpiGap, risky);
 
   return (
@@ -59,7 +65,7 @@ export default async function Home() {
 
       {/* Footer — meta info (เล็ก ไม่ใช่ decision) */}
       <p className="text-center text-[0.65rem] text-slate-400 pt-3">
-        ปี {fy} · {projects.length} โครงการ · {activities.length} กิจกรรม ·
+        ปี {fy} · {activeProjects.length} โครงการ (ไม่รวมยกเลิก) · {activities.length} กิจกรรม ·
         refresh ทุก 60 วินาที · {new Date().toLocaleDateString("th-TH")}
       </p>
     </div>

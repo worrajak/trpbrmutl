@@ -7,7 +7,7 @@
 import Link from "next/link";
 
 const LINKS = [
-  { href: "/excellence", icon: "📊", title: "KPI 26 ตัวเต็ม", desc: "Excellence + ค.ต.ป. · ดู mapping" },
+  { href: "/excellence", icon: "📊", title: "ตัวชี้วัด มทร. + catalog", desc: "Excellence · KPI ใต้ร่ม 7 ตัว · ดู mapping" },
   { href: "/projects", icon: "📂", title: "โครงการทั้งหมด", desc: "ทุกสถานะ · filter · บัญชีเบิก" },
   { href: "/research-areas", icon: "📚", title: "สาขาที่ต้องการ", desc: "Catalog · auto-sync จาก brief" },
   { href: "/briefs", icon: "📢", title: "Brief วิจัย", desc: "โจทย์เปิด · verify แหล่งข้อมูล" },

@@ -1,8 +1,8 @@
 /**
  * HealthTier1 — 3 หัวข้อใหญ่ที่ตอบ 5-sec test
  *
- *   [งบ X% / เวลา Y%]   [KPI A/B ตอบแล้ว]   [N/M เสี่ยง]
- *    🔴 ช้า Z pp         🟡 ขาด K            🔴 ต้องเร่ง
+ *   [งบ X% / เวลา Y%]   [KPI-39: 59/60 (98%)]   [N/M เสี่ยง]
+ *    🔴 ช้า Z pp         🟢 ใกล้เป้า              🔴 ต้องเร่ง
  *
  * ทุกตัวมี: ตัวเลขหลัก + ของเปรียบเทียบ + สถานะสี (สีเป็นสัญญาณ ไม่ใช่ตกแต่ง)
  */
@@ -85,16 +85,16 @@ export default function HealthTier1({ budget, kpiGap, risky }: Props) {
         status={budget.status}
       />
 
-      {/* Q2: KPI gap */}
+      {/* Q2: KPI-39 ใต้ร่ม — commit จริง vs เป้า catalog */}
       <HealthCard
         href="/excellence"
         icon="🎯"
-        title="KPI ตอบแล้ว"
-        bigText={`${kpiGap.coveredKpis}/${kpiGap.totalKpis}`}
+        title={`${kpiGap.primaryCode} ใต้ร่ม`}
+        bigText={`${kpiGap.primaryCommit}/${kpiGap.primaryTarget}`}
         compareText={
-          kpiGap.gapCount > 0
-            ? `ขาด ${kpiGap.gapCount} ตัว — เช่น ${kpiGap.uncoveredTop3.map((k) => `KPI ${k.code}`).join(", ")}`
-            : `ครบทุกตัว 🎉`
+          kpiGap.totalKpis > 0
+            ? `${kpiGap.primaryUnit || "หน่วย"} (${kpiGap.primaryPct}% ของเป้า) · KPI ครอบคลุม ≥50%: ${kpiGap.coveredKpis}/${kpiGap.totalKpis} ตัว`
+            : `ยังไม่มีข้อมูล KPI catalog`
         }
         statusLabel={kpiGap.label}
         status={kpiGap.status}

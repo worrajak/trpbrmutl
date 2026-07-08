@@ -31,19 +31,25 @@ interface ReportRow {
 export async function GET(_req: NextRequest) {
   const supabase = getSupabase();
   if (!supabase) {
-    return NextResponse.json({ projects: [], isLive: false });
+    return NextResponse.json({ projects: [], isLive: false, faculties: [], initiatives: [] });
   }
 
-  const [{ data, error }, { data: reports }] = await Promise.all([
-    supabase.from("projects").select("*").order("main_program"),
-    supabase
-      .from("activity_reports")
-      .select("project_id, submitted_at, submitted_by, report_description, evidence_files")
-      .order("submitted_at", { ascending: false }),
-  ]);
+  // projects ใช้ select("*") → คอลัมน์ใหม่ (initiative_id, faculty_id, approval_status,
+  // responsible_external) ติดมาใน response อัตโนมัติ
+  const [{ data, error }, { data: reports }, { data: faculties }, { data: initiatives }] =
+    await Promise.all([
+      supabase.from("projects").select("*").order("main_program"),
+      supabase
+        .from("activity_reports")
+        .select("project_id, submitted_at, submitted_by, report_description, evidence_files")
+        .order("submitted_at", { ascending: false }),
+      // ตารางอ้างอิงสำหรับ filter labels ฝั่ง client
+      supabase.from("rpf_faculties").select("*").order("name_th"),
+      supabase.from("rpf_initiatives").select("*").order("number"),
+    ]);
 
   if (error) {
-    return NextResponse.json({ projects: [], isLive: false });
+    return NextResponse.json({ projects: [], isLive: false, faculties: [], initiatives: [] });
   }
 
   // Build map of latest report per project (+ first image from evidence_files)
@@ -86,7 +92,12 @@ export async function GET(_req: NextRequest) {
     }));
 
   return NextResponse.json(
-    { projects, isLive: true },
+    {
+      projects,
+      isLive: true,
+      faculties: faculties || [],
+      initiatives: initiatives || [],
+    },
     {
       headers: {
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",

@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { DBProject } from "@/lib/supabase-data";
+import { useState, useEffect, useMemo } from "react";
+import type {
+  DBProject,
+  DBActivity,
+  DBFaculty,
+  DBInitiative,
+} from "@/lib/supabase-data";
+import { fetchActivities } from "@/lib/supabase-data";
+import { computeRiskyProjects } from "@/lib/dashboard-decisions";
 
 interface ProjectWithReport extends DBProject {
   last_report: {
@@ -38,11 +45,22 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
   cancelled: { text: "ยกเลิก", cls: "bg-gray-200 text-gray-500" },
 };
 
-const programOptions = [
-  { value: "all", label: "ทั้งหมด" },
-  { value: "1.ผลักดันเทคโนโลยี", label: "1.ผลักดันเทคโนโลยี" },
-  { value: "2.ขับเคลื่อนกลไก", label: "2.ขับเคลื่อนกลไก" },
-  { value: "3.พัฒนากำลังคน", label: "3.พัฒนากำลังคน" },
+// map ค่า ?main= เดิม (main_program) → initiative_id ใหม่ — กันลิงก์เก่าพัง
+const MAIN_TO_INITIATIVE: Record<string, string> = {
+  "1.ผลักดันเทคโนโลยี": "thrust",
+  "2.ขับเคลื่อนกลไก": "knowledge",
+  "3.พัฒนากำลังคน": "workforce",
+};
+
+// badge สถานะอนุมัติ (จาก approval_status JSONB) — แสดงเฉพาะ key ที่ true · ซ้อนกันได้
+const approvalBadges: Array<{
+  key: "approved" | "editing" | "in_review";
+  text: string;
+  cls: string;
+}> = [
+  { key: "approved", text: "อนุมัติแล้ว", cls: "bg-green-100 text-green-700" },
+  { key: "editing", text: "ปรับแก้ไข", cls: "bg-yellow-100 text-yellow-700" },
+  { key: "in_review", text: "รออนุมัติ", cls: "bg-orange-100 text-orange-700" },
 ];
 
 const programColor: Record<string, string> = {
@@ -53,30 +71,66 @@ const programColor: Record<string, string> = {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectWithReport[]>([]);
+  const [faculties, setFaculties] = useState<DBFaculty[]>([]);
+  const [initiatives, setInitiatives] = useState<DBInitiative[]>([]);
+  const [activities, setActivities] = useState<DBActivity[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [filterMain, setFilterMain] = useState<string>("all");
+  const [filterInitiative, setFilterInitiative] = useState<string>("all");
+  const [filterFaculty, setFilterFaculty] = useState<string>("all");
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [riskyOnly, setRiskyOnly] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     // Check URL params for filter
     const params = new URLSearchParams(window.location.search);
-    const mainParam = params.get("main");
-    if (mainParam) setFilterMain(mainParam);
+    // รองรับทั้ง ?main= และ ?main_program= (หน้า foundation/PlanTabs ใช้ main_program)
+    const mainParam = params.get("main") ?? params.get("main_program");
+    if (mainParam) {
+      // map main_program → initiative_id · ถ้า map ไม่เจอ fallback "all" (กันตารางว่างจากค่าดิบ)
+      setFilterInitiative(MAIN_TO_INITIATIVE[mainParam] || "all");
+    }
+    if (params.get("filter") === "risky") {
+      setRiskyOnly(true);
+      // เกณฑ์ overdue activity ต้องใช้ activities — ดึงตรงจาก Supabase (anon client)
+      // เฉพาะตอนเปิด filter นี้ · ถ้าดึงไม่ได้ (คืน []) จะเหลือเกณฑ์เบิกช้าอย่างเดียว
+      fetchActivities()
+        .then(setActivities)
+        .catch(() => {});
+    }
 
     fetch("/api/supabase/projects")
       .then((r) => r.json())
       .then((data) => {
         setProjects(data.projects || []);
+        setFaculties(data.faculties || []);
+        setInitiatives(data.initiatives || []);
         setIsLive(data.isLive);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  // โครงการเสี่ยง — เกณฑ์เดียวกับ home dashboard (computeRiskyProjects ใน lib/dashboard-decisions.ts)
+  // summary คืนเฉพาะ riskyCount + top3 จึงเรียกทีละโครงการ: riskyCount > 0 = โครงการนั้นเข้าเกณฑ์เสี่ยง
+  const riskyIds = useMemo(() => {
+    if (!riskyOnly) return null;
+    const ids = new Set<string>();
+    for (const p of projects) {
+      if (computeRiskyProjects([p], activities).riskyCount > 0) ids.add(p.id);
+    }
+    return ids;
+  }, [riskyOnly, projects, activities]);
+
   const filtered = projects
     .filter((p) => {
-      if (filterMain !== "all" && p.main_program !== filterMain) return false;
+      // โครงการที่ยกเลิกไม่แสดงเป็น default (เปิดดูได้ผ่าน checkbox "แสดงที่ยกเลิก")
+      if (!showCancelled && p.status === "cancelled") return false;
+      if (riskyIds && !riskyIds.has(p.id)) return false;
+      if (filterInitiative !== "all" && p.initiative_id !== filterInitiative)
+        return false;
+      if (filterFaculty !== "all" && p.faculty_id !== filterFaculty) return false;
       if (
         search &&
         !p.project_name.includes(search) &&
@@ -124,23 +178,39 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-lg bg-white p-4 shadow">
+      {/* Filters — stack vertical บนมือถือ · เรียงแถวบน sm ขึ้นไป */}
+      <div className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow sm:flex-row sm:flex-wrap sm:items-end">
         <div>
-          <label className="mb-1 block text-xs text-gray-500">โครงการหลัก</label>
+          <label className="mb-1 block text-xs text-gray-500">แผนงาน</label>
           <select
-            value={filterMain}
-            onChange={(e) => setFilterMain(e.target.value)}
-            className="rounded border px-3 py-1.5 text-sm"
+            value={filterInitiative}
+            onChange={(e) => setFilterInitiative(e.target.value)}
+            className="w-full rounded border px-3 py-1.5 text-sm sm:w-auto"
           >
-            {programOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+            <option value="all">ทั้งหมด</option>
+            {initiatives.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.name_th}
               </option>
             ))}
           </select>
         </div>
-        <div className="flex-1">
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">หน่วยงาน</label>
+          <select
+            value={filterFaculty}
+            onChange={(e) => setFilterFaculty(e.target.value)}
+            className="w-full rounded border px-3 py-1.5 text-sm sm:w-auto"
+          >
+            <option value="all">ทั้งหมด</option>
+            {faculties.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name_short || f.name_th}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1 sm:min-w-[200px]">
           <label className="mb-1 block text-xs text-gray-500">ค้นหา</label>
           <input
             type="text"
@@ -149,6 +219,26 @@ export default function ProjectsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded border px-3 py-1.5 text-sm"
           />
+        </div>
+        <div className="flex items-center gap-3 sm:pb-1.5">
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-500">
+            <input
+              type="checkbox"
+              checked={showCancelled}
+              onChange={(e) => setShowCancelled(e.target.checked)}
+            />
+            แสดงที่ยกเลิก
+          </label>
+          {riskyOnly && (
+            <button
+              type="button"
+              onClick={() => setRiskyOnly(false)}
+              title="ล้าง filter โครงการเสี่ยง"
+              className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-[0.72rem] font-medium text-red-700 hover:bg-red-200"
+            >
+              เฉพาะโครงการเสี่ยง ✕
+            </button>
+          )}
         </div>
       </div>
 
@@ -243,10 +333,27 @@ export default function ProjectsPage() {
                         ? p.project_name.substring(0, 60) + "..."
                         : p.project_name}
                     </a>
-                    <p className="mt-0.5">
+                    <p className="mt-0.5 flex flex-wrap gap-1">
                       <span className={`inline-block rounded px-1.5 py-0.5 text-[0.65rem] font-medium ${pc}`}>
                         {p.main_program}
                       </span>
+                      {/* badge สถานะอนุมัติ — แสดงทุก key ที่ true (ซ้อนกันได้) */}
+                      {approvalBadges.map(
+                        (b) =>
+                          p.approval_status?.[b.key] && (
+                            <span
+                              key={b.key}
+                              className={`inline-block rounded px-1.5 py-0.5 text-[0.65rem] font-medium ${b.cls}`}
+                            >
+                              {b.text}
+                            </span>
+                          )
+                      )}
+                      {p.status === "cancelled" && (
+                        <span className={`inline-block rounded px-1.5 py-0.5 text-[0.65rem] font-medium ${statusLabel.cancelled.cls}`}>
+                          {statusLabel.cancelled.text}
+                        </span>
+                      )}
                     </p>
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-600">
@@ -254,6 +361,11 @@ export default function ProjectsPage() {
                   </td>
                   <td className="px-3 py-2 text-xs">
                     {p.responsible || "-"}
+                    {p.responsible_external && (
+                      <p className="text-[0.65rem] text-gray-400">
+                        รับผิดชอบนอกกลุ่ม: {p.responsible_external}
+                      </p>
+                    )}
                     {p.site && (
                       <p className="text-gray-400">
                         {p.site.length > 30 ? p.site.substring(0, 30) + "..." : p.site}
