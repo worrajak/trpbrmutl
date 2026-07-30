@@ -103,8 +103,12 @@ async function main() {
       blankrows: false,
       raw: false,
     });
-    // header = row 1 · detect KPI columns
-    const hdr = rows[1] || [];
+    // header row ต่างกันต่อ sheet: บาง sheet มี title row0 (header=row1), บาง sheet header=row0
+    // หา row ที่ col0 = "ยุทธศาสตร์/แผนงาน/โครงการหลัก/โครงการย่อย"
+    const hdrIdx = rows.findIndex(
+      (r) => /ยุทธศาสตร์\/แผนงาน\/โครงการหลัก/.test(String(r[0] || ""))
+    );
+    const hdr = rows[hdrIdx >= 0 ? hdrIdx : 1] || [];
     const kpiCols = {}; // colIdx → 'KPI-10'
     let flagCols = { approved: -1, in_review: -1, editing: -1 };
     hdr.forEach((h, i) => {
