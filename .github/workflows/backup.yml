@@ -1,9 +1,22 @@
 name: Daily Backup
 
+# ⏸️ ปิดการรันอัตโนมัติแล้ว (30 ก.ค. 2569) — เหลือกดรันเองเท่านั้น
+#
+# เหตุผล: อาศัย Supabase daily backup ของแพลตฟอร์มแทน (Free tier เก็บย้อนหลัง 7 วัน)
+# เปิดกลับ: เอาคอมเมนต์ 2 บรรทัด schedule/cron ออก
+#
+# ⚠️ ก่อนเปิดกลับ ต้องแก้ 2 จุดที่ทำให้ workflow นี้ไม่เคยสำเร็จ:
+#   1. job backup-database — ชื่อ artifact ใส่ $(date +%Y%m%d) ใน with: ซึ่งไม่ใช่ shell
+#      จึงไม่ถูกแทนค่า และอักขระ ( ) % เป็นอักขระต้องห้ามของ upload-artifact v4
+#      แก้เป็น: name: db-backup-${{ github.run_id }}
+#   2. src/app/api/backup/route.ts — ดึงแค่ projects/researchers/staff/sites
+#      ยังขาด activities · kpi_targets · rpf_faculties · rpf_initiatives ·
+#      rpf_kpi_catalog · research_briefs · activity_reports · project_tokens · team_members
+
 on:
-  schedule:
-    - cron: '0 1 * * *' # ทุกวัน 08:00 น. ไทย (01:00 UTC)
-  workflow_dispatch:     # กด run manually ได้ด้วย
+  # schedule:
+  #   - cron: '0 1 * * *' # ทุกวัน 08:00 น. ไทย (01:00 UTC)
+  workflow_dispatch:     # กด run manually ได้
 
 jobs:
   backup-database:
