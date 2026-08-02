@@ -221,6 +221,7 @@ export interface RiskyProject {
   name: string;
   responsible: string | null;
   budgetTotal: number;
+  budgetRemaining: number;    // เงินที่ยังไม่เบิก — ใช้จัดอันดับ "ควรเร่งตัวไหนก่อน"
   budgetUsedPct: number;
   expectedUsedPct: number;
   reasons: string[];          // เหตุผลที่ flag
@@ -230,9 +231,25 @@ export interface RiskyProject {
 export interface RiskyProjectsSummary {
   totalProjects: number;
   riskyCount: number;
+  riskyRemaining: number;     // เงินคงค้างรวมของโครงการเสี่ยงทั้งหมด
+  zeroSpendCount: number;     // โครงการที่ยังไม่เบิกเลย (0%)
+  zeroSpendRemaining: number; // เงินคงค้างของกลุ่ม 0%
   top3: RiskyProject[];
+  all: RiskyProject[];        // เรียงแล้ว — ใช้เมื่ออยากโชว์เกิน 3
   status: "good" | "warning" | "critical";
   label: string;
+}
+
+/**
+ * แปลงเลขเดือนปฏิทิน (1-12) เป็นลำดับเดือนในปีงบไทย
+ * ต.ค.=1 · พ.ย.=2 · ธ.ค.=3 · ม.ค.=4 · … · ส.ค.=11 · ก.ย.=12
+ *
+ * จำเป็นเพราะการเทียบเลขเดือนปฏิทินตรง ๆ ทำให้เดือน "ในอนาคตของปีงบ" (ส.ค./ก.ย.)
+ * ถูกคำนวณเป็นอดีตแบบ wrap-around เช่น ตอน ก.ค.(7) เทียบ ก.ย.(9) ได้ 12-9+7 = 10 เดือน
+ * ทั้งที่ ก.ย. ยังไม่มาถึง → ทุกโครงการถูก flag ว่าเลยกำหนด
+ */
+export function toFiscalMonthIndex(calendarMonth: number): number {
+  return calendarMonth >= 10 ? calendarMonth - 9 : calendarMonth + 3;
 }
 
 export function computeRiskyProjects(
@@ -263,17 +280,15 @@ export function computeRiskyProjects(
 
     // Risk 2: มี activity ไม่รายงาน
     const projActs = activities.filter((a) => a.project_id === p.id);
+    const nowFiscalIdx = toFiscalMonthIndex(new Date().getMonth() + 1);
     const overdueActs = projActs.filter((a) => {
       if (a.status === "completed" || a.status === "cancelled") return false;
       if (a.status !== "not_started") return false;
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      // มี planned_month ที่ผ่านมาแล้ว 2+ เดือน
-      return a.planned_months.some((pm) => {
-        const diff =
-          pm <= currentMonth ? currentMonth - pm : 12 - pm + currentMonth;
-        return diff >= 2;
-      });
+      // เทียบด้วยลำดับเดือนในปีงบ ไม่ใช่เลขเดือนปฏิทิน
+      // (ไม่งั้นเดือนที่ยังไม่มาถึงในปีงบจะถูกนับเป็นอดีต — ดู toFiscalMonthIndex)
+      return a.planned_months.some(
+        (pm) => nowFiscalIdx - toFiscalMonthIndex(pm) >= 2
+      );
     });
     if (overdueActs.length > 0) {
       reasons.push(`${overdueActs.length} กิจกรรมเลยกำหนด 2+ เดือน`);
@@ -285,6 +300,7 @@ export function computeRiskyProjects(
         name: p.project_name,
         responsible: p.responsible,
         budgetTotal: total,
+        budgetRemaining: Math.max(0, total - r.effectiveUsed),
         budgetUsedPct: usedPct,
         expectedUsedPct,
         reasons,
@@ -293,15 +309,20 @@ export function computeRiskyProjects(
     }
   }
 
-  // Sort: severity high first, then by gap size
+  // เรียงตาม "เงินที่ยังไม่เบิก" เป็นหลัก
+  // เหตุผล: ช่วงปลายปีงบ เกือบทุกโครงการเบิกช้ากว่าเวลาเท่า ๆ กัน (gap pp ใกล้เคียงกันหมด)
+  // การเรียงด้วย pp จึงไม่จัดลำดับอะไรจริง — เรียงด้วยจำนวนเงินบอกได้ว่าเร่งตัวไหนคุ้มสุด
   risky.sort((a, b) => {
     if (a.severity !== b.severity) return a.severity === "high" ? -1 : 1;
-    return (b.expectedUsedPct - b.budgetUsedPct) - (a.expectedUsedPct - a.budgetUsedPct);
+    return b.budgetRemaining - a.budgetRemaining;
   });
 
   const riskyCount = risky.length;
   const totalProjects = active.length;
   const top3 = risky.slice(0, 3);
+  const riskyRemaining = risky.reduce((s, x) => s + x.budgetRemaining, 0);
+  const zeroSpend = risky.filter((x) => x.budgetUsedPct === 0);
+  const zeroSpendRemaining = zeroSpend.reduce((s, x) => s + x.budgetRemaining, 0);
 
   let status: RiskyProjectsSummary["status"];
   let label: string;
@@ -316,7 +337,17 @@ export function computeRiskyProjects(
     label = `🔴 เสี่ยง ${riskyCount} โครงการ`;
   }
 
-  return { totalProjects, riskyCount, top3, status, label };
+  return {
+    totalProjects,
+    riskyCount,
+    riskyRemaining,
+    zeroSpendCount: zeroSpend.length,
+    zeroSpendRemaining,
+    top3,
+    all: risky,
+    status,
+    label,
+  };
 }
 
 // ============================================================================

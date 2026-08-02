@@ -9,6 +9,7 @@ import type {
 } from "@/lib/supabase-data";
 import { fetchActivities } from "@/lib/supabase-data";
 import { computeRiskyProjects } from "@/lib/dashboard-decisions";
+import ActionTier2 from "@/components/dashboard/ActionTier2";
 
 interface ProjectWithReport extends DBProject {
   last_report: {
@@ -91,14 +92,14 @@ export default function ProjectsPage() {
       // map main_program → initiative_id · ถ้า map ไม่เจอ fallback "all" (กันตารางว่างจากค่าดิบ)
       setFilterInitiative(MAIN_TO_INITIATIVE[mainParam] || "all");
     }
-    if (params.get("filter") === "risky") {
-      setRiskyOnly(true);
-      // เกณฑ์ overdue activity ต้องใช้ activities — ดึงตรงจาก Supabase (anon client)
-      // เฉพาะตอนเปิด filter นี้ · ถ้าดึงไม่ได้ (คืน []) จะเหลือเกณฑ์เบิกช้าอย่างเดียว
-      fetchActivities()
-        .then(setActivities)
-        .catch(() => {});
-    }
+    if (params.get("filter") === "risky") setRiskyOnly(true);
+
+    // เกณฑ์ overdue activity ต้องใช้ activities — ดึงตรงจาก Supabase (anon client)
+    // ดึงเสมอเพราะการ์ด "เร่งโครงการนี้ก่อน" ด้านบนต้องใช้ด้วย ไม่ใช่แค่ตอนเปิด filter
+    // ถ้าดึงไม่ได้ (คืน []) จะเหลือเกณฑ์เบิกช้าอย่างเดียว — การ์ดยังทำงานได้
+    fetchActivities()
+      .then(setActivities)
+      .catch(() => {});
 
     fetch("/api/supabase/projects")
       .then((r) => r.json())
@@ -122,6 +123,13 @@ export default function ProjectsPage() {
     }
     return ids;
   }, [riskyOnly, projects, activities]);
+
+  // สรุปโครงการเสี่ยงทั้งชุด — ใช้กับการ์ด "เร่งโครงการนี้ก่อน" ด้านบนตาราง
+  // เรียงตามเงินที่ยังไม่เบิก (ดู computeRiskyProjects) เพื่อให้เร่งตัวที่คุ้มที่สุดก่อน
+  const riskySummary = useMemo(
+    () => computeRiskyProjects(projects, activities),
+    [projects, activities]
+  );
 
   const filtered = projects
     .filter((p) => {
@@ -267,6 +275,12 @@ export default function ProjectsPage() {
           <p className="text-xl font-bold text-gray-600">{formatBudget(totalRemaining)}</p>
         </div>
       </div>
+
+      {/* เร่งโครงการนี้ก่อน — ย้ายมาจากหน้าแรก เพราะที่นี่คือที่ที่ลงมือทำงานกับโครงการจริง
+          ซ่อนเมื่อเปิด filter risky อยู่แล้ว (ตารางด้านล่างคือรายการเสี่ยงทั้งหมด ไม่ต้องซ้ำ) */}
+      {!loading && !riskyOnly && riskySummary.riskyCount > 0 && (
+        <ActionTier2 risky={riskySummary} limit={5} showAllHref="/projects?filter=risky" />
+      )}
 
       {/* Project table */}
       <div className="overflow-x-auto rounded-lg bg-white shadow">

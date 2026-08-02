@@ -26,9 +26,9 @@ import {
   computeRiskyProjects,
   composeInsightSentence,
 } from "@/lib/dashboard-decisions";
+import Link from "next/link";
 import InsightHeader from "@/components/dashboard/InsightHeader";
 import HealthTier1 from "@/components/dashboard/HealthTier1";
-import ActionTier2 from "@/components/dashboard/ActionTier2";
 import DrillDownTier3 from "@/components/dashboard/DrillDownTier3";
 
 export const revalidate = 60;
@@ -57,8 +57,28 @@ export default async function Home() {
       {/* TIER 1 — 3 หัวข้อใหญ่ (5-sec scan) */}
       <HealthTier1 budget={budget} kpiGap={kpiGap} risky={risky} />
 
-      {/* TIER 2 — Action: เร่งโครงการที่ risky */}
-      <ActionTier2 risky={risky} />
+      {/* TIER 2 — Action: สรุป 1 บรรทัด + ลิงก์ไปรายการเต็มที่หน้าโครงการ
+          (รายการเร่งฉบับเต็มย้ายไปอยู่หัวหน้า /projects ซึ่งเป็นที่ที่ลงมือทำงานจริง) */}
+      {risky.riskyCount > 0 && (
+        <Link
+          href="/projects?filter=risky"
+          className="flex flex-col gap-1 rounded-xl bg-white px-4 py-3.5 ring-1 ring-red-200 transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span className="text-sm font-bold text-red-900">
+            ⚠ เร่ง {risky.riskyCount} โครงการ · ค้างเบิก{" "}
+            {risky.riskyRemaining.toLocaleString("th-TH")} บาท
+          </span>
+          <span className="text-xs text-slate-600">
+            {risky.zeroSpendCount > 0 && (
+              <>
+                ยังไม่เบิกเลย {risky.zeroSpendCount} โครงการ (
+                {risky.zeroSpendRemaining.toLocaleString("th-TH")} บาท) ·{" "}
+              </>
+            )}
+            <span className="font-medium text-cyan-700">ดูรายการเร่ง →</span>
+          </span>
+        </Link>
+      )}
 
       {/* TIER 3 — Drill-down links → หน้า detail */}
       <DrillDownTier3 />

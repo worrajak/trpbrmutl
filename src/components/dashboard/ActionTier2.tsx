@@ -14,7 +14,20 @@ const SEV_STYLE = {
   medium: { ring: "ring-amber-300", bg: "bg-amber-50", dot: "bg-amber-500", text: "text-amber-900" },
 };
 
-export default function ActionTier2({ risky }: { risky: RiskyProjectsSummary }) {
+const fmtBaht = (n: number) => n.toLocaleString("th-TH");
+
+export default function ActionTier2({
+  risky,
+  limit = 3,
+  showAllHref = "/projects?filter=risky",
+}: {
+  risky: RiskyProjectsSummary;
+  /** จำนวนรายการที่แสดง (หน้าโครงการใช้ 5 · การ์ดสรุปใช้ 3) */
+  limit?: number;
+  showAllHref?: string;
+}) {
+  const items = risky.all?.length ? risky.all.slice(0, limit) : risky.top3;
+
   if (risky.riskyCount === 0) {
     return (
       <section className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 text-center">
@@ -30,19 +43,28 @@ export default function ActionTier2({ risky }: { risky: RiskyProjectsSummary }) 
 
   return (
     <section className="rounded-xl bg-white ring-1 ring-slate-200 p-4 sm:p-5">
-      <div className="flex items-baseline justify-between gap-2 flex-wrap mb-3">
+      <div className="flex items-baseline justify-between gap-2 flex-wrap mb-1">
         <h2 className="text-base font-bold text-slate-900">
-          ⚠ เร่ง {risky.top3.length} โครงการนี้ก่อน
+          ⚠ เร่ง {items.length} โครงการนี้ก่อน
         </h2>
-        {risky.riskyCount > 3 && (
-          <Link href="/projects" className="text-xs text-cyan-700 hover:underline whitespace-nowrap">
+        {risky.riskyCount > items.length && (
+          <Link href={showAllHref} className="text-xs text-cyan-700 hover:underline whitespace-nowrap">
             ดูเสี่ยงทั้งหมด ({risky.riskyCount}) →
           </Link>
         )}
       </div>
+      <p className="mb-3 text-xs text-slate-600">
+        เรียงตาม<strong>เงินที่ยังไม่เบิก</strong> — เร่งตัวบนสุดได้เงินออกมากที่สุด
+        {risky.zeroSpendCount > 0 && (
+          <>
+            {" · "}ยังไม่เบิกเลย <strong>{risky.zeroSpendCount} โครงการ</strong>{" "}
+            ({fmtBaht(risky.zeroSpendRemaining)} บาท)
+          </>
+        )}
+      </p>
 
       <ol className="space-y-2.5">
-        {risky.top3.map((p, i) => {
+        {items.map((p, i) => {
           const s = SEV_STYLE[p.severity];
           return (
             <li key={p.id} className={`rounded-lg ${s.bg} ring-1 ${s.ring} p-3`}>
@@ -55,7 +77,13 @@ export default function ActionTier2({ risky }: { risky: RiskyProjectsSummary }) 
                   >
                     {i + 1}. {p.name}
                   </Link>
-                  <ul className={`mt-1.5 space-y-0.5 text-xs ${s.text} opacity-90`}>
+                  <p className={`mt-1 text-sm font-semibold ${s.text}`}>
+                    ค้างเบิก {fmtBaht(p.budgetRemaining)} บาท
+                    <span className="ml-1.5 text-xs font-normal opacity-80">
+                      (เบิกแล้ว {p.budgetUsedPct}% จาก {fmtBaht(p.budgetTotal)} บาท)
+                    </span>
+                  </p>
+                  <ul className={`mt-1 space-y-0.5 text-xs ${s.text} opacity-90`}>
                     {p.reasons.map((r, j) => (
                       <li key={j}>• {r}</li>
                     ))}
