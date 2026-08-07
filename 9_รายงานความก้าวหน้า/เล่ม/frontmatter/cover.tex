@@ -1,0 +1,47 @@
+% ===== ปกนอก =====
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  % พื้นบนสีกรมท่า
+  \fill[FirstBlue] (current page.north west) rectangle ([yshift=-13.2cm]current page.north east);
+  % แถบทองคั่น
+  \fill[rpfgold] ([yshift=-13.2cm]current page.north west) rectangle ([yshift=-13.55cm]current page.north east);
+  % ลายภูเขา (โปร่งแสง)
+  \fill[white,opacity=0.08]
+    ([yshift=-11.1cm]current page.north west)
+    -- ++(4.6,2.2) -- ++(3.1,-1.5) -- ++(4.2,2.5) -- ++(3.4,-1.8) -- ++(6.2,2.7)
+    |- ([yshift=-13.2cm]current page.north east) -- cycle;
+  % แถบล่าง
+  \fill[SecondBlue!12] ([yshift=3.1cm]current page.south west) rectangle ([yshift=2.75cm]current page.south east);
+\end{tikzpicture}
+
+\vspace*{2.7cm}
+{\color{white}\fontsize{17}{21}\selectfont รายงานความก้าวหน้าการดำเนินงาน รอบ 10~เดือน}\par\vspace{14pt}
+{\color{white}\fontsize{38}{44}\selectfont\bfseries กลุ่มแผนงาน\\ใต้ร่มพระบารมี}\par\vspace{12pt}
+{\color{rpfgold}\fontsize{24}{28}\selectfont\bfseries มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา}\par\vspace{18pt}
+{\color{white}\fontsize{19}{23}\selectfont ปีงบประมาณ พ.ศ. 2569}\par\vspace{6pt}
+{\color{white!85}\fontsize{14}{18}\selectfont 1 ตุลาคม 2568 -- 4 สิงหาคม 2569}\par
+
+\vspace{2.6cm}
+\begin{center}
+\setlength{\tabcolsep}{9pt}\renewcommand{\arraystretch}{1.45}
+\begin{tabular}{>{\centering\arraybackslash}p{2.9cm}>{\centering\arraybackslash}p{2.9cm}>{\centering\arraybackslash}p{2.9cm}>{\centering\arraybackslash}p{2.9cm}}
+\rowcolor{rowblue}
+{\color{FirstBlue}\LARGE\bfseries 61} & {\color{FirstBlue}\LARGE\bfseries 3} & {\color{FirstBlue}\LARGE\bfseries 11} & {\color{FirstBlue}\LARGE\bfseries 48}\\
+\rowcolor{rowblue}
+{\footnotesize โครงการย่อย} & {\footnotesize โครงการหลัก ง8} & {\footnotesize หน่วยงานร่วม} & {\footnotesize พื้นที่ดำเนินงาน}\\
+\end{tabular}
+
+\vspace{14pt}
+\setlength{\tabcolsep}{12pt}
+\begin{tabular}{>{\centering\arraybackslash}p{5.2cm}>{\centering\arraybackslash}p{5.2cm}}
+\rowcolor{headerblue}
+{\color{FirstBlue}\LARGE\bfseries 7,986,583} & {\color{FirstBlue}\LARGE\bfseries 4,460,332}\\
+\rowcolor{headerblue}
+{\footnotesize งบประมาณที่ได้รับจัดสรร (บาท)} & {\footnotesize เบิกจ่ายแล้ว (บาท) $=$ 56\%}\\
+\end{tabular}
+\end{center}
+
+\vfill
+{\footnotesize จัดทำโดย กลุ่มแผนงานใต้ร่มพระบารมี มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา $\cdot$ ข้อมูล ณ 4 สิงหาคม 2569}
+\end{titlepage}

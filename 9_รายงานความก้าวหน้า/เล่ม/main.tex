@@ -1,0 +1,44 @@
+% รายงานความก้าวหน้า รอบ 9 เดือน — กลุ่มแผนงานใต้ร่มพระบารมี มทร.ล้านนา ปีงบประมาณ 2569
+% รูปเล่มสไตล์หนังสือ (teachingdoc.sty) · XeLaTeX
+% ตัวเลข: ไฟล์งบประมาณ 14/7/2569 · ไฟล์จัดสรรแผนงานและตัวชี้วัด 20/7/2569 · ฐานข้อมูลติดตามโครงการ 22/7/2569
+% build: xelatex main.tex ×2
+\documentclass[12pt,a4paper,twoside,openright]{book}
+\usepackage{styles/teachingdoc}
+
+% --- ตั้งค่าหัว/ท้ายกระดาษของเล่มนี้ (override ค่า default ของ sty) ---
+\renewcommand{\coursename}{รายงานความก้าวหน้า รอบ 9 เดือน $\cdot$ ปีงบประมาณ 2569}
+\fancyfoot[L]{\footnotesize กลุ่มแผนงานใต้ร่มพระบารมี}
+\fancyfoot[C]{\footnotesize\thepage}
+\fancyfoot[R]{\footnotesize มทร.ล้านนา}
+
+% --- สีเสริมสำหรับตารางในภาคผนวก (fragments อ้างชื่อสีเหล่านี้) ---
+\definecolor{rpfnavy}{RGB}{45,78,156}
+\definecolor{rpfgold}{RGB}{191,146,42}
+
+\begin{document}
+\frontmatter
+\input{frontmatter/cover}
+\input{frontmatter/titlepage-inner}
+\input{frontmatter/preface}
+\input{frontmatter/exec-summary}
+
+\tableofcontents
+\listoftables
+
+\mainmatter
+\input{chapters/ch01}
+\input{chapters/ch02}
+\input{chapters/ch03}
+\input{chapters/ch04}
+\input{chapters/ch05}
+\input{chapters/ch06}
+\input{chapters/ch07}
+
+\appendix
+\input{backmatter/appendix-a}
+\input{backmatter/appendix-b}
+
+\backmatter
+\input{backmatter/acknowledgement}
+
+\end{document}

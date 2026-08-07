@@ -1,0 +1,364 @@
+% teachingdoc.sty — Style package for Thai teaching documents (เอกสารคำสอน) — ผศ.ดร.วรจักร์ เมืองใจ
+% XeLaTeX + TH Sarabun New. ใช้ซ้ำได้ทุกวิชา (ตั้ง \coursename ใน main.tex) — ไม่ต้องแก้ไฟล์นี้ต่อวิชา
+% รวมแล้ว: ragged-right tables (L{}+X), header/footer มีเลขหน้า, \thaifonttt (verbatim ไทย), mathtools, ชื่อหัวข้อไทย
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{styles/teachingdoc}[Teaching Document Style — Thai XeLaTeX]
+
+% === Page geometry ===
+% twoside + inner(ขอบสัน)/outer(ขอบนอก) + bindingoffset — เผื่อเข้าเล่มพิมพ์ 2 หน้า (สันไม่จม) · ขึ้นบทใหม่หน้าขวา (openright ใน main)
+\RequirePackage[a4paper, twoside, top=2.54cm, bottom=2.54cm, inner=3.17cm, outer=2.54cm, bindingoffset=0.5cm]{geometry}
+
+% === Thai font (XeLaTeX) ===
+\RequirePackage{fontspec}
+\RequirePackage{xunicode}
+\RequirePackage{xltxtra}
+
+% Try TH Sarabun New first, fallback to Sarabun
+\IfFontExistsTF{TH Sarabun New}{
+  \setmainfont{TH Sarabun New}[Scale=1.0]
+}{
+  \IfFontExistsTF{TH SarabunPSK}{
+    \setmainfont{TH SarabunPSK}[Scale=1.0]
+  }{
+    \setmainfont{Sarabun}[Scale=1.0]
+  }
+}
+
+% Font sizes: 16pt body (matching original)
+\renewcommand{\normalsize}{\fontsize{16pt}{20pt}\selectfont}
+\renewcommand{\large}{\fontsize{18pt}{22pt}\selectfont}
+\renewcommand{\Large}{\fontsize{20pt}{24pt}\selectfont}
+\renewcommand{\LARGE}{\fontsize{22pt}{26pt}\selectfont}
+\renewcommand{\huge}{\fontsize{24pt}{28pt}\selectfont}
+\renewcommand{\small}{\fontsize{14pt}{18pt}\selectfont}
+\renewcommand{\footnotesize}{\fontsize{12pt}{16pt}\selectfont}
+
+% === Thai language ===
+\RequirePackage{polyglossia}
+\setdefaultlanguage{thai}
+\setotherlanguage{english}
+
+% ฟอนต์ monospace สำหรับสคริปต์ไทย — polyglossia ต้องการเมื่อใช้ verbatim/\ttfamily ในโหมดไทย (เช่น โค้ด Python บทที่ 3)
+\IfFontExistsTF{TH Sarabun New}{\newfontfamily\thaifonttt{TH Sarabun New}}{\IfFontExistsTF{Sarabun}{\newfontfamily\thaifonttt{Sarabun}}{}}
+
+% === ชื่อหัวข้ออัตโนมัติเป็นภาษาไทย (override หลัง polyglossia ตั้งค่าแล้ว) ===
+\AtBeginDocument{%
+  \renewcommand{\contentsname}{สารบัญ}%
+  \renewcommand{\listfigurename}{สารบัญรูปภาพ}%
+  \renewcommand{\listtablename}{สารบัญตาราง}%
+  \renewcommand{\figurename}{รูปที่}%
+  \renewcommand{\tablename}{ตารางที่}%
+  \renewcommand{\bibname}{บรรณานุกรม}%
+}
+
+% === การตัดคำ/ตัดบรรทัดภาษาไทย (XeTeX ICU locale) ===
+% ตัดคำไทยตามพจนานุกรม locale "th"
+\XeTeXlinebreaklocale "th"
+% ช่องไฟ "ระหว่างคำไทย" ต้องยืดได้ "น้อยมาก" เท่านั้น
+% ถ้าตั้งสูง (เคยลอง 0.28em) เวลาบรรทัดต้องยืด จะถ่างทุกคำจนดูเหมือนภาษาไทยเว้นวรรคทุกคำ
+% เช่น "บาท คิด เป็น ร้อย ละ 98 แสดง ว่า กลไก การ อนุมัติ" — อ่านยากกว่าเดิม
+% 0.10em = ถ่างพอให้ TeX มีที่ขยับ แต่ตามองไม่เห็นว่าคำถูกแยก
+\XeTeXlinebreakskip = 0pt plus 0.04em minus 0.02em
+% ⭐ หัวใจของคุณภาพการตัดคำไทย: ให้การตัดที่ "จุดพจนานุกรม ICU" มีค่าปรับ (penalty)
+% ICU ตัดระดับหน่วยคำ ทำให้ได้จุดตัดกลางคำประสม เช่น เหลื่อม|ล้ำ · ยก|ระดับ · กำลัง|คน
+% ตั้ง penalty ให้ TeX เลือกตัดที่ "วรรคจริง" ก่อนเสมอ แล้วค่อยยอมตัดกลางคำเมื่อจำเป็นจริง ๆ
+\XeTeXlinebreakpenalty = 120
+% \nb{...} = ห้ามตัดบรรทัดกลางกลุ่มคำนี้ (ใช้กับคำประสมที่ ICU ชอบตัดผิด เช่น \nb{ยกระดับ})
+% ใช้เท่าที่จำเป็น — ถ้ากลุ่มคำยาวกว่าความกว้างคอลัมน์จะเกิด Overfull แทน
+\newcommand{\nb}[1]{\mbox{#1}}
+
+% === คุมการจัดชิดขอบไม่ให้ข้อความล้นขอบขวา ===
+% emergencystretch = ทางออกสุดท้ายแทนการดันคำเลยขอบ — แต่ถ้าตั้งสูงเกินจะได้บรรทัดหลวมโหว่
+% 3em เดิมทำให้เกิดบรรทัด badness 10000 จำนวนมาก จึงลดลงและชดเชยด้วย linebreakskip ที่ยืดขึ้น
+% stretch ระหว่างคำไทยน้อย → ต้องพึ่ง emergencystretch มากขึ้นเพื่อไม่ให้ล้นขอบ
+% hbadness=10000 = ไม่รายงาน underfull เพราะในงานไทยบรรทัดหลวมไม่ใช่ข้อบกพร่องจริง
+% (ตัวชี้วัดที่ต้องเป็น 0 คือ Overfull เท่านั้น)
+\tolerance=700
+\emergencystretch=3em
+\hbadness=10000
+% แยกคำ/โทเคนละตินยาว (เช่น ตัวระบุในโค้ด, ชื่อรุ่น) ให้ตัดบรรทัดได้เมื่อจำเป็น
+\hyphenpenalty=200
+\exhyphenpenalty=200
+
+% === โหมดการจัดขอบเนื้อความ (สำคัญกับคุณภาพการอ่านภาษาไทย) ===
+% ไทยไม่มีวรรคระหว่างคำ การ justify จึงต้องถ่างช่องไฟ "ระหว่างคำ" เพื่อดันขอบขวาให้เรียบ
+% ผลคือบรรทัดที่ต้องยืดมากจะอ่านเหมือนเว้นวรรคทุกคำ ("งบ ประมาณ ที่ ได้ รับ จัดสรร")
+% ragged2e/\RaggedRight = ชิดซ้าย ขอบขวาไม่เรียบ แต่ช่องไฟสม่ำเสมอทุกบรรทัด (อ่านลื่นที่สุดสำหรับไทย)
+% สลับกลับเป็น justify ได้โดยคอมเมนต์ 2 บรรทัดล่างนี้
+\RequirePackage[originalparindent]{ragged2e}
+\AtBeginDocument{\RaggedRight\setlength{\parindent}{1.27cm}}
+
+% === ย่อหน้าบรรทัดแรกหลังหัวข้อ (แบบเอกสารไทย) ===
+\RequirePackage{indentfirst}
+
+% === Math ===
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{mathtools}   % extensible arrows \xleftrightarrow ฯลฯ (ใช้ในไดอะแกรมบางบท)
+\RequirePackage{unicode-math}
+% [หนังสือ] ขนาดตัวอักษรคณิตให้พอดีกับฟอนต์ไทยหลัก (inline math กลมกลืนกับเนื้อความ)
+\setmathfont{latinmodern-math.otf}[Scale=MatchLowercase]
+
+% === Code listings (โค้ด C/Python) ===
+\RequirePackage{listings}
+% ฟอนต์โค้ด: เลือกฟอนต์ที่รองรับ "ไทย+ละติน" เพื่อให้คอมเมนต์ไทยในโค้ดแสดงครบ (Menlo ไม่มี glyph ไทย)
+% Scale=MatchLowercase: ย่อฟอนต์โค้ดให้ x-height เท่า TH Sarabun (กันโค้ดดูตัวใหญ่กว่าเนื้อความ)
+\IfFontExistsTF{Bai Jamjuree}{\newfontfamily\codefont{Bai Jamjuree}[Scale=MatchLowercase]}{\IfFontExistsTF{Chakra Petch}{\newfontfamily\codefont{Chakra Petch}[Scale=MatchLowercase]}{\IfFontExistsTF{Menlo}{\newfontfamily\codefont{Menlo}[Scale=MatchLowercase]}{\let\codefont\ttfamily}}}
+\lstset{basicstyle=\codefont\small,breaklines=true,frame=single,columns=fullflexible,keepspaces=true,showstringspaces=false,xleftmargin=1em,aboveskip=8pt,belowskip=8pt,tabsize=2}
+
+% [หนังสือ] กล่อง TODO (จุดที่ต้องเติมข้อมูลจริง — ลบในฉบับเผยแพร่)
+\newcommand{\todo}[1]{\par\smallskip\noindent\colorbox{yellow!35}{\parbox{0.95\linewidth}{\footnotesize\textbf{[TODO]} #1}}\par\smallskip}
+
+% === Graphics ===
+\RequirePackage{graphicx}
+\graphicspath{{figures/}{../figures/}}
+\RequirePackage{float}
+\RequirePackage{caption}
+\captionsetup{font=small, labelfont=bf, justification=centering, aboveskip=8pt, belowskip=3pt}
+% [หนังสือ] ระยะเหนือ-ใต้รูป/ตารางแบบ [H] ให้สมดุลกับฟอนต์ไทย 16pt/20pt
+% (default \intextsep=14pt แคบกว่าหนึ่งบรรทัด ทำให้รูปดูติดข้อความ; ตั้ง ~1 บรรทัดเต็ม)
+\setlength{\intextsep}{20pt plus 4pt minus 3pt}
+\setlength{\textfloatsep}{22pt plus 4pt minus 4pt}
+\RequirePackage{subcaption}
+
+% === Tables ===
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{multirow}
+\RequirePackage{colortbl}
+\RequirePackage{longtable}
+\definecolor{headerblue}{RGB}{213, 226, 243}
+\definecolor{rowblue}{RGB}{231, 238, 249}   % สีแถวสลับอ่อน (declared color — ใช้ใน tabularx ได้ ต่างจาก headerblue!40 ที่ทำ \XC@declaredcolor พังใน tabularx)
+\newcolumntype{C}{>{\centering\arraybackslash}X}   % คอลัมน์ยืดหยุ่นจัดกึ่งกลาง (ใช้ใน tabularx)
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}  % คอลัมน์ยืดหยุ่นชิดขวา
+% เซลล์ตารางจัดชิดซ้าย (ragged-right) — กันคำไทยถูกยืดช่องไฟตอน justify ในคอลัมน์แคบ
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% === Colors ===
+\RequirePackage{xcolor}
+% นิยาม headerblue/rowblue "ซ้ำ" หลัง xcolor — ของเดิมนิยามก่อน xcolor (ผ่านแพ็กเกจ color ที่มากับ colortbl)
+% ซึ่งใช้กับ \rowcolor ได้แต่ tikz fill= จะพัง (Undefined color model) — นิยามใหม่ตรงนี้ให้เป็นสีแบบ xcolor
+\definecolor{headerblue}{RGB}{213, 226, 243}
+\definecolor{rowblue}{RGB}{231, 238, 249}
+\definecolor{chapcolor}{RGB}{0, 51, 102}
+\definecolor{domfill}{RGB}{225, 236, 248}   % สีพื้นกล่องโดเมน/บล็อกไดอะแกรม (TikZ)
+% [template port] สีหัวบท banner + กล่อง callout (ยกจาก tex-book-template)
+\definecolor{FirstBlue}{HTML}{2D4E9C}
+\definecolor{SecondBlue}{HTML}{4A96CD}
+\definecolor{tipgreen}{HTML}{2E7D32}
+\definecolor{warnred}{HTML}{C0392B}
+\definecolor{exviolet}{HTML}{6A1B9A}
+% [template port] โค้ดในกรอบให้เข้าชุดดีไซน์ใหม่: พื้นอ่อน + กรอบมนสีฟ้า + ไฮไลต์ซินแทกซ์
+\definecolor{codebg}{HTML}{F5F8FC}       % พื้นหลังอ่อน
+\definecolor{coderule}{HTML}{B9CCE6}      % เส้นกรอบฟ้าอ่อน
+\definecolor{codecomment}{HTML}{3F8A4F}   % คอมเมนต์เขียว
+\definecolor{codestring}{HTML}{B25000}    % สตริงส้ม-น้ำตาล
+\definecolor{codenum}{HTML}{8A8A8A}       % เลขบรรทัด เทา
+\lstset{
+  keywordstyle=\color{FirstBlue}\bfseries,
+  commentstyle=\color{codecomment},
+  stringstyle=\color{codestring},
+  backgroundcolor=\color{codebg},
+  rulecolor=\color{coderule},
+  frame=single, frameround=tttt, framesep=7pt,
+  xleftmargin=1.4em, xrightmargin=0.6em,
+  aboveskip=11pt, belowskip=11pt,
+  breakindent=1.5em,
+}
+
+% === Diagrams (TikZ) — core tikz เท่านั้น (BasicTeX ไม่มี pgfplots/arrows.meta) ===
+% diagram แนวคิดวาดด้วย TikZ ; กราฟข้อมูลใช้ Python matplotlib -> PDF -> \includegraphics (ดู figures/thaiplot.py)
+% ถ้าต้องการ pgfplots: sudo tlmgr install pgfplots
+\RequirePackage{tikz}
+\usetikzlibrary{positioning, arrows, calc, fit, backgrounds}
+\tikzset{>=latex}
+
+% [template port] กล่อง callout (info/tip/warning/example) — สร้างด้วย tikz เพราะ BasicTeX ไม่มี tcolorbox/mdframed
+% หมายเหตุ: กล่องไม่ตัดข้ามหน้า เหมาะกับเนื้อหาสั้น 1–6 บรรทัด
+\newsavebox{\tdcalloutbox}
+\newenvironment{callout}[3]{% #1=สีเส้น/หัว  #2=สีพื้น  #3=ป้ายหัวกล่อง
+  \def\tdcoutline{#1}\def\tdcfill{#2}%
+  \par\medskip\noindent
+  \begin{lrbox}{\tdcalloutbox}%
+  \begin{minipage}{\dimexpr\linewidth-1.7cm\relax}%
+    \setlength{\parindent}{0pt}\RaggedRight\small
+    {\bfseries\color{#1}#3}\par\vspace{3pt}%
+}{%
+  \end{minipage}%
+  \end{lrbox}%
+  \begin{tikzpicture}
+    \node[inner sep=10pt, rounded corners=4pt, fill=\tdcfill, draw=\tdcoutline, line width=0.9pt]{\usebox{\tdcalloutbox}};
+  \end{tikzpicture}\par\medskip%
+}
+\newenvironment{infobox}{\begin{callout}{FirstBlue}{FirstBlue!7}{หมายเหตุ}}{\end{callout}}
+\newenvironment{tipbox}{\begin{callout}{tipgreen}{tipgreen!8}{เคล็ดลับ}}{\end{callout}}
+\newenvironment{warnbox}{\begin{callout}{warnred}{warnred!7}{ข้อควรระวัง}}{\end{callout}}
+\newenvironment{examplebox}{\begin{callout}{exviolet}{exviolet!7}{ตัวอย่าง}}{\end{callout}}
+
+% [skill: teaching-doc-latex] กรอบ AI สำหรับภาพที่ยังไม่มี — ใส่ prompt ให้ไป gen รูปเอง
+% \aifigbox{ชื่อไฟล์}{หัวเรื่อง}{prompt: ชนิดภาพ/องค์ประกอบ/สื่อความหมาย}{caption}
+%   default \finalfigfalse = แสดงกรอบ prompt ; ตั้ง \finalfigtrue (ใน main.tex) เมื่อวางรูปจริงที่ figures/<ชื่อไฟล์>.png|jpg
+\newif\iffinalfig\finalfigfalse
+\definecolor{aibg}{RGB}{244,248,253}
+\colorlet{aiborder}{FirstBlue}
+\newcommand{\emptyaibox}[1]{\setlength{\fboxsep}{14pt}\setlength{\fboxrule}{1pt}\fcolorbox{aiborder}{aibg}{\begin{minipage}{0.8\textwidth}\centering{\color{aiborder}[ยังไม่มีไฟล์รูป figures/#1.png|jpg]}\end{minipage}}}
+\newcommand{\aifigbox}[4]{%
+  \begin{figure}[H]\centering
+  \iffinalfig
+    \IfFileExists{figures/#1.png}{\includegraphics[width=0.85\textwidth]{#1.png}}{%
+    \IfFileExists{figures/#1.jpg}{\includegraphics[width=0.85\textwidth]{#1.jpg}}{\emptyaibox{#1}}}%
+  \else
+    \setlength{\fboxsep}{14pt}\setlength{\fboxrule}{1pt}%
+    \fcolorbox{aiborder}{aibg}{\begin{minipage}{0.82\textwidth}%
+    {\small\bfseries\color{aiborder}ภาพประกอบ --- เตรียมสร้างด้วย AI (ใช้คำบรรยายด้านล่างเป็นต้นแบบ)}\par
+    \vspace{5pt}\textcolor{aiborder}{\rule{\linewidth}{0.6pt}}\par\vspace{8pt}%
+    {\bfseries #2}\par\vspace{6pt}\small #3\end{minipage}}%
+  \fi
+  \caption{#4}\label{fig:#1}%
+  \end{figure}}
+
+% === Headers and Footers ===
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\providecommand{\coursename}{}% override ด้วย \renewcommand{\coursename}{...} ใน main.tex
+\fancyhead[L]{\footnotesize\itshape\coursename}
+\fancyhead[R]{\footnotesize\itshape\nouppercase{\leftmark}}
+\fancyfoot[L]{\footnotesize ผศ.ดร.วรจักร์ เมืองใจ}
+\fancyfoot[C]{\footnotesize\thepage}
+\fancyfoot[R]{\footnotesize สาขาวิศวกรรมไฟฟ้า มทร.ล้านนา}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\setlength{\headheight}{16pt}
+% running head ฝั่งขวาแสดงสั้น ๆ แค่ "บทที่ N" กันชื่อบทยาวชนข้อความหัวกระดาษซ้าย
+\renewcommand{\chaptermark}[1]{\markboth{บทที่ \thechapter}{}}
+
+% [twoside] เลิกบังคับดันเนื้อชนขอบล่างทุกหน้า (book default = \flushbottom) —
+% หน้าที่ float [H] ใหญ่ถูกดันข้ามหน้า กาวยืดจะถูกกระจุกกลางหน้าเป็นช่องว่างยักษ์เหนือ/ใต้รูป
+\raggedbottom
+
+% [twoside] หน้าว่าง (verso) ที่แทรกก่อนขึ้นบทใหม่ ให้ "ว่างสนิท" — ไม่มี header/footer/เลขหน้า
+% (ค่าเริ่มต้นของ book: หน้าว่างจาก \chapter จะติด pagestyle fancy; หน้าว่างของ \part ว่างอยู่แล้ว)
+\makeatletter
+\renewcommand*{\cleardoublepage}{%
+  \clearpage
+  \if@twoside
+    \ifodd\c@page\else
+      \thispagestyle{empty}\hbox{}\newpage
+    \fi
+  \fi}
+\makeatother
+
+% === Chapter/Section formatting ===
+\RequirePackage{titlesec}
+\RequirePackage{titletoc}   % [template port] กลไกมินิสารบัญต้นบท
+
+% [template port] แถบหัวบท (banner) — วาดด้วย tikz overlay อิงมุมหน้ากระดาษ (engine-agnostic ใช้ได้กับ XeLaTeX+ไทย)
+\newcommand{\chapterbanner}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[FirstBlue] ([xshift=2cm,yshift=-3.0cm]current page.north west)
+      rectangle ([xshift=-2cm,yshift=-4.4cm]current page.north east);
+    \fill[SecondBlue] ([xshift=2cm,yshift=-4.4cm]current page.north west)
+      rectangle ([xshift=-2cm,yshift=-4.58cm]current page.north east);
+    \fill[white] ([xshift=3.3cm,yshift=-3.7cm]current page.north west) circle (0.62cm);
+    \node[text=FirstBlue, font=\LARGE\bfseries]
+      at ([xshift=3.3cm,yshift=-3.7cm]current page.north west) {\thechapter};
+    \node[anchor=west, text=white, font=\Large\bfseries]
+      at ([xshift=4.4cm,yshift=-3.7cm]current page.north west) {บทที่};
+  \end{tikzpicture}%
+}
+% [template port] มินิสารบัญ "ในบทนี้" — แสดง section ของบทปัจจุบัน (titletoc; ไม่แตะ \titlecontents เพื่อไม่ให้สารบัญหลักเพี้ยน)
+\newcommand{\chapterminitoc}{%
+  \begingroup
+  \normalfont\normalcolor\small
+  \par\vspace{1pt}\noindent{\bfseries\color{FirstBlue}ในบทนี้}\par\vspace{1pt}%
+  \startcontents
+  \printcontents{0}{1}{\setcounter{tocdepth}{1}}%
+  \endgroup
+  \par\medskip
+}
+% flag: ให้ banner+minitoc ทำงานเฉพาะบท "มีเลข" — กัน \chapter* (สารบัญ/บรรณานุกรม/ดัชนี/คำนำ) รั่ว
+\newif\ifnumberedchap
+\titleformat{\chapter}[display]
+  {\normalfont\global\numberedchapfalse}%
+  {\global\numberedchaptrue\chapterbanner}{0pt}%
+  {\huge\bfseries\color{FirstBlue}\raggedright}%
+  [\ifnumberedchap\chapterminitoc\fi]
+\titleformat{\section}{\large\bfseries\color{FirstBlue}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{SecondBlue!85!black}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{chapcolor}}{\thesubsubsection}{1em}{}
+% \chapter ไม่ใส่ดอกจัน (star) เพื่อให้ย่อหน้าแรกหลังหัวข้อ "ย่อหน้า" + ลดช่องว่างเหนือหัวข้อ
+% (titlesec default ของ chapter เป็นแบบ star = ไม่ย่อหน้า + เว้น 50pt เหนือหัวข้อ ทำให้หัวข้อลอยกลางหน้า)
+\titlespacing{\chapter}{0pt}{2.35cm}{0.8cm}   % [template port] ดันชื่อบท+เนื้อหาลงใต้แถบ banner
+\titlespacing{\section}{0pt}{12pt}{6pt}
+\titlespacing{\subsection}{0pt}{10pt}{4pt}
+\titlespacing{\subsubsection}{0pt}{8pt}{2pt}
+
+% === Paragraph indent (Thai style) ===
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{0pt}
+
+% === Equation numbering by chapter ===
+\numberwithin{equation}{chapter}
+\numberwithin{figure}{chapter}
+\numberwithin{table}{chapter}
+
+% === Hyperlinks ===
+\RequirePackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=chapcolor,
+  citecolor=chapcolor,
+  urlcolor=blue,
+  bookmarks=true,
+  pdfencoding=auto,
+}
+
+% === Bibliography ===
+\RequirePackage[backend=biber, style=apa, sorting=nyt]{biblatex}
+
+% === Custom commands ===
+% Equation with right-aligned number (Thai style)
+\newcommand{\thaiequation}[2]{%
+  \begin{equation} #1 \label{#2} \end{equation}%
+}
+
+% Variable definition after equation
+\newenvironment{vardef}{%
+  \noindent\hspace{1.27cm}\begin{tabular}{@{}lc>{\raggedright\arraybackslash}p{0.62\linewidth}@{}}%
+  เมื่อ &  & \\
+}{%
+  \end{tabular}\par\vspace{6pt}%
+}
+\newcommand{\var}[2]{& #1 & คือ #2 \\}
+
+% Figure with caption and source
+\newcommand{\insertfig}[4][0.85\textwidth]{%
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=#1]{#2}
+    \caption{#3}
+    \label{fig:#2}
+    \vspace{-6pt}
+    {\footnotesize\textit{ที่มา: #4}}
+  \end{figure}
+}
+
+% Table caption with source
+\newcommand{\tabcaption}[2]{%
+  \caption{#1}%
+  \vspace{-6pt}
+  {\footnotesize\textit{ที่มา: #2}}%
+}
+
+% Thai-style list
+\RequirePackage{enumitem}
+\setlist[enumerate]{leftmargin=2cm, label=\arabic*.}
+\setlist[itemize]{leftmargin=2cm}
+
+% force indent after heading (titlesec override fix)
+\makeatletter
+\let\@afterindentfalse\@afterindenttrue
+\@afterindenttrue
+\makeatother
