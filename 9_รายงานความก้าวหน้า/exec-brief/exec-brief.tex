@@ -1,0 +1,251 @@
+% ===========================================================
+%  บทสรุปผู้บริหาร (2 หน้า) — กลุ่มแผนงานใต้ร่มพระบารมี 2569
+%  ข้อมูล ณ 4 สิงหาคม 2569 · ตัวเลขทุกจุดมาจากฐานข้อมูลติดตามโครงการ
+%  build: xelatex exec-brief.tex
+% ===========================================================
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{thai}
+\setotherlanguage{english}
+
+\IfFontExistsTF{TH Sarabun New}{\setmainfont{TH Sarabun New}[Scale=1.0]}{%
+  \IfFontExistsTF{TH SarabunPSK}{\setmainfont{TH SarabunPSK}[Scale=1.0]}{\setmainfont{Sarabun}[Scale=1.0]}}
+
+% --- การตัดคำไทย (ค่าเดียวกับเล่มรายงาน) ---
+\XeTeXlinebreaklocale "th"
+\XeTeXlinebreakskip = 0pt plus 0.04em minus 0.02em
+\XeTeXlinebreakpenalty = 120
+\tolerance=700
+\emergencystretch=3em
+\hbadness=10000
+
+\usepackage[a4paper,top=1.5cm,bottom=1.4cm,left=1.7cm,right=1.7cm]{geometry}
+\usepackage[originalparindent]{ragged2e}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+
+\definecolor{FirstBlue}{HTML}{2D4E9C}
+\definecolor{SecondBlue}{HTML}{4A96CD}
+\definecolor{rpfgold}{HTML}{C79A3C}
+\definecolor{headerblue}{RGB}{213, 226, 243}
+\definecolor{rowblue}{RGB}{231, 238, 249}
+\definecolor{tipgreen}{HTML}{2E7D32}
+\definecolor{warnred}{HTML}{C0392B}
+\definecolor{greybox}{HTML}{F4F6F9}
+
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.25}
+
+\pagestyle{fancy}\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\color{black!55}กลุ่มแผนงานใต้ร่มพระบารมี มทร.ล้านนา $\cdot$ ข้อมูล ณ 4 สิงหาคม 2569}
+\fancyfoot[R]{\footnotesize\color{black!55}หน้า \thepage/2}
+
+% ---------- ตัวเลขเด่น ----------
+\newcommand{\bignum}[3]{%
+  \begin{tikzpicture}
+    \node[draw=SecondBlue!35,line width=0.6pt,fill=#3,rounded corners=3pt,
+          minimum width=3.55cm,minimum height=1.5cm,inner sep=3pt] {%
+      \begin{minipage}{3.3cm}\centering
+        {\color{FirstBlue}\fontsize{19}{21}\selectfont\bfseries #1}\par\vspace{1pt}
+        {\fontsize{9.5}{11}\selectfont #2}
+      \end{minipage}};
+  \end{tikzpicture}}
+
+% ---------- หัวข้อ ----------
+\newcommand{\sechead}[1]{%
+  \vspace{5pt}
+  {\color{FirstBlue}\fontsize{13.5}{16}\selectfont\bfseries #1}%
+  \par\vspace{-3pt}{\color{rpfgold}\rule{\linewidth}{1.2pt}}\par\vspace{2pt}}
+
+% กล่องไฮไลต์ — แถบสีซ้าย + พื้นอ่อน (ไม่พึ่ง tcolorbox)
+\newsavebox{\flagbuf}
+\newenvironment{flagbox}[1]{%
+  \colorlet{flagbar}{#1}%
+  \par\vspace{3pt}\noindent
+  \begin{lrbox}{\flagbuf}%
+  \begin{minipage}{\dimexpr\linewidth-0.85cm\relax}\RaggedRight\small\vspace{3pt}}%
+  {\vspace{3pt}\end{minipage}\end{lrbox}%
+  \colorbox{flagbar!6}{\makebox[\dimexpr\linewidth-2\fboxsep\relax][l]{%
+    \textcolor{flagbar}{\rule[-\dimexpr\dp\flagbuf+3pt\relax]{2.6pt}{\dimexpr\ht\flagbuf+\dp\flagbuf+6pt\relax}}%
+    \hspace{5pt}\usebox{\flagbuf}}}\par\vspace{3pt}}
+
+\begin{document}
+\RaggedRight
+
+% ======================= หน้า 1 =======================
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[FirstBlue] (current page.north west) rectangle ([yshift=-3.9cm]current page.north east);
+  \fill[rpfgold]   ([yshift=-3.9cm]current page.north west) rectangle ([yshift=-4.03cm]current page.north east);
+\end{tikzpicture}
+\vspace*{-0.15cm}
+{\color{white}\fontsize{11}{13}\selectfont บทสรุปผู้บริหาร $\cdot$ รายงานความก้าวหน้า รอบ 10~เดือน}\par\vspace{3pt}
+{\color{white}\fontsize{23}{26}\selectfont\bfseries กลุ่มแผนงานใต้ร่มพระบารมี}\par\vspace{2pt}
+{\color{rpfgold}\fontsize{14}{16}\selectfont\bfseries มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา}\hfill
+{\color{white!85}\fontsize{10.5}{12}\selectfont ปีงบประมาณ 2569 $\cdot$ 1 ต.ค. 2568 -- 4 ส.ค. 2569}
+\vspace{0.85cm}
+
+\begin{center}
+\bignum{7,986,583}{งบประมาณจัดสรร (บาท)}{white}\hspace{-3pt}
+\bignum{4,460,332}{เบิกจ่ายแล้ว $=$ 56\%}{rowblue}\hspace{-3pt}
+\bignum{61}{โครงการย่อย ใน 3 ง8}{white}\hspace{-3pt}
+\bignum{55}{วันเหลือถึงสิ้นปีงบ}{rowblue}
+\end{center}
+\vspace{-4pt}
+
+\sechead{1. สถานะโดยสรุป}
+
+แผนงานดำเนินการ 61~โครงการ ภายใต้โครงการหลัก 3 โครงการตามแบบ ง8
+โดยหน่วยงานภายในมหาวิทยาลัย 11~หน่วยงาน หัวหน้าโครงการ 42~ท่าน
+ครอบคลุมพื้นที่ดำเนินงาน 48~พื้นที่ ในศูนย์พัฒนาโครงการหลวง สถานีเกษตรหลวง
+โครงการตามพระราชดำริ และชุมชนบนพื้นที่สูง
+
+\begin{flagbox}{tipgreen}
+\textbf{ทำได้เกินเป้าแล้ว} --- ตัวชี้วัดที่ 39 (องค์ความรู้ เทคโนโลยี และนวัตกรรมที่นำไปใช้
+ในโครงการหลวงและโครงการตามพระราชดำริ) ซึ่งเป็น\textbf{เป้าหมายโดยตรงของแผนงาน}
+รับมาดำเนินการ \textbf{62 จากเป้า 60 คิดเป็น 103\%} กระจายใน 37~โครงการ ;
+อนุมัติโครงการแล้ว 59 จาก 61 ; โอนงบถึงผู้รับผิดชอบแล้ว 98\%
+\end{flagbox}
+
+\begin{flagbox}{warnred}
+\textbf{ต้องเร่งด่วน} --- เบิกจ่าย \textbf{56\%} ขณะที่เวลาปีงบประมาณผ่านไป \textbf{85\%}
+\textbf{ช้ากว่ากรอบเวลา 29~จุดร้อยละ} ต้องเบิกจ่ายเพิ่มอีก \textbf{3,526,251~บาท ใน 55~วัน}
+โดยมีใบสั่งซื้อรองรับแล้วเพียง 825,156~บาท เท่ากับวงเงินกว่า \textbf{2.7 ล้านบาทยังไม่เริ่มกระบวนการจัดซื้อจัดจ้าง}
+\end{flagbox}
+
+\sechead{2. ตัวเลขสำคัญ}
+
+\begin{minipage}[t]{0.485\textwidth}
+{\footnotesize\textbf{\color{FirstBlue}สถานะงบประมาณภาพรวม}}\par\vspace{2pt}
+\small
+\begin{tabular}{L{3.55cm}rr}
+\toprule
+\rowcolor{headerblue}
+\textbf{รายการ} & \textbf{บาท} & \textbf{\%}\\
+\midrule
+งบประมาณจัดสรร & 7,986,583 & 100\\
+\rowcolor{rowblue}
+โอนถึงผู้รับผิดชอบ & 7,798,583 & 98\\
+ผูกพันใบสั่งซื้อ & 825,156 & 10\\
+\rowcolor{rowblue}
+\textbf{เบิกจ่ายจริง} & \textbf{4,460,332} & \textbf{56}\\
+เบิกจ่าย$+$ผูกพัน & 5,285,488 & 66\\
+\rowcolor{rowblue}
+\textbf{คงเหลือต้องเบิก} & \textbf{3,526,251} & \textbf{44}\\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.485\textwidth}
+{\footnotesize\textbf{\color{FirstBlue}รายโครงการหลัก ง8}}\par\vspace{2pt}
+\small
+\begin{tabular}{L{2.75cm}C{0.75cm}rr}
+\toprule
+\rowcolor{headerblue}
+\textbf{โครงการหลัก} & \textbf{จำนวน} & \textbf{เบิกจ่าย} & \textbf{\%}\\
+\midrule
+ง8-1 เทคโนโลยี นวัตกรรมสู่ชุมชน & 16 & 1,064,116 & 54\\
+\rowcolor{rowblue}
+ง8-2 องค์ความรู้ ยกระดับคุณภาพชีวิต & 14 & 1,360,534 & 68\\
+ง8-3 พัฒนากำลังคน ลดความเหลื่อมล้ำ & 31 & 2,035,682 & 51\\
+\midrule
+\rowcolor{headerblue}
+\textbf{รวม} & \textbf{61} & \textbf{4,460,332} & \textbf{56}\\
+\bottomrule
+\end{tabular}
+\end{minipage}
+
+\vspace{4pt}
+{\footnotesize\color{black!60}ร้อยละการเบิกจ่ายทุกจุดคำนวณจาก\textbf{งบประมาณที่ได้รับจัดสรร} เพื่อให้ตัวเลขรายโครงการหลักบวกกลับตรงกับภาพรวม}
+
+\sechead{3. ผลตัวชี้วัดที่รับมาดำเนินการ}
+
+{\small\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{L{9.4cm}C{2.3cm}C{1.5cm}L{2.4cm}}
+\toprule
+\rowcolor{headerblue}
+\textbf{ตัวชี้วัด} & \textbf{รับมา/เป้า} & \textbf{ร้อยละ} & \textbf{สถานะ}\\
+\midrule
+ที่ 39 องค์ความรู้สู่โครงการหลวงและโครงการตามพระราชดำริ & 62 / 60 & 103\% & {\color{tipgreen}\bfseries ผ่านเป้า}\\
+\rowcolor{rowblue}
+ที่ 35 กำลังคนที่ได้รับการพัฒนาทักษะ & 288 / 400 & 72\% & ตามแผน\\
+ที่ 40 องค์ความรู้ยกระดับคุณภาพชีวิตชุมชน & 45 / 100 & 45\% & ต้องเร่ง\\
+\rowcolor{rowblue}
+ที่ 10 เครือข่ายความร่วมมือ & --- & 18\% & {\color{warnred}\bfseries เชิงโครงสร้าง}\\
+ที่ 17 ทรัพย์สินทางปัญญา & --- & 13\% & {\color{warnred}\bfseries เชิงโครงสร้าง}\\
+\rowcolor{rowblue}
+ที่ 38 ความร่วมมือกับสถานประกอบการ & --- & 8\% & {\color{warnred}\bfseries เชิงโครงสร้าง}\\
+\bottomrule
+\end{tabular}}
+
+\vspace{3pt}
+\begin{flagbox}{SecondBlue}
+\textbf{ข้อควรทราบในการอ่านตัวเลข} --- ยังไม่มีการบันทึกรายงานผลรายกิจกรรมเข้าระบบติดตาม
+(0 จาก 268~กิจกรรม) ตัวเลขตัวชี้วัดข้างต้นจึงเป็น\textbf{ค่าที่โครงการรับมาดำเนินการ}
+มิใช่ผลสำเร็จที่ผ่านการตรวจรับ การปิดช่องว่างนี้เป็นเงื่อนไขจำเป็นของรายงานฉบับสมบูรณ์
+\end{flagbox}
+
+% ======================= หน้า 2 =======================
+\sechead{4. ประเด็นวิเคราะห์}
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt,topsep=2pt]
+  \item \textbf{ปัญหาอยู่ที่กระบวนการ มิใช่เนื้องาน} --- ตัวชี้วัดภารกิจหลักทำได้เกินเป้าแล้ว
+        แต่การเบิกจ่ายและการรายงานผลตามไม่ทัน มาตรการที่ควรใช้จึงเป็นด้านการบริหารจัดการ
+        และการสนับสนุนกระบวนการพัสดุ มิใช่การปรับเปลี่ยนเนื้องานของโครงการ
+  \item \textbf{คอขวดไม่ได้อยู่ต้นทาง} --- อนุมัติแล้ว 59 จาก 61~โครงการ โอนงบร้อยละ~98
+        คอขวดอยู่ที่ขั้นตอนการใช้จ่ายในระดับโครงการ
+  \item \textbf{ความต่างระหว่างหน่วยงานสูงมาก} --- ตั้งแต่ร้อยละ~96 (มทร.ล้านนา น่าน) ลงมาถึงร้อยละ~0
+        บ่งชี้ปัญหาด้านศักยภาพกระบวนการพัสดุรายหน่วยงาน ; ยังมี 7~โครงการที่ยังไม่เบิกจ่ายเลย
+        รวม 530,000~บาท
+  \item \textbf{ตัวชี้วัดเชิงเครือข่ายและเชิงพาณิชย์ต่ำเชิงโครงสร้าง} --- โครงการส่วนใหญ่ออกแบบ
+        เพื่อชุมชนและพื้นที่โครงการหลวง มิได้ออกแบบเพื่อสถานประกอบการหรือการจดทะเบียนทรัพย์สินทางปัญญาตั้งแต่ต้น
+\end{enumerate}
+
+\sechead{5. ข้อเสนอต่อผู้บริหาร และเป้าหมาย 55 วันสุดท้าย}
+
+\small
+\begin{tabular}{L{5.5cm}L{7.0cm}L{3.4cm}}
+\toprule
+\rowcolor{headerblue}
+\textbf{ข้อเสนอ} & \textbf{การดำเนินการ} & \textbf{หมุดหมาย}\\
+\midrule
+1. เร่งรัดการเบิกจ่าย & ติดตามโครงการที่เบิกจ่ายต่ำกว่าร้อยละ~30 รายสัปดาห์ พร้อมจัดทีมช่วยจัดทำเอกสารจัดซื้อจัดจ้าง โดยเฉพาะ มทร.ล้านนา ตาก (3~โครงการ 250,000~บาท) และคณะบริหารธุรกิจและศิลปศาสตร์ (1~โครงการ 40,000~บาท) & สิ้น ส.ค. เบิกจ่ายถึงร้อยละ~75\\
+\rowcolor{rowblue}
+2. กำหนดวินัยการรายงานผล & ให้ผู้รับผิดชอบบันทึกผลรายกิจกรรมพร้อมหลักฐานเข้าระบบติดตามให้ครบ & กลาง ก.ย. ครบ 268~กิจกรรม\\
+3. ปิดช่องว่างตัวชี้วัด & เร่งยื่นจดทะเบียนทรัพย์สินทางปัญญาจากผลงานที่พร้อม และลงนามความร่วมมือกับหน่วยงานภายนอกและสถานประกอบการ & ก.ย. 2569\\
+\rowcolor{rowblue}
+4. ทบทวนการออกแบบตัวชี้วัดปี 2570 & ออกแบบตัวชี้วัดให้สอดคล้องลักษณะงานพัฒนาชุมชนตั้งแต่ต้นปี พร้อมปฏิทินเบิกจ่ายรายไตรมาส & ต้นปีงบประมาณ 2570\\
+\bottomrule
+\end{tabular}
+\normalsize
+
+\vspace{4pt}
+\begin{center}
+\begin{tikzpicture}
+\node[draw=FirstBlue,line width=0.9pt,fill=greybox,rounded corners=3pt,
+      inner sep=7pt,text width=16.2cm]{%
+  \RaggedRight
+  \textbf{\color{FirstBlue}เป้าหมายที่ต้องปิดภายใน 30 กันยายน 2569} \quad
+  เบิกจ่ายให้ถึงร้อยละ~90 ของงบจัดสรร $=$ \textbf{7,187,925~บาท} เท่ากับต้องเบิกจ่ายเพิ่มอีก
+  \textbf{2,727,593~บาท} ; บันทึกรายงานผลครบ \textbf{268~กิจกรรม} ; ปิดโครงการครบ \textbf{61~โครงการ}};
+\end{tikzpicture}
+\end{center}
+
+\vspace{2pt}
+{\footnotesize\color{black!60}
+ตัวเลขทุกจำนวนในเอกสารนี้มาจากฐานข้อมูลระบบติดตามโครงการ ซึ่งปรับปรุงจากไฟล์งบประมาณของกลุ่มแผนงาน
+ฉบับวันที่ 4 สิงหาคม 2569 และไฟล์จัดสรรแผนงานและตัวชี้วัด ฉบับวันที่ 20 กรกฎาคม 2569
+ตรวจสอบย้อนกลับได้รายโครงการในรายงานความก้าวหน้าฉบับเต็ม (49~หน้า) และที่ระบบติดตามโครงการออนไลน์}
+
+\end{document}
