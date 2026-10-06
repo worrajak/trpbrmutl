@@ -31,7 +31,20 @@ const COMMIT = process.argv.includes("--commit");
 const FY = 2569;
 const SRC = require("./data/budget-2569-final-2026-10-01.json");
 
-const EXPECT = { rows: 75, spent: 7446794, g8_1: 1836240, g8_2: 1894933, g8_3: 3715621 };
+const FRAME = 8000000; // กรอบงบประมาณแผนงาน — ยอดรวมในระบบห้ามเกินค่านี้
+const EXPECT = {
+  rows: 75, spent: 7446794, g8_1: 1836240, g8_2: 1894933, g8_3: 3715621,
+  transferred: 7992353, t_g8_1: 1999620, t_g8_2: 1998472, t_g8_3: 3994261,
+};
+
+// รายการที่อยู่ใน DB แต่ไม่ปรากฏในงบการเงินปิดปี 2569 และเบิกจ่าย 0 บาท
+// -> ไม่ได้ดำเนินการจริงในปีงบประมาณนี้ ปิดสถานะเพื่อไม่ให้ยอดรวมในระบบเกินกรอบ 8,000,000
+// ตาม CLAUDE.md: mark status='cancelled' ไม่ใช่ DELETE (เก็บประวัติ)
+const CANCEL_IDS = [
+  "16911210000085010001", // สำรวจผลผลิตทางการเกษตรโครงการหลวง (คณะบริหารธุรกิจและศิลปศาสตร์)
+  "66916000000085010001", // คำขอสิ่งบ่งชี้ทางภูมิศาสตร์ (GI) กาแฟเลอตอ - ง8-3
+  "66916000000084010001", // คำขอสิ่งบ่งชี้ทางภูมิศาสตร์ (GI) กาแฟเลอตอ - ง8-2
+];
 
 // รหัสกันเงินเหลื่อมปีขึ้นต้น 8301/8401/8501 = ง8-1/2/3 · ERP 20 หลักดูตำแหน่ง 12-14
 const INI = { "083": "thrust", "084": "knowledge", "085": "workforce" };
@@ -68,14 +81,20 @@ const key = (s) => String(s || "").replace(/^\d+\.\s*/, "").replace(/[\s()"']/g,
   // ---------- guard: ตรวจไฟล์ต้นทางกับยอดทางการก่อนแตะ DB ----------
   const rows = SRC.rows;
   const sum = { g8_1: 0, g8_2: 0, g8_3: 0 };
-  for (const r of rows) sum[G8[initiativeOf(r.erp)]] += r.spent;
+  const tr = { g8_1: 0, g8_2: 0, g8_3: 0 };
+  for (const r of rows) { sum[G8[initiativeOf(r.erp)]] += r.spent; tr[G8[initiativeOf(r.erp)]] += r.adjusted; }
   const spent = rows.reduce((s, r) => s + r.spent, 0);
+  const transferred = rows.reduce((s, r) => s + r.adjusted, 0);
   const checks = [
     ["จำนวนรายการ", rows.length, EXPECT.rows],
     ["เบิกจ่ายรวม", spent, EXPECT.spent],
-    ["ง8-1", sum.g8_1, EXPECT.g8_1],
-    ["ง8-2", sum.g8_2, EXPECT.g8_2],
-    ["ง8-3", sum.g8_3, EXPECT.g8_3],
+    ["เบิก ง8-1", sum.g8_1, EXPECT.g8_1],
+    ["เบิก ง8-2", sum.g8_2, EXPECT.g8_2],
+    ["เบิก ง8-3", sum.g8_3, EXPECT.g8_3],
+    ["งบรวม", transferred, EXPECT.transferred],
+    ["งบ ง8-1", tr.g8_1, EXPECT.t_g8_1],
+    ["งบ ง8-2", tr.g8_2, EXPECT.t_g8_2],
+    ["งบ ง8-3", tr.g8_3, EXPECT.t_g8_3],
   ];
   let bad = 0;
   for (const [label, got, want] of checks) {
@@ -84,7 +103,10 @@ const key = (s) => String(s || "").replace(/^\d+\.\s*/, "").replace(/[\s()"']/g,
     console.log(`  ${ok ? "✓" : "✗"} ${label.padEnd(14)} ${f(got).padStart(11)} / ${f(want)}`);
   }
   if (bad) { console.error(`\n❌ ยอดไม่ตรงเอกสารการเงิน ${bad} จุด — ยกเลิก ไม่เขียน DB`); process.exit(1); }
-  console.log(`✓ ตรงกับไฟล์ทางการครบทุกระดับ\n`);
+  if (transferred > FRAME) {
+    console.error(`\n❌ งบรวม ${f(transferred)} เกินกรอบแผนงาน ${f(FRAME)} — ยกเลิก ไม่เขียน DB`); process.exit(1);
+  }
+  console.log(`✓ ตรงกับไฟล์ทางการครบทุกระดับ · งบรวมไม่เกินกรอบ ${f(FRAME)} (ต่ำกว่า ${f(FRAME - transferred)})\n`);
 
   // ---------- โหลด DB ----------
   const { data, error } = await sb.from("projects")
@@ -98,7 +120,11 @@ const key = (s) => String(s || "").replace(/^\d+\.\s*/, "").replace(/[\s()"']/g,
   const updates = [], inserts = [], erpFills = [];
   for (const r of rows) {
     const ini = initiativeOf(r.erp);
-    const target = { budget_total: r.allocated, budget_used: r.spent, budget_remaining: r.allocated - r.spent };
+    // budget_total ใช้ "งปม.โอนเปลี่ยนแปลงระหว่างปี" (adjusted) มิใช่ "จัดสรรปี พ.ศ.2569" (allocated)
+    // เพราะ allocated รวมกันได้ 8,665,538 ซึ่งเกินกรอบแผนงาน 8,000,000 (นับเงินก้อนเดียวซ้ำ
+    // ตอนโอนเปลี่ยนแปลงและตั้งรายการกันเงินเหลื่อมปี) ส่วน adjusted รวมกันได้ 7,992,353
+    // ตรงกับบรรทัด "รวมทั้งหมด" ของเอกสารทางการ และตรงราย ง8 ครบทั้งสามโครงการหลัก
+    const target = { budget_total: r.adjusted, budget_used: r.spent, budget_remaining: r.adjusted - r.spent };
     let p = byId.get(r.erp);
 
     // แถวที่ DB ยังไม่มี id = ERP → ลองจับจากชื่อ (แถวที่ erp_code ยังว่าง)
@@ -155,13 +181,21 @@ const key = (s) => String(s || "").replace(/^\d+\.\s*/, "").replace(/[\s()"']/g,
 
   const before = data.filter((p) => p.status !== "cancelled").reduce((s, p) => s + Number(p.budget_used), 0);
   console.log(`\nยอดเบิกจ่ายรวม: ${f(before)} → ${f(spent)}  (+${f(spent - before)})`);
-  console.log(`กรอบแผนงาน ${f(SRC._frame.total)} · จัดสรรรายโครงการรวม ${f(rows.reduce((s, r) => s + r.allocated, 0))}`);
-  console.log(`เบิกจ่าย ${((spent / SRC._frame.total) * 100).toFixed(1)}% ของกรอบแผนงาน`);
+  console.log(`กรอบแผนงาน ${f(FRAME)} · งบหลังโอนเปลี่ยนแปลงรวม ${f(transferred)} (ต่ำกว่ากรอบ ${f(FRAME - transferred)})`);
+  console.log(`เบิกจ่าย ${((spent / FRAME) * 100).toFixed(1)}% ของกรอบแผนงาน · ${((spent / transferred) * 100).toFixed(1)}% ของงบที่โอนจริง`);
+  console.log(`ปิดสถานะรายการที่ไม่อยู่ในงบการเงินปิดปี ${CANCEL_IDS.length} รายการ`);
 
   if (!COMMIT) { console.log(`\n🟡 DRY-RUN — รัน \`--commit\` เพื่อเขียนจริง`); return; }
 
   console.log(`\n🟢 Committing...\n`);
   let ok = 0, err = 0;
+  for (const id of CANCEL_IDS) {
+    const p = byId.get(id);
+    if (!p) continue;
+    if (Number(p.budget_used) !== 0) { console.log(`   ⏭  ข้าม ${id} — มีการเบิกจ่าย ${f(p.budget_used)}`); continue; }
+    const { error } = await sb.from("projects").update({ status: "cancelled", budget_remaining: 0 }).eq("id", id);
+    if (error) { err++; console.log(`   ❌ cancel ${id}: ${error.message}`); } else ok++;
+  }
   for (const x of erpFills) {
     const { error } = await sb.from("projects").update({ erp_code: x.erp }).eq("id", x.id);
     if (error) { err++; console.log(`   ❌ erp_code ${x.id}: ${error.message}`); } else ok++;
