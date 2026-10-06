@@ -128,6 +128,31 @@ cd "9_รายงานความก้าวหน้า/เล่ม" && py
 > `FRAME_BY_INITIATIVE` (2/2/4 ล้าน) และ `RETURNED_BUDGET` (คืนงบประมาณ) ฝังเป็นค่าคงที่พร้อมคอมเมนต์อ้างแหล่ง
 > ถ้าปีงบใหม่กรอบเปลี่ยน ต้องแก้ที่นี่ด้วย
 
+## 8. อัปเดตไฟล์ PDF ที่ให้ดาวน์โหลดบนเว็บ
+
+เว็บเสิร์ฟไฟล์จาก `public/reports/` ทุกครั้งที่ build เล่มใหม่ ต้องคัดลอกทับด้วย
+ไม่งั้นคนโหลดจะได้ฉบับเก่าทั้งที่ตัวเลขบนหน้าเว็บอัปเดตแล้ว
+
+```bash
+cd "/Users/worrajak/Library/CloudStorage/Dropbox/2012-02-08_TheRoyalProject_x/RPF-Researcher-Profile"
+cp "9_รายงานความก้าวหน้า/RPF2569_รายงานผลการดำเนินงาน_ฉบับสมบูรณ์.pdf" public/reports/RPF2569-annual-report.pdf
+cp "9_รายงานความก้าวหน้า/RPF2569_บทสรุปผู้บริหาร_2หน้า.pdf" public/reports/RPF2569-executive-summary.pdf
+```
+
+| | |
+|---|---|
+| URL | `/reports/RPF2569-annual-report.pdf` · `/reports/RPF2569-executive-summary.pdf` |
+| ชื่อ URL เป็นอังกฤษ | กันปัญหา encoding ภาษาไทยใน URL |
+| ชื่อไฟล์ตอนโหลด | ตั้งเป็นภาษาไทยด้วย attribute `download` ที่ `ExecSummaryCard.tsx` และ `/executive-summary` |
+| ขนาด/จำนวนหน้า ที่แสดง | เขียนไว้ในค่าคงที่ `DOWNLOADS` ของ `src/app/executive-summary/page.tsx` — **ถ้าเล่มหนาขึ้นต้องแก้ตัวเลขด้วย** |
+
+> [!warning] ก่อนอัปไฟล์ใหม่ ตรวจข้อมูลส่วนบุคคลเสมอ
+> ```bash
+> pdftotext เล่ม.pdf - | grep -cE '0[0-9]{1,2}-?[0-9]{3}-?[0-9]{4}'   # เบอร์โทร ต้องเป็น 0
+> pdftotext เล่ม.pdf - | grep -c '@'                                   # อีเมล ต้องเป็น 0
+> ```
+> ฉบับปี 2569 ผ่านทั้งสองข้อ (มีแต่ชื่อหัวหน้าโครงการ ซึ่ง API สาธารณะเปิดอยู่แล้ว)
+
 ## คำสั่งรวบยอด
 
 ```bash
