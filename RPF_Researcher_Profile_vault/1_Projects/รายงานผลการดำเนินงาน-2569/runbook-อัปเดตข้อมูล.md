@@ -135,8 +135,14 @@ cd "9_รายงานความก้าวหน้า/เล่ม" && py
 
 ```bash
 cd "/Users/worrajak/Library/CloudStorage/Dropbox/2012-02-08_TheRoyalProject_x/RPF-Researcher-Profile"
+# 1) build เล่ม  2) build บทสรุป 2 หน้า (คนละโฟลเดอร์!)  3) ค่อยคัดลอก
+cd "9_รายงานความก้าวหน้า/เล่ม"       && xelatex -interaction=nonstopmode main.tex && xelatex -interaction=nonstopmode main.tex
+cd "../exec-brief"                   && xelatex -interaction=nonstopmode exec-brief.tex && xelatex -interaction=nonstopmode exec-brief.tex
+cd "../.."
+cp "9_รายงานความก้าวหน้า/เล่ม/main.pdf"             "9_รายงานความก้าวหน้า/RPF2569_รายงานผลการดำเนินงาน_ฉบับสมบูรณ์.pdf"
+cp "9_รายงานความก้าวหน้า/exec-brief/exec-brief.pdf" "9_รายงานความก้าวหน้า/RPF2569_บทสรุปผู้บริหาร_2หน้า.pdf"
 cp "9_รายงานความก้าวหน้า/RPF2569_รายงานผลการดำเนินงาน_ฉบับสมบูรณ์.pdf" public/reports/RPF2569-annual-report.pdf
-cp "9_รายงานความก้าวหน้า/RPF2569_บทสรุปผู้บริหาร_2หน้า.pdf" public/reports/RPF2569-executive-summary.pdf
+cp "9_รายงานความก้าวหน้า/RPF2569_บทสรุปผู้บริหาร_2หน้า.pdf"            public/reports/RPF2569-executive-summary.pdf
 ```
 
 | | |
@@ -145,6 +151,19 @@ cp "9_รายงานความก้าวหน้า/RPF2569_บทส�
 | ชื่อ URL เป็นอังกฤษ | กันปัญหา encoding ภาษาไทยใน URL |
 | ชื่อไฟล์ตอนโหลด | ตั้งเป็นภาษาไทยด้วย attribute `download` ที่ `ExecSummaryCard.tsx` และ `/executive-summary` |
 | ขนาด/จำนวนหน้า ที่แสดง | เขียนไว้ในค่าคงที่ `DOWNLOADS` ของ `src/app/executive-summary/page.tsx` — **ถ้าเล่มหนาขึ้นต้องแก้ตัวเลขด้วย** |
+
+> [!danger] ตรวจว่าเป็นไฟล์ฉบับล่าสุดก่อนเสมอ — เคยพลาดมาแล้ว
+> 6 ต.ค. 2569 เผยแพร่บทสรุป 2 หน้าฉบับ 4 ส.ค. (เบิกจ่าย 56%) ขึ้นเว็บ
+> เพราะคัดลอกไฟล์ที่ build ไว้นานแล้วโดยไม่ได้ตรวจ ขัดกับหน้าเว็บที่แสดง 93.1%
+>
+> **บทสรุป 2 หน้าอยู่คนละโฟลเดอร์กับเล่ม** (`exec-brief/` ไม่ใช่ `เล่ม/`)
+> และ**ไม่ได้ถูก build พร้อมกัน** ต้อง `xelatex exec-brief.tex ×2` แยกต่างหากทุกครั้ง
+>
+> ```bash
+> # ตรวจว่าไฟล์มีตัวเลขรอบล่าสุด และไม่มีตัวเลขรอบเก่าเหลือ
+> pdftotext ไฟล์.pdf - | grep -c '7,446,794'          # ต้อง > 0
+> pdftotext ไฟล์.pdf - | grep -cE '4,460,332|7,986,583'  # ต้องเป็น 0
+> ```
 
 > [!warning] ก่อนอัปไฟล์ใหม่ ตรวจข้อมูลส่วนบุคคลเสมอ
 > ```bash
