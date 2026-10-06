@@ -28,7 +28,22 @@ const esc = (s) => String(s || "").replace(/\\/g, "/").replace(/([&%$#_{}])/g, "
   .replace(/\^/g, "").replace(/~/g, "-").replace(/\n/g, " ").trim();
 const f = (n) => Number(n || 0).toLocaleString("en-US");
 // ง8 group จากรหัส ERP หลักที่ 12-14 : 083=ผลักดัน · 084=ขับเคลื่อน · 085=พัฒนากำลังคน
-const grp = (id) => (/^\d{18,20}$/.test(String(id)) ? String(id).slice(11, 14) : "other");
+// รหัส ERP 20 หลัก -> หลักที่ 12-14 ; รหัสกันเงินเหลื่อมปี 8301/8401/8501-691-1BGxxxx -> 083/084/085
+const grp = (id) => {
+  const s = String(id);
+  if (/^\d{18,20}$/.test(s)) return s.slice(11, 14);
+  const m = s.match(/^(83|84|85)01-/);
+  return m ? "0" + m[1] : "other";
+};
+
+// รายการที่อยู่ใน DB แต่ไม่ปรากฏในงบการเงินปิดปี 2569 และเบิกจ่าย 0 บาท
+// ยังไม่ได้ mark cancelled ใน DB (รอผู้ใช้ยืนยัน) จึงกันออกจากรายงานไว้ก่อน
+// เพื่อให้จำนวนโครงการและยอดงบตรงกับไฟล์ทางการ 1_10_2569 (75 รายการ)
+const EXCLUDE_IDS = new Set([
+  "16911210000085010001", // การสำรวจผลผลิตทางการเกษตรโครงการหลวง (คณะบริหารธุรกิจและศิลปศาสตร์)
+  "66916000000085010001", // คำขอสิ่งบ่งชี้ทางภูมิศาสตร์ (GI) กาแฟเลอตอ - ง8-3
+  "66916000000084010001", // คำขอสิ่งบ่งชี้ทางภูมิศาสตร์ (GI) กาแฟเลอตอ - ง8-2
+]);
 const G = {
   "083": "ง8-1 ผลักดันเทคโนโลยี นวัตกรรมสู่ชุมชน ตามเป้าหมายการพัฒนาอย่างยั่งยืน",
   "084": "ง8-2 ขับเคลื่อนกลไกการพัฒนาองค์ความรู้เพื่อยกระดับคุณภาพชีวิต",
@@ -40,7 +55,7 @@ const G = {
   const { data: FA } = await sb.from("rpf_faculties").select("id,name_th");
   const { data: K } = await sb.from("kpi_targets").select("project_id,kpi_code,target_value").not("kpi_code", "is", null);
   const fn = {}; FA.forEach((x) => (fn[x.id] = x.name_th));
-  const A = P.filter((p) => p.status !== "cancelled");
+  const A = P.filter((p) => p.status !== "cancelled" && !EXCLUDE_IDS.has(String(p.id)));
 
   // ---------- ภาคผนวก ก : รายชื่อโครงการ + การเบิกจ่าย ----------
   const HDR6 = `\\rowcolor{rpfnavy!12}\n\\textbf{ที่} & \\textbf{ชื่อโครงการ} & \\textbf{ผู้รับผิดชอบ} & \\textbf{หน่วยงาน} & \\textbf{จัดสรร} & \\textbf{เบิกจ่าย}${NL}\n`;
@@ -49,7 +64,7 @@ const G = {
      + ">{\\raggedleft\\arraybackslash}p{1.45cm}>{\\raggedleft\\arraybackslash}p{2.0cm}@{}}\n";
   t += `\\toprule\n${HDR6}\\midrule\n\\endfirsthead\n\\toprule\n${HDR6}\\midrule\n\\endhead\n`;
   for (const g of ["083", "084", "085"]) {
-    const rows = A.filter((p) => grp(p.id) === g).sort((a, b) => a.id.localeCompare(b.id));
+    const rows = A.filter((p) => grp(p.id) === g).sort((a, b) => (a.id.length - b.id.length) || a.id.localeCompare(b.id));
     t += `\\multicolumn{6}{@{}l}{\\cellcolor{rpfnavy!12}\\bfseries ${esc(G[g])} (${rows.length} โครงการ)}${NL}\n\\midrule\n`;
     rows.forEach((p, i) => {
       const pct = Number(p.budget_total) ? Math.round((Number(p.budget_used) / Number(p.budget_total)) * 100) : 0;
@@ -69,7 +84,7 @@ const G = {
   k2 += "\\begin{longtable}{@{}p{0.42cm}p{8.3cm}p{4.75cm}@{}}\n";
   k2 += `\\toprule\n${HDR3}\\midrule\n\\endfirsthead\n\\toprule\n${HDR3}\\midrule\n\\endhead\n`;
   for (const g of ["083", "084", "085"]) {
-    const rows = A.filter((p) => grp(p.id) === g && kb[p.id]).sort((a, b) => a.id.localeCompare(b.id));
+    const rows = A.filter((p) => grp(p.id) === g && kb[p.id]).sort((a, b) => (a.id.length - b.id.length) || a.id.localeCompare(b.id));
     k2 += `\\multicolumn{3}{@{}l}{\\cellcolor{rpfnavy!12}\\bfseries ${esc(G[g])}}${NL}\n\\midrule\n`;
     rows.forEach((p, i) => {
       const s = kb[p.id].sort((a, b) => a.kpi_code.localeCompare(b.kpi_code))

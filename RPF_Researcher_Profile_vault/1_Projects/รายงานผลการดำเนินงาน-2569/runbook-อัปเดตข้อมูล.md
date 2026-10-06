@@ -1,0 +1,121 @@
+---
+type: runbook
+updated: 2026-07-30
+---
+
+# Runbook — อัปเดตข้อมูลและ build เล่มใหม่
+
+ทำตามลำดับ 1 → 5 ทุกครั้งที่มีข้อมูลใหม่
+
+## 0. path หลัก
+
+```
+9_รายงานความก้าวหน้า/เล่ม/          ← source ของเล่ม
+├── main.tex                        ← ประกอบทุกส่วน
+├── chapters/ch01..ch07.tex         ← เนื้อหา (แก้ที่นี่)
+├── frontmatter/ backmatter/
+├── data/tab-*.tex                  ← ตาราง (generate ห้ามแก้มือ)
+├── styles/teachingdoc.sty          ← ดีไซน์เล่ม
+└── tools/gen_tables.js · sync_vault.py
+```
+
+## 1. Sync ข้อมูลใหม่จาก Google Drive → ฐานข้อมูล
+
+ทีมงานอัปโหลดไฟล์งบใหม่ที่ Drive โฟลเดอร์ **ปีงบประมาณ 2569 › การใช้งบประมาณ**
+ตั้งชื่อแบบ `D_M_2569_งบประมาณกลุ่มแผนงานใต้ร่มพระบารมี ปีงบประมาณ2569.xlsx`
+
+1. ดาวน์โหลด xlsx ล่าสุด
+2. sheet 1 คอลัมน์ที่ใช้: `col1`=ERP · `col4`=กรอบงบ · `col9`=เบิกจ่ายสะสม · `col12`=คงเหลือ
+3. ใช้ template `supabase/sync-budget-2026-07-07.js` (copy เปลี่ยนวันที่/path) — **dry-run ดู diff ก่อน commit เสมอ**
+4. ถ้าไฟล์ตัวชี้วัด (`จัดสรรแผนงาน งบประมาณ และตัวชี้วัด`) เปลี่ยนด้วย → รัน `supabase/backfill-kpi-approval-2026-07-07.js --commit`
+
+> [!warning] ระวัง 2 เรื่อง
+> วันที่ใน Excel เป็น พ.ศ. — ต้องลบ 543
+> โครงการที่ถูกยกเลิกให้ mark `status='cancelled'` ไม่ใช่ DELETE (เก็บประวัติ)
+
+## 2. Regenerate ตารางในเล่ม
+
+```bash
+cd "9_รายงานความก้าวหน้า/เล่ม" && node tools/gen_tables.js
+```
+
+script จะพิมพ์**ตัวเลขสรุป**ออกมาท้ายสุด — เอาไปเทียบกับตัวเลขที่เขียนในเนื้อเรื่องรายบท
+(บทที่ 2, 3, 4, 5, 6, 7 และบทสรุปผู้บริหาร มีตัวเลขฝังอยู่ในข้อความ ต้องแก้ตามด้วยมือ)
+
+## 3. แก้เนื้อหา
+
+แก้ที่ `.tex` เท่านั้น (`chapters/chNN.tex`) — ห้ามแก้ `.md` ใน vault เพราะจะถูกทับตอน sync
+
+ตัวเลขที่ฝังในข้อความและต้องไล่แก้เมื่อข้อมูลเปลี่ยน:
+
+| ตัวเลข | อยู่ที่ |
+|---|---|
+| งบรวม / เบิกจ่าย / ร้อยละ | ปก · ปกใน · บทสรุปผู้บริหาร · ch02 · ch03 · ch06 · ch07 |
+| ตัวเลขราย ง8 (16/14/31 · งบ · เบิก) | ch02 · ch03 · ch05 |
+| KPI commit ทั้ง 7 ตัว | บทสรุปผู้บริหาร · ch04 · ch06 |
+| จำนวนหน่วยงาน/หัวหน้าโครงการ/พื้นที่/กิจกรรม | ปก · ch02 · กิตติกรรมประกาศ |
+| ร้อยละเวลาที่ผ่านไป + วันคงเหลือ | บทสรุปผู้บริหาร · ch01 · ch03 · ch07 |
+
+## 4. Build + QA gate
+
+```bash
+cd "9_รายงานความก้าวหน้า/เล่ม" && xelatex -interaction=nonstopmode main.tex > /tmp/b.log 2>&1 && xelatex -interaction=nonstopmode main.tex > /tmp/b.log 2>&1
+```
+
+ตรวจ 6 ข้อ **ทุกข้อต้องเป็น 0** (ยกเว้นจำนวนหน้า):
+
+```bash
+echo "pages:        $(pdfinfo main.pdf | awk '/Pages/{print $2}')"
+echo "missing char: $(grep -c 'Missing char' main.log)"
+echo "errors:       $(grep -c '^!' /tmp/b.log)"
+echo "undefined:    $(grep -ci 'undefined' /tmp/b.log)"
+echo "overfull:     $(grep -c 'Overfull \hbox' main.log)"
+```
+
+ข้อ 6 = เปิดดูหน้าจริง `pdftoppm -png -r 55 -f N -l N main.pdf /tmp/pg`
+
+> [!warning] Overfull hbox แก้ยังไง
+> เกิดจากตารางกว้างเกิน **textwidth 14.79 cm**
+> กติกา: ผลรวม `p{}` ทุกคอลัมน์ + `tabcolsep × 2 × จำนวนคอลัมน์` ต้อง ≤ 14.79 cm
+> (tabcolsep default = 6pt = 0.211 cm ต่อข้าง)
+> อีกสาเหตุ: คำไทยยาวคำเดียวกว้างกว่าคอลัมน์ เช่น "สถาปัตยกรรมศาสตร์" = 2.32 cm
+
+## 5. Sync กลับเข้า vault
+
+```bash
+cd "9_รายงานความก้าวหน้า/เล่ม" && python3 tools/sync_vault.py --check   # ดูก่อน
+cd "9_รายงานความก้าวหน้า/เล่ม" && python3 tools/sync_vault.py           # เขียนจริง
+```
+
+เขียนเฉพาะระหว่าง `<!-- SYNC:CONTENT:START/END -->` — บันทึกที่เขียนมือด้านบนคงอยู่
+
+
+## 6. การตัดคำ/จัดขอบภาษาไทย (ตั้งไว้แล้วใน `styles/teachingdoc.sty`)
+
+ค่าที่ปรับจนได้ผลดีที่สุด — **อย่าแก้โดยไม่ดูผลจริง**
+
+| ค่า | ตั้งเป็น | เหตุผล |
+|---|---|---|
+| `\XeTeXlinebreakskip` | `0pt plus 0.04em minus 0.02em` | ยืดช่องไฟระหว่างคำไทยได้น้อยมาก ; ถ้าตั้งสูง (เคยลอง 0.28em) จะถ่างทุกคำ อ่านเป็น "งบ ประมาณ ที่ ได้ รับ" |
+| `\XeTeXlinebreakpenalty` | `120` | ⭐ ตัวสำคัญ — ให้ตัดที่ **วรรคจริง** ก่อนจุดพจนานุกรม ICU ; แก้อาการตัดกลางคำ เช่น เหลื่อม/ล้ำ · ยก/ระดับ |
+| `ragged2e` + `\RaggedRight` | เปิด | **เลิก justify** — ต้นเหตุการถ่างช่องไฟทั้งหมด ; ไทยไม่มีวรรคระหว่างคำ การดันขอบขวาให้เรียบจึงต้องถ่างคำ |
+| `originalparindent` | เปิด | คงย่อหน้าเยื้อง 1.27 cm (ragged2e ล้าง parindent เป็น 0 โดยปริยาย) |
+| `\tolerance` / `\emergencystretch` | `700` / `3em` | กัน Overfull โดยไม่ต้องพึ่งการยืดช่องไฟ |
+
+### เทคนิคระดับข้อความ
+- **ผูกเลขกับหน่วยด้วย `~`** เช่น `70~วัน` `61~โครงการ` `7,986,583~บาท` — กันเลขกับหน่วยแยกคนละบรรทัด (ทำไว้แล้ว 111 จุด) ; เพิ่มข้อความใหม่ให้ทำตาม
+- **ใส่วรรคจริงในชื่อยาว** ที่ ICU ตัดผิด เช่น `องค์ความรู้ เพื่อยกระดับคุณภาพชีวิต` (เพิ่มวรรคก่อน "เพื่อ")
+- **`\nb{...}`** = ห้ามตัดกลางกลุ่มคำ — ใช้เท่าที่จำเป็น เพราะบังคับมากไปจะไปตัดจุดที่แย่กว่าเดิม
+
+> [!warning] อยากกลับไป justify?
+> คอมเมนต์บรรทัด `\AtBeginDocument{\RaggedRight...}` ใน `styles/teachingdoc.sty`
+> แต่ยอมรับว่าจะมีบรรทัดถ่างช่องไฟกลับมา — ทดลองแล้วปรับค่าอย่างไรก็ไม่หายหมด
+
+## คำสั่งรวบยอด
+
+```bash
+cd "/Users/worrajak/Library/CloudStorage/Dropbox/2012-02-08_TheRoyalProject_x/RPF-Researcher-Profile/9_รายงานความก้าวหน้า/เล่ม" && node tools/gen_tables.js && xelatex -interaction=nonstopmode main.tex >/dev/null 2>&1 && xelatex -interaction=nonstopmode main.tex >/dev/null 2>&1 && python3 tools/sync_vault.py && cp main.pdf "../RPF2569_รายงานความก้าวหน้า_รูปเล่ม.pdf" && echo "overfull: $(grep -c 'Overfull \hbox' main.log)"
+```
+
+## Links
+- [[_project-brief]] · [[ช่องว่างที่ต้องปิด]]
