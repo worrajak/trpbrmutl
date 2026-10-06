@@ -16,7 +16,7 @@ import {
   fetchFaculties,
   fetchActivityReportCount,
 } from "@/lib/supabase-data";
-import { buildExecutiveSummary } from "@/lib/executive-summary";
+import { buildExecutiveSummary, REPORT_META } from "@/lib/executive-summary";
 
 export const revalidate = 60;
 
@@ -26,6 +26,31 @@ export const metadata = {
 };
 
 const baht = (n: number) => Math.round(n).toLocaleString("th-TH");
+
+/**
+ * ไฟล์รายงานใน public/reports/ — ใช้ชื่อ URL เป็นอังกฤษกันปัญหา encoding
+ * แต่ตั้งชื่อไฟล์ตอนดาวน์โหลดเป็นภาษาไทยด้วย attribute download
+ */
+const DOWNLOADS = [
+  {
+    href: "/reports/RPF2569-annual-report.pdf",
+    file: "รายงานผลการดำเนินงาน-ใต้ร่มพระบารมี-2569-ฉบับสมบูรณ์.pdf",
+    title: "รายงานผลการดำเนินงาน ฉบับสมบูรณ์",
+    desc: "57 หน้า · 7 บท + ภาคผนวกรายโครงการและตัวชี้วัด",
+    size: "273 KB",
+    icon: "📕",
+    primary: true,
+  },
+  {
+    href: "/reports/RPF2569-executive-summary.pdf",
+    file: "บทสรุปผู้บริหาร-ใต้ร่มพระบารมี-2569.pdf",
+    title: "บทสรุปผู้บริหาร",
+    desc: "2 หน้า · สำหรับนำเสนอและแนบวาระประชุม",
+    size: "131 KB",
+    icon: "📄",
+    primary: false,
+  },
+];
 
 const SEV_TEXT = {
   good: "text-emerald-700",
@@ -104,6 +129,38 @@ export default async function ExecutiveSummaryPage() {
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{d.verdict.detail}</p>
       </div>
+
+      {/* ดาวน์โหลดเอกสาร */}
+      <section className="rounded-xl bg-white p-4 ring-1 ring-slate-200 sm:p-5">
+        <h2 className="mb-2.5 text-sm font-bold text-slate-800">⬇ ดาวน์โหลดเอกสารฉบับเต็ม</h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {DOWNLOADS.map((d) => (
+            <a
+              key={d.href}
+              href={d.href}
+              download={d.file}
+              className={`flex items-start gap-3 rounded-lg p-3 ring-1 transition hover:shadow-md ${
+                d.primary
+                  ? "bg-cyan-50/60 ring-cyan-300 hover:bg-cyan-50"
+                  : "bg-slate-50 ring-slate-200 hover:bg-white"
+              }`}
+            >
+              <span className="text-xl leading-none">{d.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.8rem] font-bold text-slate-800">{d.title}</span>
+                <span className="block text-[0.7rem] leading-snug text-slate-500">{d.desc}</span>
+                <span className="mt-0.5 block text-[0.65rem] text-slate-400">
+                  PDF · {d.size} · ข้อมูล ณ {REPORT_META.asOf}
+                </span>
+              </span>
+            </a>
+          ))}
+        </div>
+        <p className="mt-2 text-[0.65rem] leading-snug text-slate-400">
+          เอกสารทั้งสองฉบับใช้ชุดตัวเลขเดียวกับหน้านี้ หากข้อมูลในระบบเปลี่ยนหลังจากนี้
+          ตัวเลขบนหน้าเว็บจะอัปเดตก่อน ส่วนไฟล์ PDF จะอัปเดตเมื่อจัดทำเล่มรอบถัดไป
+        </p>
+      </section>
 
       {/* 1 ขอบเขต */}
       <Section no={1} title="ขอบเขตและที่มาของรายงาน">

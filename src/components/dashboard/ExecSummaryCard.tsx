@@ -31,9 +31,10 @@ export default function ExecSummaryCard({ data }: { data: ExecutiveSummary }) {
   const topGap = data.findings.gaps[0];
 
   return (
+    <div className={`rounded-xl bg-white ring-1 ${t.ring}`}>
     <Link
       href="/executive-summary"
-      className={`block rounded-xl bg-white ring-1 ${t.ring} p-4 transition hover:shadow-md`}
+      className="block rounded-t-xl p-4 pb-3 transition hover:bg-slate-50/60"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-slate-800">📋 สรุปผู้บริหาร</h2>
@@ -85,5 +86,25 @@ export default function ExecSummaryCard({ data }: { data: ExecutiveSummary }) {
         อ่านบทสรุปฉบับเต็ม →
       </p>
     </Link>
+
+    {/* แถวดาวน์โหลด — อยู่นอก Link เพราะ <a> ซ้อนใน <a> ไม่ได้ */}
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2.5">
+      <span className="text-[0.65rem] text-slate-400">ดาวน์โหลด</span>
+      <a
+        href="/reports/RPF2569-annual-report.pdf"
+        download="รายงานผลการดำเนินงาน-ใต้ร่มพระบารมี-2569-ฉบับสมบูรณ์.pdf"
+        className="text-[0.72rem] font-medium text-cyan-700 hover:underline"
+      >
+        📕 เล่มฉบับสมบูรณ์ (57 หน้า)
+      </a>
+      <a
+        href="/reports/RPF2569-executive-summary.pdf"
+        download="บทสรุปผู้บริหาร-ใต้ร่มพระบารมี-2569.pdf"
+        className="text-[0.72rem] font-medium text-cyan-700 hover:underline"
+      >
+        📄 บทสรุป 2 หน้า
+      </a>
+    </div>
+    </div>
   );
 }
