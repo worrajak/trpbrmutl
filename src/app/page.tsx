@@ -19,7 +19,10 @@ import {
   fetchActivities,
   fetchKpiCatalog,
   fetchKpiTargetsWithCode,
+  fetchFaculties,
+  fetchActivityReportCount,
 } from "@/lib/supabase-data";
+import { buildExecutiveSummary } from "@/lib/executive-summary";
 import {
   computeBudgetUrgency,
   computeKpiGap,
@@ -30,16 +33,20 @@ import Link from "next/link";
 import InsightHeader from "@/components/dashboard/InsightHeader";
 import HealthTier1 from "@/components/dashboard/HealthTier1";
 import DrillDownTier3 from "@/components/dashboard/DrillDownTier3";
+import ExecSummaryCard from "@/components/dashboard/ExecSummaryCard";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const [projects, activities, kpiCatalog, kpiTargets] = await Promise.all([
-    fetchProjects(),
-    fetchActivities(),
-    fetchKpiCatalog(),
-    fetchKpiTargetsWithCode(),
-  ]);
+  const [projects, activities, kpiCatalog, kpiTargets, faculties, activityReportCount] =
+    await Promise.all([
+      fetchProjects(),
+      fetchActivities(),
+      fetchKpiCatalog(),
+      fetchKpiTargetsWithCode(),
+      fetchFaculties(),
+      fetchActivityReportCount(),
+    ]);
 
   const fy = 2569;
   // fetchProjects ไม่กรอง status='cancelled' — ตัดออกจากทุก compute ที่นี่
@@ -48,11 +55,22 @@ export default async function Home() {
   const kpiGap = computeKpiGap(activeProjects, kpiCatalog, kpiTargets);
   const risky = computeRiskyProjects(activeProjects, activities, fy);
   const insight = composeInsightSentence(budget, kpiGap, risky);
+  const execSummary = buildExecutiveSummary({
+    projects,
+    kpiCatalog,
+    kpiTargets,
+    faculties,
+    activities,
+    activityReportCount,
+  });
 
   return (
     <div className="space-y-4">
       {/* TIER 0 — 1 ประโยค "วันนี้ดีไหม?" */}
       <InsightHeader insight={insight} />
+
+      {/* สรุปผู้บริหาร — การ์ดย่อ · คลิกอ่านฉบับเต็มที่ /executive-summary */}
+      <ExecSummaryCard data={execSummary} />
 
       {/* TIER 1 — 3 หัวข้อใหญ่ (5-sec scan) */}
       <HealthTier1 budget={budget} kpiGap={kpiGap} risky={risky} />

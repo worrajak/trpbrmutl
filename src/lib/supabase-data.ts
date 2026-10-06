@@ -257,6 +257,20 @@ export async function fetchFaculties(): Promise<DBFaculty[]> {
   return data || [];
 }
 
+/** จำนวนรายงานผลรายกิจกรรมที่บันทึกเข้าระบบ (ใช้ในบทสรุปผู้บริหาร) */
+export async function fetchActivityReportCount(): Promise<number> {
+  const supabase = getSupabase();
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from("activity_reports")
+    .select("id", { count: "exact", head: true });
+  if (error) {
+    console.error("fetchActivityReportCount error:", error.message);
+    return 0;
+  }
+  return count || 0;
+}
+
 export async function fetchInitiatives(): Promise<DBInitiative[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
