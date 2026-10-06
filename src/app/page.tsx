@@ -80,20 +80,23 @@ export default async function Home() {
       {risky.riskyCount > 0 && (
         <Link
           href="/projects?filter=risky"
-          className="flex flex-col gap-1 rounded-xl bg-white px-4 py-3.5 ring-1 ring-red-200 transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+          className={`flex flex-col gap-1 rounded-xl bg-white px-4 py-3.5 ring-1 transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between ${risky.closed ? "ring-amber-200" : "ring-red-200"}`}
         >
-          <span className="text-sm font-bold text-red-900">
-            ⚠ เร่ง {risky.riskyCount} โครงการ · ค้างเบิก{" "}
+          <span className={`text-sm font-bold ${risky.closed ? "text-amber-900" : "text-red-900"}`}>
+            ⚠ {risky.closed ? "เบิกไม่ครบ" : "เร่ง"} {risky.riskyCount} โครงการ ·{" "}
+            {risky.closed ? "เหลือไม่ได้เบิก" : "ค้างเบิก"}{" "}
             {risky.riskyRemaining.toLocaleString("th-TH")} บาท
           </span>
           <span className="text-xs text-slate-600">
             {risky.zeroSpendCount > 0 && (
               <>
-                ยังไม่เบิกเลย {risky.zeroSpendCount} โครงการ (
+                ไม่เบิกเลย {risky.zeroSpendCount} โครงการ (
                 {risky.zeroSpendRemaining.toLocaleString("th-TH")} บาท) ·{" "}
               </>
             )}
-            <span className="font-medium text-cyan-700">ดูรายการเร่ง →</span>
+            <span className="font-medium text-cyan-700">
+              {risky.closed ? "ดูรายการ →" : "ดูรายการเร่ง →"}
+            </span>
           </span>
         </Link>
       )}

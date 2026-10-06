@@ -32,10 +32,13 @@ export default function ActionTier2({
     return (
       <section className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 text-center">
         <p className="text-base font-bold text-emerald-800">
-          🟢 ไม่มีโครงการที่ต้องเร่ง — ทุกตัวเดินตามแผน
+          {risky.closed
+            ? "🟢 ปิดปีงบประมาณครบทุกโครงการ"
+            : "🟢 ไม่มีโครงการที่ต้องเร่ง — ทุกตัวเดินตามแผน"}
         </p>
         <p className="mt-1 text-xs text-emerald-700">
-          {risky.totalProjects} โครงการทำงาน · เบิกตามจังหวะเวลา
+          {risky.totalProjects} โครงการ ·{" "}
+          {risky.closed ? "เบิกจ่ายถึงเป้าปลายปีทุกตัว" : "เบิกตามจังหวะเวลา"}
         </p>
       </section>
     );
@@ -45,19 +48,24 @@ export default function ActionTier2({
     <section className="rounded-xl bg-white ring-1 ring-slate-200 p-4 sm:p-5">
       <div className="flex items-baseline justify-between gap-2 flex-wrap mb-1">
         <h2 className="text-base font-bold text-slate-900">
-          ⚠ เร่ง {items.length} โครงการนี้ก่อน
+          ⚠ {risky.closed
+            ? `${items.length} โครงการเบิกจ่ายไม่ครบเมื่อปิดปี`
+            : `เร่ง ${items.length} โครงการนี้ก่อน`}
         </h2>
         {risky.riskyCount > items.length && (
           <Link href={showAllHref} className="text-xs text-cyan-700 hover:underline whitespace-nowrap">
-            ดูเสี่ยงทั้งหมด ({risky.riskyCount}) →
+            {risky.closed ? "ดูทั้งหมด" : "ดูเสี่ยงทั้งหมด"} ({risky.riskyCount}) →
           </Link>
         )}
       </div>
       <p className="mb-3 text-xs text-slate-600">
-        เรียงตาม<strong>เงินที่ยังไม่เบิก</strong> — เร่งตัวบนสุดได้เงินออกมากที่สุด
+        เรียงตาม<strong>เงินที่ยังไม่เบิก</strong>
+        {risky.closed
+          ? " — เป็นงบที่คืนหรือตกไปเมื่อปิดปี ไม่รวมรายการกันเหลื่อมปี"
+          : " — เร่งตัวบนสุดได้เงินออกมากที่สุด"}
         {risky.zeroSpendCount > 0 && (
           <>
-            {" · "}ยังไม่เบิกเลย <strong>{risky.zeroSpendCount} โครงการ</strong>{" "}
+            {" · "}ไม่เบิกเลย <strong>{risky.zeroSpendCount} โครงการ</strong>{" "}
             ({fmtBaht(risky.zeroSpendRemaining)} บาท)
           </>
         )}

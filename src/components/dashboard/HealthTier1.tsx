@@ -78,9 +78,13 @@ export default function HealthTier1({ budget, kpiGap, risky }: Props) {
       <HealthCard
         href="/projects"
         icon="💰"
-        title="งบเบิก vs เวลา"
+        title={risky.closed ? "เบิกจ่ายปิดปี" : "งบเบิก vs เวลา"}
         bigText={`${budget.usedPct}%`}
-        compareText={`เวลา FY ${budget.elapsedPct}% · เบิกแล้ว ${fmtBaht(budget.usedAmount)} / ${fmtBaht(budget.totalBudget)} บ.`}
+        compareText={
+          risky.closed
+            ? `เบิกแล้ว ${fmtBaht(budget.usedAmount)} / ${fmtBaht(budget.totalBudget)} บ. · เป้าปลายปี 90%`
+            : `เวลา FY ${budget.elapsedPct}% · เบิกแล้ว ${fmtBaht(budget.usedAmount)} / ${fmtBaht(budget.totalBudget)} บ.`
+        }
         statusLabel={budget.label}
         status={budget.status}
       />
@@ -104,12 +108,16 @@ export default function HealthTier1({ budget, kpiGap, risky }: Props) {
       <HealthCard
         href="/projects"
         icon="⚠"
-        title="โครงการเสี่ยง"
+        title={risky.closed ? "เบิกไม่ครบเมื่อปิดปี" : "โครงการเสี่ยง"}
         bigText={`${risky.riskyCount}/${risky.totalProjects}`}
         compareText={
-          risky.riskyCount > 0
-            ? `เบิกช้า/ไม่รายงานเกินกำหนด · ดูเต็มด้านล่าง`
-            : `โครงการทั้งหมดเดินตามแผน`
+          risky.closed
+            ? risky.riskyCount > 0
+              ? `เบิกต่ำกว่าเป้า 90% · ไม่รวมกันเหลื่อมปี ${risky.carryoverCount} รายการ`
+              : `ทุกโครงการเบิกถึงเป้าปลายปี`
+            : risky.riskyCount > 0
+              ? `เบิกช้า/ไม่รายงานเกินกำหนด · ดูเต็มด้านล่าง`
+              : `โครงการทั้งหมดเดินตามแผน`
         }
         statusLabel={risky.label}
         status={risky.status}

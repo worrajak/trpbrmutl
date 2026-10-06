@@ -46,6 +46,18 @@ export function getThaiFiscalYearProgress(fy: number = 2569): {
   return { startMs: start, endMs: end, elapsedDays, totalDays, elapsedPct };
 }
 
+/** ปีงบประมาณสิ้นสุดแล้วหรือยัง (เลย 30 ก.ย. ของปีงบนั้น) */
+export function isFiscalYearClosed(fy: number = 2569): boolean {
+  return Date.now() > getThaiFiscalYearProgress(fy).endMs;
+}
+
+/**
+ * รายการกันเงินเหลื่อมปีใช้รหัสงบประมาณรูปแบบ 8301-691-1BGxxxx (83/84/85 = ง8-1/2/3)
+ * ไม่ใช่ ERP 20 หลัก — เป็นเงินที่ได้รับอนุมัติให้ใช้ต่อในปีถัดไป ไม่ใช่โครงการที่มีปัญหา
+ * จึงต้องแยกออกจากการนับ "โครงการเสี่ยง"
+ */
+export const isCarryoverProject = (id: string) => /^(83|84|85)01-/.test(String(id));
+
 // ============================================================================
 // Q1: งบประมาณเร่งใช้แค่ไหน?
 // ============================================================================
@@ -73,7 +85,16 @@ export function computeBudgetUrgency(projects: DBProject[], fy: number = 2569): 
 
   let status: BudgetUrgency["status"];
   let label: string;
-  if (gapPp >= 5) {
+  if (isFiscalYearClosed(fy)) {
+    // ปิดปีแล้ว — เทียบกับเวลาไม่มีความหมาย ใช้เกณฑ์ผลลัพธ์แทน
+    status = usedPct >= 90 ? "ahead" : usedPct >= 75 ? "on_track" : usedPct >= 50 ? "behind" : "critical";
+    label =
+      usedPct >= 90
+        ? `🟢 ปิดปีที่ ${usedPct}% — เหนือเป้า 90%`
+        : usedPct >= 75
+          ? `🟡 ปิดปีที่ ${usedPct}% — ต่ำกว่าเป้า 90%`
+          : `🔴 ปิดปีที่ ${usedPct}% — ต่ำกว่าเป้ามาก`;
+  } else if (gapPp >= 5) {
     status = "ahead";
     label = `🟢 เร็วกว่าเวลา ${gapPp} pp`;
   } else if (gapPp >= -10) {
@@ -238,6 +259,9 @@ export interface RiskyProjectsSummary {
   all: RiskyProject[];        // เรียงแล้ว — ใช้เมื่ออยากโชว์เกิน 3
   status: "good" | "warning" | "critical";
   label: string;
+  closed: boolean;            // ปีงบสิ้นสุดแล้ว — เปลี่ยนภาษาจาก "เร่ง" เป็น "เบิกไม่ครบ"
+  carryoverCount: number;     // รายการกันเงินเหลื่อมปี (อนุมัติแล้ว ไม่ใช่ความเสี่ยง)
+  carryoverAmount: number;
 }
 
 /**
@@ -258,13 +282,20 @@ export function computeRiskyProjects(
   fy: number = 2569
 ): RiskyProjectsSummary {
   const { elapsedPct } = getThaiFiscalYearProgress(fy);
-  const expectedUsedPct = elapsedPct;
+  const closed = isFiscalYearClosed(fy);
+  // ปิดปีแล้วเทียบกับ "เวลาที่ผ่านไป" ไม่มีความหมาย — ใช้เป้าเบิกจ่ายปลายปี 90% แทน
+  const expectedUsedPct = closed ? 90 : elapsedPct;
   const risky: RiskyProject[] = [];
 
-  // กรองเฉพาะ in_progress / approved
-  const active = projects.filter(
-    (p) => p.status === "in_progress" || p.status === "approved"
-  );
+  // ระหว่างปี: ดูเฉพาะโครงการที่ยังเดินอยู่ (in_progress / approved)
+  // ปิดปีแล้ว: ต้องดูทุกโครงการรวม completed ด้วย เพราะคำถามเปลี่ยนจาก
+  // "ตัวไหนต้องเร่ง" เป็น "ตัวไหนปิดปีโดยเบิกไม่ครบ" (ผู้เรียกกรอง cancelled มาแล้ว)
+  const activeAll = closed
+    ? projects
+    : projects.filter((p) => p.status === "in_progress" || p.status === "approved");
+  // รายการกันเงินเหลื่อมปี = อนุมัติให้ใช้ต่อปีหน้าแล้ว ไม่ใช่ความเสี่ยง
+  const carryover = activeAll.filter((p) => isCarryoverProject(p.id));
+  const active = activeAll.filter((p) => !isCarryoverProject(p.id));
 
   for (const p of active) {
     const r = computeBudgetReconciliation(p);
@@ -275,11 +306,15 @@ export function computeRiskyProjects(
     // Risk 1: เบิกช้ากว่า expected 20+ pp
     const gap = expectedUsedPct - usedPct;
     if (gap >= 20) {
-      reasons.push(`เบิกช้ากว่าเวลา ${gap} pp (${usedPct}% vs ${expectedUsedPct}%)`);
+      reasons.push(
+        closed
+          ? `เบิกจ่ายไม่ครบ ${usedPct}% (ต่ำกว่าเป้าปลายปี ${expectedUsedPct}% อยู่ ${gap} pp)`
+          : `เบิกช้ากว่าเวลา ${gap} pp (${usedPct}% vs ${expectedUsedPct}%)`
+      );
     }
 
-    // Risk 2: มี activity ไม่รายงาน
-    const projActs = activities.filter((a) => a.project_id === p.id);
+    // Risk 2: มี activity ไม่รายงาน — เช็คเฉพาะตอนปีงบยังเดินอยู่
+    const projActs = closed ? [] : activities.filter((a) => a.project_id === p.id);
     const nowFiscalIdx = toFiscalMonthIndex(new Date().getMonth() + 1);
     const overdueActs = projActs.filter((a) => {
       if (a.status === "completed" || a.status === "cancelled") return false;
@@ -328,13 +363,13 @@ export function computeRiskyProjects(
   let label: string;
   if (riskyCount === 0) {
     status = "good";
-    label = `🟢 ไม่มีเสี่ยง`;
+    label = closed ? `🟢 ปิดปีครบทุกโครงการ` : `🟢 ไม่มีเสี่ยง`;
   } else if (riskyCount <= 2) {
     status = "warning";
-    label = `🟡 เสี่ยง ${riskyCount} โครงการ`;
+    label = closed ? `🟡 เบิกไม่ครบ ${riskyCount} โครงการ` : `🟡 เสี่ยง ${riskyCount} โครงการ`;
   } else {
-    status = "critical";
-    label = `🔴 เสี่ยง ${riskyCount} โครงการ`;
+    status = closed ? "warning" : "critical";
+    label = closed ? `🟡 เบิกไม่ครบ ${riskyCount} โครงการ` : `🔴 เสี่ยง ${riskyCount} โครงการ`;
   }
 
   return {
@@ -347,6 +382,9 @@ export function computeRiskyProjects(
     all: risky,
     status,
     label,
+    closed,
+    carryoverCount: carryover.length,
+    carryoverAmount: carryover.reduce((sum, p) => sum + Number(p.budget_total || 0), 0),
   };
 }
 
@@ -373,6 +411,30 @@ export function composeInsightSentence(
   risky: RiskyProjectsSummary
 ): InsightSentence {
   const parts: InsightSentence["parts"] = [];
+
+  // ---- ปีงบปิดแล้ว: ประโยคเป็น "สรุปผลปิดปี" ไม่ใช่ "ต้องเร่งอะไร" ----
+  if (risky.closed) {
+    parts.push({
+      text: `ปิดปีงบแล้ว — เบิกจ่าย ${budget.usedPct}% ของกรอบ`,
+      href: "/executive-summary",
+      severity: budget.usedPct >= 90 ? "good" : "warning",
+    });
+    if (risky.carryoverCount > 0) {
+      parts.push({
+        text: `กันเหลื่อมปี ${risky.carryoverCount} รายการ (${risky.carryoverAmount.toLocaleString("th-TH")} บาท)`,
+        href: "/executive-summary",
+        severity: "good",
+      });
+    }
+    if (risky.riskyCount > 0) {
+      parts.push({
+        text: `เบิกไม่ครบ ${risky.riskyCount} โครงการ`,
+        href: "/projects?filter=risky",
+        severity: "warning",
+      });
+    }
+    return { hasIssues: true, parts, fallback: "" };
+  }
 
   // Part 1: budget — โชว์เฉพาะ behind/critical
   if (budget.status === "behind" || budget.status === "critical") {
