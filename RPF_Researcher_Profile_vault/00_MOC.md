@@ -18,6 +18,7 @@ maintained_by: Worrajak
 ## 🔥 Quick Access
 
 - เริ่มงานใหม่ → ดู [[_project-brief|brief ของ project active]]
+- ดูผลปิดปีงบ 2569 → [[1_Projects/รายงานผลการดำเนินงาน-2569/ปิดปีงบ-2569-บันทึกการทำงาน|บันทึกการทำงาน + ตัวเลขที่ใช้อ้างอิง]]
 - ทำรายงานสิ้นปีงบ → [[1_Projects/รายงานผลการดำเนินงาน-2569/runbook-อัปเดตข้อมูล|runbook อัปเดตข้อมูล + build เล่ม]]
 - เปิดเอกสารตรวจรับ → [[1_Projects/acceptance-2569/_project-brief|Acceptance 2569]]
 - ต้อง deploy → [[DEPLOYMENT]] · [[HANDOFF]]
@@ -31,7 +32,7 @@ maintained_by: Worrajak
 | Project | สถานะ | brief |
 |---------|------|-------|
 | Acceptance 2569 | 🟢 active | [[1_Projects/acceptance-2569/_project-brief\|brief]] |
-| **รายงานผลการดำเนินงาน 2569** | 🟢 active · ครบกำหนด 30 ก.ย. 2569 | [[1_Projects/รายงานผลการดำเนินงาน-2569/_project-brief\|brief]] |
+| **รายงานผลการดำเนินงาน 2569** | ✅ เสร็จ 6 ต.ค. 2569 · เบิกจ่ายปิดปี 93.1% | [[1_Projects/รายงานผลการดำเนินงาน-2569/_project-brief\|brief]] |
 | Dashboard TOR 2569 | 🟢 active | [[1_Projects/dashboard-tor-2569/_project-brief\|brief]] |
 
 ---
