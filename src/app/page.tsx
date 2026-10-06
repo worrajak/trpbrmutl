@@ -103,7 +103,8 @@ export default async function Home() {
 
       {/* Footer — meta info (เล็ก ไม่ใช่ decision) */}
       <p className="text-center text-[0.65rem] text-slate-400 pt-3">
-        ปี {fy} · {activeProjects.length} โครงการ (ไม่รวมยกเลิก) · {activities.length} กิจกรรม ·
+        ปี {fy} · {activeProjects.length} โครงการ (ไม่รวมยกเลิก) ·{" "}
+        {execSummary.counts.activities} กิจกรรม ·
         refresh ทุก 60 วินาที · {new Date().toLocaleDateString("th-TH")}
       </p>
     </div>
