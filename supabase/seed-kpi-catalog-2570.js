@@ -73,16 +73,19 @@ const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_P
   toInsert.forEach((r) =>
     console.log(`   ${r.code.padEnd(8)} เป้า ${String(r.target_count).padStart(4)} ${r.target_unit}   ${r.name_th}`));
 
-  // ⚠️ code เป็น PRIMARY KEY — ใส่ปีสองปีไม่ได้ถ้า key ไม่รวมปี ตรวจก่อนเขียน
-  const clash = toInsert.filter((r) => all.some((a) => a.code === r.code));
-  if (clash.length > 0) {
+  // ตรวจว่า migration 2026-10-07-kpi-catalog-multiyear.sql รันแล้วหรือยัง
+  // ใช้การมีอยู่ของ kpi_targets.fiscal_year เป็นตัวบอก เพราะอยู่ใน transaction เดียวกัน
+  // กับการเปลี่ยน PRIMARY KEY เป็น (code, fiscal_year)
+  const { error: migErr } = await sb.from("kpi_targets").select("fiscal_year").limit(1);
+  if (migErr) {
     console.error(
-      `\n❌ rpf_kpi_catalog ใช้ code เป็น PRIMARY KEY — มี ${clash.length} รหัสซ้ำกับปีเดิม` +
-      `\n   ต้องแก้ primary key เป็น (code, fiscal_year) ก่อน ผ่าน migration` +
-      `\n   ดู supabase/2026-10-07-kpi-catalog-multiyear.sql — ยกเลิก ไม่เขียน DB`
+      `\n❌ ยังไม่ได้รัน migration — kpi_targets.fiscal_year ไม่มี` +
+      `\n   รัน supabase/2026-10-07-kpi-catalog-multiyear.sql ใน Supabase SQL Editor ก่อน` +
+      `\n   (${migErr.message}) — ยกเลิก ไม่เขียน DB`
     );
     process.exit(1);
   }
+  console.log(`  ✓ migration รันแล้ว — PRIMARY KEY รองรับหลายปีงบ`);
 
   if (!COMMIT) { console.log(`\n🟡 DRY-RUN — รัน \`--commit\` เพื่อเขียนจริง`); return; }
 
