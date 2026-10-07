@@ -23,6 +23,7 @@ import {
   fetchActivityReportCount,
 } from "@/lib/supabase-data";
 import { buildExecutiveSummary } from "@/lib/executive-summary";
+import { buildYearTransition } from "@/lib/year-transition";
 import { CURRENT_FY } from "@/lib/fiscal-year";
 import {
   computeBudgetUrgency,
@@ -35,6 +36,7 @@ import InsightHeader from "@/components/dashboard/InsightHeader";
 import HealthTier1 from "@/components/dashboard/HealthTier1";
 import DrillDownTier3 from "@/components/dashboard/DrillDownTier3";
 import ExecSummaryCard from "@/components/dashboard/ExecSummaryCard";
+import YearTransition from "@/components/dashboard/YearTransition";
 
 export const revalidate = 60;
 
@@ -64,11 +66,25 @@ export default async function Home() {
     activities,
     activityReportCount,
   });
+  const transition = buildYearTransition(execSummary);
 
   return (
     <div className="space-y-4">
       {/* TIER 0 — 1 ประโยค "วันนี้ดีไหม?" */}
       <InsightHeader insight={insight} />
+
+      {/* การเปลี่ยนผ่านปีงบ — อยู่บนสุดเพราะเป็นสิ่งที่ต้องตัดสินใจต่อ
+          ซ้าย 2569 ที่ปิดแล้ว · กลาง ทิศทางใหม่ · ขวา 2570 ที่กำลังเริ่ม */}
+      <YearTransition data={transition} compact />
+
+      {/* ---- ด้านล่างนี้คือการรายงานผลของปีที่ปิดแล้ว ---- */}
+      <div className="flex items-center gap-2 pt-1">
+        <span className="h-px flex-1 bg-slate-200" />
+        <span className="text-[0.65rem] font-medium text-slate-400">
+          รายงานผลการดำเนินงาน ปีงบประมาณ {fy}
+        </span>
+        <span className="h-px flex-1 bg-slate-200" />
+      </div>
 
       {/* สรุปผู้บริหาร — การ์ดย่อ · คลิกอ่านฉบับเต็มที่ /executive-summary */}
       <ExecSummaryCard data={execSummary} />

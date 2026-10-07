@@ -4,20 +4,44 @@
  * desktop : ซ้าย (ปีที่ปิด) | กลาง (ทิศทางใหม่) | ขวา (ปีที่เริ่ม)
  * mobile  : เรียงลงมา ซ้าย → กลาง → ขวา พร้อมลูกศรชี้ลง
  */
+import Link from "next/link";
 import type { YearTransition as TData } from "@/lib/year-transition";
 
 const baht = (n: number) => Math.round(n).toLocaleString("th-TH");
 
-export default function YearTransition({ data }: { data: TData }) {
+/**
+ * @param compact โหมดหน้าแรก — ตัดรายการให้สั้นลงและมีลิงก์ไปอ่านฉบับเต็ม
+ *                หน้าแรกเป็นที่สแกน ไม่ใช่ที่อ่านละเอียด
+ */
+export default function YearTransition({
+  data,
+  compact = false,
+}: {
+  data: TData;
+  compact?: boolean;
+}) {
+  const carry = compact ? data.carryForward.slice(0, 2) : data.carryForward;
+  const fixes = compact ? data.fixes.slice(0, 3) : data.fixes;
+  const topics = compact ? data.sampleTopics.slice(0, 3) : data.sampleTopics;
+
   return (
     <section className="rounded-xl bg-white p-4 ring-1 ring-slate-200 sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-slate-800">
           🔄 การเปลี่ยนผ่าน {data.from.fy} → {data.to.fy}
         </h2>
-        <span className="text-[0.65rem] text-slate-400">
-          ลากสิ่งที่ได้ผลไปต่อ · แก้สิ่งที่ยังไม่ได้ผล
-        </span>
+        {compact ? (
+          <Link
+            href="/executive-summary"
+            className="text-[0.7rem] font-medium text-cyan-700 hover:underline"
+          >
+            ดูบทสรุปฉบับเต็ม →
+          </Link>
+        ) : (
+          <span className="text-[0.65rem] text-slate-400">
+            ลากสิ่งที่ได้ผลไปต่อ · แก้สิ่งที่ยังไม่ได้ผล
+          </span>
+        )}
       </div>
 
       <div className="grid items-stretch gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
@@ -39,7 +63,9 @@ export default function YearTransition({ data }: { data: TData }) {
             ))}
           </dl>
 
-          {/* ผลรายโครงการหลัก — เติมให้ช่องซ้ายมีน้ำหนักพอกับอีกสองช่อง */}
+          {/* ผลรายโครงการหลัก — เติมให้ช่องซ้ายมีน้ำหนักพอกับอีกสองช่อง
+              โหมดย่อซ่อนไว้ เพราะหน้าแรกมีการ์ดสุขภาพแสดงข้อมูลชุดนี้อยู่แล้ว */}
+          {!compact && (<>
           <p className="mb-1.5 mt-3 text-[0.65rem] font-bold uppercase tracking-wide text-slate-500">
             เบิกจ่ายรายโครงการหลัก
           </p>
@@ -64,6 +90,7 @@ export default function YearTransition({ data }: { data: TData }) {
               </li>
             ))}
           </ul>
+          </>)}
         </div>
 
         {/* ---------------- กลาง: ทิศทางใหม่ ---------------- */}
@@ -80,7 +107,7 @@ export default function YearTransition({ data }: { data: TData }) {
             ↗ ลากไปต่อ
           </p>
           <ul className="mb-3 space-y-1.5">
-            {data.carryForward.map((c) => (
+            {carry.map((c) => (
               <li
                 key={c.title}
                 className="rounded-md border-l-2 border-emerald-400 bg-emerald-50/60 px-2.5 py-1.5"
@@ -93,9 +120,14 @@ export default function YearTransition({ data }: { data: TData }) {
 
           <p className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-wide text-red-700">
             ⚙ ต้องแก้
+            {compact && data.fixes.length > fixes.length && (
+              <span className="ml-1 font-normal normal-case text-slate-400">
+                ({fixes.length} จาก {data.fixes.length} ข้อ)
+              </span>
+            )}
           </p>
           <ul className="space-y-1.5">
-            {data.fixes.map((f) => (
+            {fixes.map((f) => (
               <li
                 key={f.title}
                 className="rounded-md border-l-2 border-red-400 bg-red-50/50 px-2.5 py-1.5"
@@ -214,7 +246,7 @@ export default function YearTransition({ data }: { data: TData }) {
             ตัวอย่างหัวข้อที่ตั้งธงไว้
           </p>
           <ul className="space-y-1.5">
-            {data.sampleTopics.map((t) => (
+            {topics.map((t) => (
               <li key={t.code} className="rounded-md bg-white px-2.5 py-1.5 ring-1 ring-cyan-100">
                 <p className="text-[0.7rem] font-medium leading-snug text-slate-800">
                   <span className="mr-1 rounded bg-slate-700 px-1 text-[0.65rem] font-bold text-white">
