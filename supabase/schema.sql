@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS kpi_targets (
     unit TEXT,
     verified BOOLEAN DEFAULT FALSE,
     is_additional BOOLEAN DEFAULT FALSE,          -- true = หน.โครงการเพิ่มเองภายหลัง
+    fiscal_year INT NOT NULL DEFAULT 2569,        -- ปีงบของค่าที่รับมา (ดู 2026-10-07-kpi-catalog-multiyear.sql)
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

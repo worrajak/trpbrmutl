@@ -14,6 +14,7 @@
  * (ค่าที่ไม่มีคอลัมน์ใน DB เช่น กรอบงบรายโครงการหลัก และยอดคืนงบประมาณ)
  */
 import type { DBProject, DBKpiCatalog, DBKpiTarget, DBFaculty } from "./supabase-data";
+import { CURRENT_FY, fiscalYearInfo } from "./fiscal-year";
 
 /** กรอบงบประมาณรายโครงการหลัก — จากเอกสารจัดสรรแผนงาน ปีงบประมาณ 2569 */
 export const FRAME_BY_INITIATIVE: Record<string, number> = {
@@ -26,16 +27,32 @@ export const FRAME_TOTAL = 8_000_000;
 /** ยอดคืนงบประมาณ — จากไฟล์งบประมาณฉบับปิดปี (ยังไม่มีคอลัมน์ใน DB) */
 export const RETURNED_BUDGET = 172_105;
 
-/** metadata ของรอบรายงาน */
-export const REPORT_META = {
-  fiscalYear: 2569,
-  periodStart: "1 ตุลาคม 2568",
-  periodEnd: "30 กันยายน 2569",
-  asOf: "30 กันยายน 2569",
-  status: "ปิดปีงบประมาณแล้ว",
-  source: "ไฟล์งบประมาณกลุ่มแผนงานใต้ร่มพระบารมี ฉบับปิดปีงบประมาณ (ปรับปรุง 1 ตุลาคม 2569)",
-  fullReport: "รายงานผลการดำเนินงานฉบับสมบูรณ์ ปีงบประมาณ 2569 (55 หน้า)",
-} as const;
+/** ข้อมูลเฉพาะปี ที่ผูกกับเอกสารต้นทาง ไม่สามารถคำนวณจากวันที่ได้ */
+const SOURCE_BY_FY: Record<number, { asOf: string; source: string; fullReport: string }> = {
+  2569: {
+    asOf: "30 กันยายน 2569",
+    source: "ไฟล์งบประมาณกลุ่มแผนงานใต้ร่มพระบารมี ฉบับปิดปีงบประมาณ (ปรับปรุง 1 ตุลาคม 2569)",
+    fullReport: "รายงานผลการดำเนินงานฉบับสมบูรณ์ ปีงบประมาณ 2569 (57 หน้า)",
+  },
+};
+
+/** metadata ของรอบรายงาน — ส่วนที่คำนวณได้มาจาก fiscalYearInfo */
+export function reportMeta(fy: number = CURRENT_FY) {
+  const info = fiscalYearInfo(fy);
+  const src = SOURCE_BY_FY[fy];
+  return {
+    fiscalYear: fy,
+    periodStart: info.startLabel,
+    periodEnd: info.endLabel,
+    asOf: src?.asOf ?? (info.closed ? info.endLabel : "ข้อมูลล่าสุดในระบบ"),
+    status: info.closed ? "ปิดปีงบประมาณแล้ว" : "อยู่ระหว่างปีงบประมาณ",
+    source: src?.source ?? "ฐานข้อมูลระบบติดตามโครงการ",
+    fullReport: src?.fullReport ?? "ยังไม่มีรายงานฉบับสมบูรณ์ของปีนี้",
+  };
+}
+
+/** ค่าคงที่สำหรับโค้ดเดิมที่ยังอ้าง REPORT_META ตรง ๆ */
+export const REPORT_META = reportMeta(CURRENT_FY);
 
 export const INITIATIVE_LABEL: Record<string, string> = {
   thrust: "ง8-1 ผลักดันเทคโนโลยี นวัตกรรมสู่ชุมชน",
@@ -77,7 +94,7 @@ export interface ExecKpi {
 }
 
 export interface ExecutiveSummary {
-  meta: typeof REPORT_META;
+  meta: ReturnType<typeof reportMeta>;
   verdict: { headline: string; detail: string; severity: Severity };
   headline: ExecLine[];
   initiatives: ExecInitiative[];
@@ -113,6 +130,7 @@ const pct = (a: number, b: number) => (b > 0 ? (a / b) * 100 : 0);
 const baht = (n: number) => Math.round(n).toLocaleString("th-TH");
 
 export function buildExecutiveSummary(args: {
+  fy?: number;
   projects: DBProject[];
   kpiCatalog: DBKpiCatalog[];
   kpiTargets: DBKpiTarget[];
@@ -121,10 +139,10 @@ export function buildExecutiveSummary(args: {
   activityReportCount: number;
 }): ExecutiveSummary {
   const { projects, kpiCatalog, kpiTargets, faculties, activities, activityReportCount } = args;
+  const fy = args.fy ?? CURRENT_FY;
+  const meta = reportMeta(fy);
 
-  const active = projects.filter(
-    (p) => p.status !== "cancelled" && p.fiscal_year === REPORT_META.fiscalYear
-  );
+  const active = projects.filter((p) => p.status !== "cancelled" && p.fiscal_year === fy);
   const ids = new Set(active.map((p) => p.id));
   // นับเฉพาะกิจกรรมของโครงการที่ยังดำเนินการ (ไม่รวมโครงการที่ยกเลิก)
   const activityCount = activities.filter((a) => ids.has(a.project_id)).length;
@@ -349,7 +367,7 @@ export function buildExecutiveSummary(args: {
   };
 
   return {
-    meta: REPORT_META,
+    meta,
     verdict,
     headline,
     initiatives,

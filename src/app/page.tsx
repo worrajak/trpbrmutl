@@ -23,6 +23,7 @@ import {
   fetchActivityReportCount,
 } from "@/lib/supabase-data";
 import { buildExecutiveSummary } from "@/lib/executive-summary";
+import { CURRENT_FY } from "@/lib/fiscal-year";
 import {
   computeBudgetUrgency,
   computeKpiGap,
@@ -38,17 +39,17 @@ import ExecSummaryCard from "@/components/dashboard/ExecSummaryCard";
 export const revalidate = 60;
 
 export default async function Home() {
-  const [projects, activities, kpiCatalog, kpiTargets, faculties, activityReportCount] =
+  const fy = CURRENT_FY;
+  const projects = await fetchProjects(fy);
+  const [activities, kpiCatalog, kpiTargets, faculties, activityReportCount] =
     await Promise.all([
-      fetchProjects(),
-      fetchActivities(),
-      fetchKpiCatalog(),
+      fetchActivities(projects.map((p) => p.id)),
+      fetchKpiCatalog(fy),
       fetchKpiTargetsWithCode(),
       fetchFaculties(),
       fetchActivityReportCount(),
     ]);
 
-  const fy = 2569;
   // fetchProjects ไม่กรอง status='cancelled' — ตัดออกจากทุก compute ที่นี่
   const activeProjects = projects.filter((p) => p.status !== "cancelled");
   const budget = computeBudgetUrgency(activeProjects, fy);

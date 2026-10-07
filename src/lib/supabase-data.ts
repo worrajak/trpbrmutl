@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { CURRENT_FY } from "./fiscal-year";
 
 // ===== Types for Supabase data =====
 
@@ -147,13 +148,13 @@ function sanitizeResponsible(
 
 // ===== Data fetching functions =====
 
-export async function fetchProjects(): Promise<DBProject[]> {
+/** @param fy ปีงบที่ต้องการ · ส่ง null เพื่อดึงทุกปี */
+export async function fetchProjects(fy: number | null = CURRENT_FY): Promise<DBProject[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .order("main_program");
+  let q = supabase.from("projects").select("*").order("main_program");
+  if (fy !== null) q = q.eq("fiscal_year", fy);
+  const { data, error } = await q;
   if (error) {
     console.error("fetchProjects error:", error.message);
     return [];
@@ -181,17 +182,19 @@ export async function fetchProjectById(
   return data;
 }
 
+/**
+ * ตาราง activities ไม่มีคอลัมน์ fiscal_year — ปีงบมาจากโครงการที่กิจกรรมสังกัด
+ * @param projectIds ถ้าส่งมา จะคืนเฉพาะกิจกรรมของโครงการชุดนั้น (ใช้กรองรายปี)
+ */
 export async function fetchActivities(
-  projectId?: string
+  projectIds?: string[]
 ): Promise<DBActivity[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  let query = supabase
-    .from("activities")
-    .select("*")
-    .order("activity_order");
-  if (projectId) query = query.eq("project_id", projectId);
-  const { data, error } = await query;
+  if (projectIds && projectIds.length === 0) return [];
+  let q = supabase.from("activities").select("*").order("activity_order");
+  if (projectIds) q = q.in("project_id", projectIds);
+  const { data, error } = await q;
   if (error) {
     console.error("fetchActivities error:", error.message);
     return [];
@@ -229,12 +232,17 @@ export async function fetchKpiTargetsWithCode(): Promise<DBKpiTarget[]> {
   return data || [];
 }
 
-export async function fetchKpiCatalog(): Promise<DBKpiCatalog[]> {
+/**
+ * @param fy ปีงบของชุดตัวชี้วัด — ต้องกรองเสมอ ไม่งั้นพอมีข้อมูลหลายปี
+ *           จำนวนตัวชี้วัดจะถูกนับรวมข้ามปีและสัดส่วนทุกหน้าจะเพี้ยน
+ */
+export async function fetchKpiCatalog(fy: number = CURRENT_FY): Promise<DBKpiCatalog[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("rpf_kpi_catalog")
     .select("*")
+    .eq("fiscal_year", fy)
     .order("code");
   if (error) {
     console.error("fetchKpiCatalog error:", error.message);

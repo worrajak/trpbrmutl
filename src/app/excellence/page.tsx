@@ -5,6 +5,7 @@ import {
   fetchKpiCatalog,
   fetchKpiTargetsWithCode,
 } from "@/lib/supabase-data";
+import { CURRENT_FY } from "@/lib/fiscal-year";
 import type { DBKpiCatalog, DBKpiTarget } from "@/lib/supabase-data";
 import {
   EXCELLENCE_KPIS,
@@ -76,8 +77,8 @@ const fmtNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("th-TH"
 
 export default async function ExcellencePage() {
   const [allProjects, kpiCatalog, kpiTargets] = await Promise.all([
-    fetchProjects(),
-    fetchKpiCatalog(),
+    fetchProjects(CURRENT_FY),
+    fetchKpiCatalog(CURRENT_FY),
     fetchKpiTargetsWithCode(),
   ]);
   // exclude โครงการที่ถูกยกเลิก (fy=2569 มี 1 row) จากการนับ/จับคู่เป็น default
@@ -96,7 +97,7 @@ export default async function ExcellencePage() {
           🏆 RMUTL Excellence Plan
         </p>
         <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold drop-shadow leading-tight text-white">
-          ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา ปี 2569
+          ตอบยุทธศาสตร์ความเป็นเลิศ มทร.ล้านนา ปี {CURRENT_FY}
         </h1>
         <p className="mt-3 text-sm sm:text-base text-amber-50 max-w-3xl leading-relaxed">
           แสดง mapping ระหว่างโครงการใต้ร่มพระบารมีกับ KPI
@@ -133,7 +134,7 @@ export default async function ExcellencePage() {
         <section>
           <div className="mb-3 flex items-center gap-2">
             <h2 className="text-lg font-bold text-gray-800">
-              📊 ตัวชี้วัด มทร. ปี 2569 — จากฐานข้อมูลจริง
+              📊 ตัวชี้วัด มทร. ปี {CURRENT_FY} — จากฐานข้อมูลจริง
             </h2>
             <div className="flex-1 h-px bg-gradient-to-r from-amber-200 to-transparent" />
             <span className="text-xs text-gray-500">
