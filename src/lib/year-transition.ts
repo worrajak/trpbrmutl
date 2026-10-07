@@ -11,6 +11,7 @@
  * ซึ่งมาจากข้อเสนอในบทที่ 7 ของรายงานฉบับสมบูรณ์
  */
 import type { ExecutiveSummary } from "./executive-summary";
+import { G9_META, G9_TOPICS, summarizeG9, type G9Topic } from "./g9-2570";
 
 export const NEXT_FY = 2570;
 
@@ -26,14 +27,13 @@ export interface FixItem {
   metric: string;
 }
 
-export interface BriefCandidate {
+export interface G9Plan {
   id: string;
-  title: string;
-  location: string | null;
-  planNumber: number | null;
-  budgetMin: number | null;
-  budgetMax: number | null;
-  kpis: string[];
+  name: string;
+  frame: number;
+  topics: number;
+  slots: number;
+  budget: number;
 }
 
 export interface YearTransition {
@@ -53,16 +53,35 @@ export interface YearTransition {
     budgetNote: string;
     carryover: { count: number; amount: number };
     targets: { k: string; v: string }[];
+    /** แผนรับข้อเสนอ ง.9 ปี 2570 — จากร่างภาคผนวกประกอบประกาศ */
+    g9: {
+      status: string;
+      revised: string;
+      source: string;
+      frame: number;
+      open: number;
+      central: number;
+      slots: number;
+      topics: number;
+      climatePercent: number;
+      byPlan: G9Plan[];
+      byPhase: { phase: string; slots: number }[];
+    };
   };
-  briefs: BriefCandidate[];
+  /** ตัวอย่างหัวข้อที่จะเปิดประกาศ ง.9 */
+  sampleTopics: G9Topic[];
 }
 
 const baht = (n: number) => Math.round(n).toLocaleString("th-TH");
 
-export function buildYearTransition(
-  exec: ExecutiveSummary,
-  briefs: BriefCandidate[]
-): YearTransition {
+export function buildYearTransition(exec: ExecutiveSummary): YearTransition {
+  const g9 = summarizeG9();
+  // ตัวอย่างหัวข้อ: เลือกหัวข้อที่เปิดรับมากสุดของแต่ละแผนงาน อย่างละ 2 รายการ
+  const sampleTopics = g9.byPlan.flatMap((p) =>
+    G9_TOPICS.filter((t) => t.plan === p.id)
+      .sort((a, b) => b.slots * b.budgetEach - a.slots * a.budgetEach)
+      .slice(0, 2)
+  );
   const primary = exec.kpis.find((k) => k.isPrimary);
   const lowKpis = exec.kpis.filter((k) => !k.isPrimary && k.percent < 20);
   const fullyDisbursed = exec.faculties.filter((f) => f.percent >= 99.5).length;
@@ -171,18 +190,29 @@ export function buildYearTransition(
       fy: NEXT_FY,
       label: `ปีงบประมาณ ${NEXT_FY}`,
       status: "เริ่มแล้ว",
-      budgetNote:
-        "ยังไม่ได้รับกรอบงบประมาณและตัวชี้วัดอย่างเป็นทางการ ตัวเลขฝั่งนี้จึงเป็นเป้าหมายเชิงกระบวนการจากข้อเสนอในบทที่ 7",
+      budgetNote: `แผนรับข้อเสนอ ง.9 ยังเป็น${G9_META.status} (ปรับปรุง ${G9_META.revised}) ยังไม่ใช่ประกาศฉบับทางการ · ${G9_META.note}`,
       carryover: { count: exec.outlook.items.length, amount: exec.outlook.total },
       targets: [
         { k: "รายงานผลเข้าระบบ", v: "ไม่น้อยกว่า 80% ของกิจกรรม" },
         { k: "เบิกจ่ายสิ้นไตรมาส 3", v: "ไม่น้อยกว่า 70%" },
         { k: "หน่วยงานที่ปิดปีต่ำกว่า 80%", v: "ไม่มี" },
-        { k: "ตัวชี้วัดเครือข่ายและเชิงพาณิชย์", v: "เหนือ 40%" },
         { k: "SDG และพื้นที่รายโครงการ", v: "ครบทุกโครงการ" },
       ],
+      g9: {
+        status: G9_META.status,
+        revised: G9_META.revised,
+        source: G9_META.source,
+        frame: g9.frame,
+        open: g9.budget,
+        central: g9.central,
+        slots: g9.slots,
+        topics: g9.topics,
+        climatePercent: g9.climatePercent,
+        byPlan: g9.byPlan,
+        byPhase: g9.byPhase,
+      },
     },
 
-    briefs,
+    sampleTopics,
   };
 }

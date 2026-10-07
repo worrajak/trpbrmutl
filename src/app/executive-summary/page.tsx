@@ -19,31 +19,6 @@ import {
 import { buildExecutiveSummary, REPORT_META } from "@/lib/executive-summary";
 import { buildYearTransition } from "@/lib/year-transition";
 import YearTransition from "@/components/dashboard/YearTransition";
-import { getSupabase } from "@/lib/supabase";
-
-/** โจทย์ที่เปิดรับอยู่ — ใช้เป็นตัวอย่างโครงการที่จะเรียกแบบ ง.9 ในปีถัดไป */
-async function fetchOpenBriefs() {
-  const supabase = getSupabase();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("research_briefs")
-    .select("id, title, location, plan_number, budget_min, budget_max, target_kpis")
-    .eq("status", "open")
-    .order("plan_number");
-  if (error) {
-    console.error("fetchOpenBriefs error:", error.message);
-    return [];
-  }
-  return (data || []).map((b) => ({
-    id: b.id as string,
-    title: b.title as string,
-    location: (b.location as string) || null,
-    planNumber: (b.plan_number as number) ?? null,
-    budgetMin: (b.budget_min as number) ?? null,
-    budgetMax: (b.budget_max as number) ?? null,
-    kpis: (b.target_kpis as string[]) || [],
-  }));
-}
 
 export const revalidate = 60;
 
@@ -122,7 +97,6 @@ export default async function ExecutiveSummaryPage() {
       fetchFaculties(),
       fetchActivityReportCount(),
     ]);
-  const briefs = await fetchOpenBriefs();
 
   const d = buildExecutiveSummary({
     projects,
@@ -132,7 +106,7 @@ export default async function ExecutiveSummaryPage() {
     activities,
     activityReportCount,
   });
-  const transition = buildYearTransition(d, briefs);
+  const transition = buildYearTransition(d);
 
   return (
     <div className="space-y-3">

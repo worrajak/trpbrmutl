@@ -4,16 +4,9 @@
  * desktop : ซ้าย (ปีที่ปิด) | กลาง (ทิศทางใหม่) | ขวา (ปีที่เริ่ม)
  * mobile  : เรียงลงมา ซ้าย → กลาง → ขวา พร้อมลูกศรชี้ลง
  */
-import Link from "next/link";
 import type { YearTransition as TData } from "@/lib/year-transition";
 
 const baht = (n: number) => Math.round(n).toLocaleString("th-TH");
-
-function budgetRange(min: number | null, max: number | null) {
-  if (!min && !max) return null;
-  if (min && max && min !== max) return `${baht(min)}–${baht(max)} บาท`;
-  return `${baht(max || min || 0)} บาท`;
-}
 
 export default function YearTransition({ data }: { data: TData }) {
   return (
@@ -155,46 +148,87 @@ export default function YearTransition({ data }: { data: TData }) {
             ))}
           </dl>
 
-          {/* ตัวอย่างโจทย์ที่จะเรียก ง.9 */}
-          <p className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-wide text-cyan-800">
-            ตัวอย่างโครงการที่จะเรียกแบบ ง.9
-          </p>
-          {data.briefs.length === 0 ? (
-            <p className="rounded-md bg-white px-2.5 py-2 text-[0.65rem] text-slate-400 ring-1 ring-cyan-100">
-              ยังไม่มีโจทย์ที่เปิดรับในระบบ
+          {/* แผนรับข้อเสนอ ง.9 ปี 2570 */}
+          <div className="mb-2.5 rounded-md bg-white px-2.5 py-2 ring-1 ring-cyan-100">
+            <div className="flex flex-wrap items-baseline justify-between gap-1">
+              <p className="text-[0.65rem] font-bold uppercase tracking-wide text-cyan-800">
+                แผนเปิดรับข้อเสนอ ง.9
+              </p>
+              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-900">
+                {data.to.g9.status}
+              </span>
+            </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <div className="rounded bg-cyan-50/70 px-2 py-1">
+                <p className="text-[0.65rem] text-slate-500">เปิดรับ</p>
+                <p className="text-sm font-bold tabular-nums text-slate-800">
+                  {data.to.g9.slots} โครงการ
+                </p>
+                <p className="text-[0.65rem] text-slate-400">{data.to.g9.topics} หัวข้อ</p>
+              </div>
+              <div className="rounded bg-cyan-50/70 px-2 py-1">
+                <p className="text-[0.65rem] text-slate-500">วงเงินที่เปิดรับ</p>
+                <p className="text-sm font-bold tabular-nums text-slate-800">
+                  {baht(data.to.g9.open)}
+                </p>
+                <p className="text-[0.65rem] text-slate-400">
+                  จากกรอบ {baht(data.to.g9.frame)} บาท
+                </p>
+              </div>
+            </div>
+            <p className="mt-1.5 text-[0.65rem] leading-snug text-slate-500">
+              ระยะ{" "}
+              {data.to.g9.byPhase.map((p, i) => (
+                <span key={p.phase}>
+                  {i > 0 && " · "}
+                  {p.phase} {p.slots} โครงการ
+                </span>
+              ))}
             </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {data.briefs.map((b) => {
-                const range = budgetRange(b.budgetMin, b.budgetMax);
-                return (
-                  <li key={b.id}>
-                    <Link
-                      href={`/briefs/${b.id}`}
-                      className="block rounded-md bg-white px-2.5 py-1.5 ring-1 ring-cyan-100 transition hover:ring-cyan-300"
-                    >
-                      <p className="text-[0.7rem] font-medium leading-snug text-slate-800">
-                        {b.title}
-                      </p>
-                      <p className="mt-0.5 text-[0.65rem] text-slate-400">
-                        {b.planNumber ? `แผนงานที่ ${b.planNumber}` : null}
-                        {b.planNumber && (b.location || range) ? " · " : null}
-                        {b.location}
-                        {b.location && range ? " · " : null}
-                        {range}
-                      </p>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <Link
-            href="/briefs"
-            className="mt-2 block text-right text-[0.7rem] font-medium text-cyan-700 hover:underline"
-          >
-            ดูโจทย์ทั้งหมด →
-          </Link>
+            <p className="text-[0.65rem] leading-snug text-slate-500">
+              ภูมิอากาศเป็นสาระหลัก {data.to.g9.climatePercent.toFixed(0)}% ของวงเงิน ·
+              ส่วนกลาง {baht(data.to.g9.central)} บาท
+            </p>
+          </div>
+
+          {/* รายแผนงาน */}
+          <ul className="mb-2.5 space-y-1">
+            {data.to.g9.byPlan.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-baseline justify-between gap-2 rounded-md bg-white px-2.5 py-1 ring-1 ring-cyan-100"
+              >
+                <span className="text-[0.65rem] leading-snug text-slate-600">
+                  <span className="font-bold text-slate-700">แผนงาน {p.id}</span> {p.name}
+                </span>
+                <span className="flex-shrink-0 text-right text-[0.65rem] font-bold tabular-nums text-cyan-800">
+                  {p.slots} โครงการ
+                  <span className="block font-normal text-slate-400">{baht(p.budget)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {/* ตัวอย่างหัวข้อ */}
+          <p className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-wide text-cyan-800">
+            ตัวอย่างหัวข้อที่ตั้งธงไว้
+          </p>
+          <ul className="space-y-1.5">
+            {data.sampleTopics.map((t) => (
+              <li key={t.code} className="rounded-md bg-white px-2.5 py-1.5 ring-1 ring-cyan-100">
+                <p className="text-[0.7rem] font-medium leading-snug text-slate-800">
+                  <span className="mr-1 rounded bg-slate-700 px-1 text-[0.65rem] font-bold text-white">
+                    {t.code}
+                  </span>
+                  {t.title}
+                </p>
+                <p className="mt-0.5 text-[0.65rem] text-slate-400">
+                  {t.phase} · {t.months} · รับ {t.slots} × {baht(t.budgetEach)} บาท · {t.track}
+                  {t.climateCore ? " · ภูมิอากาศ" : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
