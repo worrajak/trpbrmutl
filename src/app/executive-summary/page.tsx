@@ -17,6 +17,33 @@ import {
   fetchActivityReportCount,
 } from "@/lib/supabase-data";
 import { buildExecutiveSummary, REPORT_META } from "@/lib/executive-summary";
+import { buildYearTransition } from "@/lib/year-transition";
+import YearTransition from "@/components/dashboard/YearTransition";
+import { getSupabase } from "@/lib/supabase";
+
+/** โจทย์ที่เปิดรับอยู่ — ใช้เป็นตัวอย่างโครงการที่จะเรียกแบบ ง.9 ในปีถัดไป */
+async function fetchOpenBriefs() {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("research_briefs")
+    .select("id, title, location, plan_number, budget_min, budget_max, target_kpis")
+    .eq("status", "open")
+    .order("plan_number");
+  if (error) {
+    console.error("fetchOpenBriefs error:", error.message);
+    return [];
+  }
+  return (data || []).map((b) => ({
+    id: b.id as string,
+    title: b.title as string,
+    location: (b.location as string) || null,
+    planNumber: (b.plan_number as number) ?? null,
+    budgetMin: (b.budget_min as number) ?? null,
+    budgetMax: (b.budget_max as number) ?? null,
+    kpis: (b.target_kpis as string[]) || [],
+  }));
+}
 
 export const revalidate = 60;
 
@@ -95,6 +122,7 @@ export default async function ExecutiveSummaryPage() {
       fetchFaculties(),
       fetchActivityReportCount(),
     ]);
+  const briefs = await fetchOpenBriefs();
 
   const d = buildExecutiveSummary({
     projects,
@@ -104,6 +132,7 @@ export default async function ExecutiveSummaryPage() {
     activities,
     activityReportCount,
   });
+  const transition = buildYearTransition(d, briefs);
 
   return (
     <div className="space-y-3">
@@ -120,6 +149,18 @@ export default async function ExecutiveSummaryPage() {
           ปีงบประมาณ {d.meta.fiscalYear} · {d.meta.periodStart} ถึง {d.meta.periodEnd} ·{" "}
           {d.meta.status}
         </p>
+      </div>
+
+      {/* การเปลี่ยนผ่านปีงบประมาณ — อยู่บนสุดเพราะเป็นสิ่งที่ต้องตัดสินใจต่อ */}
+      <YearTransition data={transition} />
+
+      {/* ---- ด้านล่างนี้คือการรายงานผลปีงบประมาณที่ปิดแล้ว ---- */}
+      <div className="flex items-center gap-2 pt-1">
+        <span className="h-px flex-1 bg-slate-200" />
+        <span className="text-[0.65rem] font-medium text-slate-400">
+          รายงานผลการดำเนินงาน ปีงบประมาณ {d.meta.fiscalYear}
+        </span>
+        <span className="h-px flex-1 bg-slate-200" />
       </div>
 
       {/* คำตัดสิน */}
