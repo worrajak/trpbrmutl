@@ -80,7 +80,7 @@ export default async function Home() {
       {/* ---- ด้านล่างนี้คือการรายงานผลของปีที่ปิดแล้ว ---- */}
       <div className="flex items-center gap-2 pt-1">
         <span className="h-px flex-1 bg-slate-200" />
-        <span className="text-[0.65rem] font-medium text-slate-400">
+        <span className="text-[0.8rem] font-medium text-slate-400">
           รายงานผลการดำเนินงาน ปีงบประมาณ {fy}
         </span>
         <span className="h-px flex-1 bg-slate-200" />
@@ -122,7 +122,7 @@ export default async function Home() {
       <DrillDownTier3 />
 
       {/* Footer — meta info (เล็ก ไม่ใช่ decision) */}
-      <p className="text-center text-[0.65rem] text-slate-400 pt-3">
+      <p className="text-center text-[0.8rem] text-slate-400 pt-3">
         ปี {fy} · {activeProjects.length} โครงการ (ไม่รวมยกเลิก) ·{" "}
         {execSummary.counts.activities} กิจกรรม ·
         refresh ทุก 60 วินาที · {new Date().toLocaleDateString("th-TH")}

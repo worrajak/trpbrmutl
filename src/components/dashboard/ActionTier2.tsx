@@ -97,7 +97,7 @@ export default function ActionTier2({
                     ))}
                   </ul>
                   {p.responsible && (
-                    <p className="mt-1.5 text-[0.7rem] text-slate-600">
+                    <p className="mt-1.5 text-[0.88rem] text-slate-600">
                       👤 ผู้รับผิดชอบ: <strong>{p.responsible}</strong>
                     </p>
                   )}

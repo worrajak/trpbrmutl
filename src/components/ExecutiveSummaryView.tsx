@@ -71,7 +71,7 @@ function Section({
   return (
     <section className="rounded-xl bg-white p-4 ring-1 ring-slate-200 sm:p-5">
       <h2 className="mb-3 flex items-baseline gap-2 text-sm font-bold text-slate-800">
-        <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-700 text-[0.65rem] font-bold text-white">
+        <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-cyan-700 text-[0.8rem] font-bold text-white">
           {no}
         </span>
         {title}
@@ -107,14 +107,14 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
     <div className="space-y-3">
       {/* หัวเรื่อง */}
       <div className="rounded-xl bg-gradient-to-br from-cyan-800 to-slate-800 p-5 text-white">
-        <Link href="/" className="text-[0.72rem] text-cyan-200 hover:text-white">
+        <Link href="/" className="text-[0.9rem] text-cyan-200 hover:text-white">
           ← กลับหน้าแรก
         </Link>
         <h1 className="mt-1.5 text-lg font-bold sm:text-xl">บทสรุปผู้บริหาร</h1>
         <p className="text-sm text-cyan-100">
           กลุ่มแผนงานใต้ร่มพระบารมี มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา
         </p>
-        <p className="mt-2 text-[0.72rem] text-cyan-200">
+        <p className="mt-2 text-[0.9rem] text-cyan-200">
           ปีงบประมาณ {d.meta.fiscalYear} · {d.meta.periodStart} ถึง {d.meta.periodEnd} ·{" "}
           {d.meta.status}
         </p>
@@ -122,7 +122,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
         {/* เลือกปีงบ — ขึ้นเฉพาะเมื่อมีข้อมูลมากกว่าหนึ่งปี */}
         {AVAILABLE_FY.length > 1 && (
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-[0.65rem] text-cyan-300">ดูปีงบ</span>
+            <span className="text-[0.8rem] text-cyan-300">ดูปีงบ</span>
             {AVAILABLE_FY.map((y) => {
               const info = fiscalYearInfo(y);
               const active = y === fy;
@@ -130,7 +130,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
                 <Link
                   key={y}
                   href={`/executive-summary/${y}`}
-                  className={`rounded-full px-2.5 py-0.5 text-[0.7rem] font-medium transition ${
+                  className={`rounded-full px-2.5 py-0.5 text-[0.88rem] font-medium transition ${
                     active
                       ? "bg-white text-cyan-900"
                       : "bg-white/15 text-cyan-100 hover:bg-white/25"
@@ -151,7 +151,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
       {/* ---- ด้านล่างนี้คือการรายงานผลปีงบประมาณที่ปิดแล้ว ---- */}
       <div className="flex items-center gap-2 pt-1">
         <span className="h-px flex-1 bg-slate-200" />
-        <span className="text-[0.65rem] font-medium text-slate-400">
+        <span className="text-[0.8rem] font-medium text-slate-400">
           รายงานผลการดำเนินงาน ปีงบประมาณ {d.meta.fiscalYear}
         </span>
         <span className="h-px flex-1 bg-slate-200" />
@@ -182,16 +182,16 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
             >
               <span className="text-xl leading-none">{d.icon}</span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[0.8rem] font-bold text-slate-800">{d.title}</span>
-                <span className="block text-[0.7rem] leading-snug text-slate-500">{d.desc}</span>
-                <span className="mt-0.5 block text-[0.65rem] text-slate-400">
+                <span className="block text-[0.95rem] font-bold text-slate-800">{d.title}</span>
+                <span className="block text-[0.88rem] leading-snug text-slate-500">{d.desc}</span>
+                <span className="mt-0.5 block text-[0.8rem] text-slate-400">
                   PDF · {d.size} · ข้อมูล ณ {REPORT_META.asOf}
                 </span>
               </span>
             </a>
           ))}
         </div>
-        <p className="mt-2 text-[0.65rem] leading-snug text-slate-400">
+        <p className="mt-2 text-[0.8rem] leading-snug text-slate-400">
           เอกสารทั้งสองฉบับใช้ชุดตัวเลขเดียวกับหน้านี้ หากข้อมูลในระบบเปลี่ยนหลังจากนี้
           ตัวเลขบนหน้าเว็บจะอัปเดตก่อน ส่วนไฟล์ PDF จะอัปเดตเมื่อจัดทำเล่มรอบถัดไป
         </p>
@@ -207,8 +207,8 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
             ["แหล่งข้อมูล", d.meta.source],
           ].map(([k, v]) => (
             <div key={k} className="rounded-lg bg-slate-50 px-3 py-2">
-              <dt className="text-[0.65rem] text-slate-500">{k}</dt>
-              <dd className="text-[0.8rem] leading-snug text-slate-800">{v}</dd>
+              <dt className="text-[0.8rem] text-slate-500">{k}</dt>
+              <dd className="text-[0.95rem] leading-snug text-slate-800">{v}</dd>
             </div>
           ))}
         </dl>
@@ -219,7 +219,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {d.headline.map((h) => (
             <div key={h.label} className="rounded-lg bg-slate-50 px-3 py-2.5">
-              <dt className="text-[0.65rem] text-slate-500">{h.label}</dt>
+              <dt className="text-[0.8rem] text-slate-500">{h.label}</dt>
               <dd
                 className={`text-base font-bold tabular-nums ${
                   h.severity ? SEV_TEXT[h.severity] : "text-slate-900"
@@ -227,7 +227,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
               >
                 {h.value}
               </dd>
-              {h.sub && <dd className="text-[0.65rem] text-slate-400">{h.sub}</dd>}
+              {h.sub && <dd className="text-[0.8rem] text-slate-400">{h.sub}</dd>}
             </div>
           ))}
         </dl>
@@ -235,15 +235,15 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
 
       {/* 3 ผลเทียบเป้า */}
       <Section no={3} title="ผลการดำเนินงานเทียบเป้าหมาย">
-        <h3 className="mb-1.5 text-[0.72rem] font-bold text-slate-600">
+        <h3 className="mb-1.5 text-[0.9rem] font-bold text-slate-600">
           ก. งบประมาณรายโครงการหลัก (เทียบกรอบงบประมาณ)
         </h3>
         <div className="space-y-2">
           {d.initiatives.map((i) => (
             <div key={i.id} className="rounded-lg bg-slate-50 px-3 py-2">
               <div className="flex flex-wrap items-baseline justify-between gap-1">
-                <span className="text-[0.8rem] font-medium text-slate-800">{i.label}</span>
-                <span className="text-[0.72rem] tabular-nums text-slate-500">
+                <span className="text-[0.95rem] font-medium text-slate-800">{i.label}</span>
+                <span className="text-[0.9rem] tabular-nums text-slate-500">
                   {baht(i.spent)} / {baht(i.frame)} บาท · {i.projects} รายการ
                 </span>
               </div>
@@ -255,7 +255,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
                   />
                 </div>
                 <span
-                  className={`w-10 text-right text-[0.72rem] font-bold tabular-nums ${
+                  className={`w-10 text-right text-[0.9rem] font-bold tabular-nums ${
                     i.percent >= 90 ? SEV_TEXT.good : SEV_TEXT.warning
                   }`}
                 >
@@ -266,11 +266,11 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
           ))}
         </div>
 
-        <h3 className="mb-1.5 mt-4 text-[0.72rem] font-bold text-slate-600">
+        <h3 className="mb-1.5 mt-4 text-[0.9rem] font-bold text-slate-600">
           ข. ตัวชี้วัดที่รับมาดำเนินการ (เทียบเป้าหมายมหาวิทยาลัย)
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-[0.72rem]">
+          <table className="w-full text-[0.9rem]">
             <thead>
               <tr className="border-b border-slate-200 text-left text-slate-500">
                 <th className="py-1.5 pr-2 font-medium">ตัวชี้วัด</th>
@@ -288,7 +288,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
                     </span>{" "}
                     <span className="text-slate-500">{k.name}</span>
                     {k.isPrimary && (
-                      <span className="ml-1 rounded bg-cyan-100 px-1 text-[0.65rem] font-bold text-cyan-800">
+                      <span className="ml-1 rounded bg-cyan-100 px-1 text-[0.8rem] font-bold text-cyan-800">
                         เป้าของกลุ่มโดยตรง
                       </span>
                     )}
@@ -307,16 +307,16 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-[0.65rem] leading-snug text-slate-400">
+        <p className="mt-2 text-[0.8rem] leading-snug text-slate-400">
           เป้าหมายในคอลัมน์ &ldquo;เป้า&rdquo; เป็นเป้าระดับมหาวิทยาลัย
           กลุ่มแผนงานเป็นผู้สนับสนุนส่วนหนึ่ง ยกเว้นตัวชี้วัดที่กำกับว่าเป็นเป้าของกลุ่มโดยตรง
         </p>
 
-        <h3 className="mb-1.5 mt-4 text-[0.72rem] font-bold text-slate-600">
+        <h3 className="mb-1.5 mt-4 text-[0.9rem] font-bold text-slate-600">
           ค. การเบิกจ่ายรายหน่วยงาน (เทียบงบที่ได้รับโอน)
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-[0.72rem]">
+          <table className="w-full text-[0.9rem]">
             <thead>
               <tr className="border-b border-slate-200 text-left text-slate-500">
                 <th className="py-1.5 pr-2 font-medium">หน่วยงาน</th>
@@ -351,12 +351,12 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
       <Section no={4} title="ข้อค้นพบสำคัญ">
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <h3 className="mb-1.5 text-[0.72rem] font-bold text-emerald-700">จุดแข็ง</h3>
+            <h3 className="mb-1.5 text-[0.9rem] font-bold text-emerald-700">จุดแข็ง</h3>
             <ul className="space-y-1.5">
               {d.findings.strengths.map((s, i) => (
                 <li
                   key={i}
-                  className="rounded-lg border-l-2 border-emerald-400 bg-emerald-50/50 px-2.5 py-1.5 text-[0.72rem] leading-snug text-slate-700"
+                  className="rounded-lg border-l-2 border-emerald-400 bg-emerald-50/50 px-2.5 py-1.5 text-[0.9rem] leading-snug text-slate-700"
                 >
                   {s}
                 </li>
@@ -364,12 +364,12 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
             </ul>
           </div>
           <div>
-            <h3 className="mb-1.5 text-[0.72rem] font-bold text-amber-700">ช่องว่างและความเสี่ยง</h3>
+            <h3 className="mb-1.5 text-[0.9rem] font-bold text-amber-700">ช่องว่างและความเสี่ยง</h3>
             <ul className="space-y-1.5">
               {d.findings.gaps.map((s, i) => (
                 <li
                   key={i}
-                  className="rounded-lg border-l-2 border-amber-400 bg-amber-50/50 px-2.5 py-1.5 text-[0.72rem] leading-snug text-slate-700"
+                  className="rounded-lg border-l-2 border-amber-400 bg-amber-50/50 px-2.5 py-1.5 text-[0.9rem] leading-snug text-slate-700"
                 >
                   {s}
                 </li>
@@ -385,7 +385,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
           {d.limitations.map((s, i) => (
             <li
               key={i}
-              className="rounded-lg border-l-2 border-slate-300 bg-slate-50 px-2.5 py-1.5 text-[0.72rem] leading-snug text-slate-600"
+              className="rounded-lg border-l-2 border-slate-300 bg-slate-50 px-2.5 py-1.5 text-[0.9rem] leading-snug text-slate-600"
             >
               {s}
             </li>
@@ -398,12 +398,12 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
         <ol className="space-y-2">
           {d.recommendations.map((r, i) => (
             <li key={r.title} className="flex gap-2.5">
-              <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 text-[0.65rem] font-bold text-white">
+              <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 text-[0.8rem] font-bold text-white">
                 {i + 1}
               </span>
               <div>
-                <p className="text-[0.8rem] font-bold text-slate-800">{r.title}</p>
-                <p className="text-[0.72rem] leading-snug text-slate-600">{r.detail}</p>
+                <p className="text-[0.95rem] font-bold text-slate-800">{r.title}</p>
+                <p className="text-[0.9rem] leading-snug text-slate-600">{r.detail}</p>
               </div>
             </li>
           ))}
@@ -412,7 +412,7 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
 
       {/* 7 งานที่ต่อเนื่อง */}
       <Section no={7} title="งานที่ต่อเนื่องไปปีงบประมาณ 2570">
-        <p className="mb-2 text-[0.8rem] text-slate-600">
+        <p className="mb-2 text-[0.95rem] text-slate-600">
           ได้รับอนุมัติให้ขยายเวลาการใช้งบประมาณ {d.outlook.items.length} รายการ วงเงินรวม{" "}
           <span className="font-bold text-slate-900">{baht(d.outlook.total)}</span> บาท
         </p>
@@ -422,13 +422,13 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
               key={it.name}
               className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
             >
-              <span className="text-[0.72rem] leading-snug text-slate-700">
+              <span className="text-[0.9rem] leading-snug text-slate-700">
                 {it.initiative && (
                   <span className="mr-1.5 font-bold text-slate-500">{it.initiative}</span>
                 )}
                 {it.name}
               </span>
-              <span className="flex-shrink-0 text-[0.72rem] font-bold tabular-nums text-slate-800">
+              <span className="flex-shrink-0 text-[0.9rem] font-bold tabular-nums text-slate-800">
                 {baht(it.amount)}
               </span>
             </li>
@@ -451,12 +451,12 @@ export default async function ExecutiveSummaryView({ fy = CURRENT_FY }: { fy?: n
             <p className="text-sm font-bold text-slate-800">
               {l.icon} {l.t}
             </p>
-            <p className="text-[0.7rem] text-slate-500">{l.d}</p>
+            <p className="text-[0.88rem] text-slate-500">{l.d}</p>
           </Link>
         ))}
       </div>
 
-      <p className="pt-2 text-center text-[0.65rem] leading-snug text-slate-400">
+      <p className="pt-2 text-center text-[0.8rem] leading-snug text-slate-400">
         ตัวเลขทุกจำนวนคำนวณจากฐานข้อมูลระบบติดตามโครงการโดยตรง (refresh ทุก 60 วินาที)
         <br />
         รายละเอียดฉบับเต็มอยู่ใน {d.meta.fullReport}

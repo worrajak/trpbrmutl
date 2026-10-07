@@ -38,7 +38,7 @@ export default function ExecSummaryCard({ data }: { data: ExecutiveSummary }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-slate-800">📋 สรุปผู้บริหาร</h2>
-        <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ${t.chip}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[0.8rem] font-bold ${t.chip}`}>
           {data.meta.status} · {data.meta.asOf}
         </span>
       </div>
@@ -51,7 +51,7 @@ export default function ExecSummaryCard({ data }: { data: ExecutiveSummary }) {
           <div className="absolute inset-y-0 left-0 bg-slate-300" style={{ width: `${pctCarry}%` }} />
           <div className={`absolute inset-y-0 left-0 ${t.bar}`} style={{ width: `${pctOfFrame}%` }} />
         </div>
-        <p className="mt-1 text-[0.65rem] text-slate-500">
+        <p className="mt-1 text-[0.8rem] text-slate-500">
           เบิกจ่าย {data.budget.percentOfFrame.toFixed(1)}% · รวมเงินกันเหลื่อมปี{" "}
           {data.budget.percentWithCarryover.toFixed(1)}% ของกรอบ {baht(data.budget.frame)} บาท
         </p>
@@ -60,22 +60,22 @@ export default function ExecSummaryCard({ data }: { data: ExecutiveSummary }) {
       <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {figures.map((f) => (
           <div key={f.k} className="rounded-lg bg-slate-50 px-2.5 py-2">
-            <dt className="text-[0.65rem] text-slate-500">{f.k}</dt>
+            <dt className="text-[0.8rem] text-slate-500">{f.k}</dt>
             <dd className="text-sm font-bold tabular-nums text-slate-900">{f.v}</dd>
-            <dd className="text-[0.65rem] text-slate-400">{f.u}</dd>
+            <dd className="text-[0.8rem] text-slate-400">{f.u}</dd>
           </div>
         ))}
       </dl>
 
       <div className="mt-3 space-y-1.5">
         {topStrength && (
-          <p className="text-[0.72rem] leading-snug text-slate-600">
+          <p className="text-[0.9rem] leading-snug text-slate-600">
             <span className="mr-1 font-bold text-emerald-700">ผลสำเร็จ</span>
             {topStrength}
           </p>
         )}
         {topGap && (
-          <p className="text-[0.72rem] leading-snug text-slate-600">
+          <p className="text-[0.9rem] leading-snug text-slate-600">
             <span className="mr-1 font-bold text-amber-700">ต้องแก้</span>
             {topGap}
           </p>
@@ -89,18 +89,18 @@ export default function ExecSummaryCard({ data }: { data: ExecutiveSummary }) {
 
     {/* แถวดาวน์โหลด — อยู่นอก Link เพราะ <a> ซ้อนใน <a> ไม่ได้ */}
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2.5">
-      <span className="text-[0.65rem] text-slate-400">ดาวน์โหลด</span>
+      <span className="text-[0.8rem] text-slate-400">ดาวน์โหลด</span>
       <a
         href="/reports/RPF2569-annual-report.pdf"
         download="รายงานผลการดำเนินงาน-ใต้ร่มพระบารมี-2569-ฉบับสมบูรณ์.pdf"
-        className="text-[0.72rem] font-medium text-cyan-700 hover:underline"
+        className="text-[0.9rem] font-medium text-cyan-700 hover:underline"
       >
         📕 เล่มฉบับสมบูรณ์ (57 หน้า)
       </a>
       <a
         href="/reports/RPF2569-executive-summary.pdf"
         download="บทสรุปผู้บริหาร-ใต้ร่มพระบารมี-2569.pdf"
-        className="text-[0.72rem] font-medium text-cyan-700 hover:underline"
+        className="text-[0.9rem] font-medium text-cyan-700 hover:underline"
       >
         📄 บทสรุป 2 หน้า
       </a>

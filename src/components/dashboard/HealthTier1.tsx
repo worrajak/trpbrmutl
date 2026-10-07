@@ -58,15 +58,15 @@ function HealthCard({ href, icon, title, bigText, compareText, statusLabel, stat
       href={href}
       className={`rounded-xl ring-1 px-4 py-3.5 transition hover:shadow-md hover:scale-[1.01] ${bg}`}
     >
-      <p className="text-xs uppercase tracking-wider text-slate-600 font-medium flex items-center gap-1.5">
+      <p className="text-[0.9rem] uppercase tracking-wider text-slate-600 font-medium flex items-center gap-1.5">
         <span className="text-sm">{icon}</span>
         <span>{title}</span>
       </p>
       <p className={`mt-1 text-3xl font-bold leading-tight ${text}`}>{bigText}</p>
       <div className="mt-2 flex items-baseline justify-between gap-2">
-        <p className="text-xs text-slate-600 leading-tight">{compareText}</p>
+        <p className="text-[0.85rem] text-slate-600 leading-snug">{compareText}</p>
       </div>
-      <p className={`mt-1.5 text-xs font-bold ${text}`}>{statusLabel}</p>
+      <p className={`mt-1.5 text-[0.9rem] font-bold ${text}`}>{statusLabel}</p>
     </Link>
   );
 }

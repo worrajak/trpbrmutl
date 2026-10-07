@@ -23,7 +23,7 @@ export default function InsightHeader({ insight }: { insight: InsightSentence })
   if (!insight.hasIssues) {
     return (
       <div className={`rounded-xl ring-1 px-4 py-3 ${COLOR.good.bg}`}>
-        <p className={`text-sm font-bold ${COLOR.good.text}`}>{insight.fallback}</p>
+        <p className={`text-base font-bold ${COLOR.good.text}`}>{insight.fallback}</p>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export default function InsightHeader({ insight }: { insight: InsightSentence })
     <div className={`rounded-xl ring-1 px-4 py-3 ${c.bg}`}>
       <div className="flex items-start gap-3">
         <span className={`mt-1.5 inline-flex h-2.5 w-2.5 flex-shrink-0 rounded-full ${c.dot} animate-pulse`} />
-        <p className={`text-sm sm:text-base font-bold leading-snug ${c.text}`}>
+        <p className={`text-base sm:text-lg font-bold leading-snug ${c.text}`}>
           <span className="opacity-70 mr-1">🎯 วันนี้:</span>
           {insight.parts.map((p, i) => (
             <span key={i}>

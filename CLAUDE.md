@@ -58,7 +58,9 @@ Stack: Next.js 14 App Router · Supabase (Postgres + RLS) · Tailwind · OpenRou
 
 ### UI / Tailwind
 - ❌ **ห้าม** `text-[10px]` / `text-[11px]` (pixel ตายตัว ไม่ scale)
-- ✅ **ใช้** `text-[0.65rem]` / `text-[0.72rem]` แทน
+- ❌ **ห้าม** `text-[0.65rem]` / `text-[0.72rem]` — base 17.5px ทำให้ได้ 11-13px user อ่านไม่ออก
+- ✅ **ขนาดเล็กสุดที่ใช้ได้คือ `text-[0.8rem]`** (14px) สำหรับ label/caption เท่านั้น
+- ✅ เนื้อความทั่วไป `text-[0.9rem]`-`text-sm` · หัวข้อย่อย `text-[0.95rem]` ขึ้นไป
 - Mobile-first: stack vertical บน `< sm` ถ้าเสี่ยง overflow
 - Base font: 17.5px desktop · 19px mobile (ใหญ่กว่าเพื่ออ่านง่าย)
 - Sarabun font ผ่าน `next/font/google` ใน layout

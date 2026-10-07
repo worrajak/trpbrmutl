@@ -30,7 +30,7 @@ export default function DrillDownTier3() {
               <span>{l.icon}</span>
               <span>{l.title}</span>
             </p>
-            <p className="mt-0.5 text-[0.7rem] text-slate-500 leading-snug">{l.desc}</p>
+            <p className="mt-0.5 text-[0.88rem] text-slate-500 leading-snug">{l.desc}</p>
           </Link>
         ))}
       </div>
