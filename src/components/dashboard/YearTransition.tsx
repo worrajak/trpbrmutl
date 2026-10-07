@@ -45,6 +45,32 @@ export default function YearTransition({ data }: { data: TData }) {
               </div>
             ))}
           </dl>
+
+          {/* ผลรายโครงการหลัก — เติมให้ช่องซ้ายมีน้ำหนักพอกับอีกสองช่อง */}
+          <p className="mb-1.5 mt-3 text-[0.65rem] font-bold uppercase tracking-wide text-slate-500">
+            เบิกจ่ายรายโครงการหลัก
+          </p>
+          <ul className="space-y-1">
+            {data.from.byInitiative.map((i) => (
+              <li key={i.label} className="rounded-md bg-white px-2.5 py-1.5 ring-1 ring-slate-100">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[0.65rem] text-slate-600">{i.label}</span>
+                  <span className="text-[0.7rem] font-bold tabular-nums text-slate-700">
+                    {i.percent.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full bg-slate-400"
+                    style={{ width: `${Math.min(100, i.percent)}%` }}
+                  />
+                </div>
+                <p className="mt-0.5 text-[0.65rem] tabular-nums text-slate-400">
+                  {baht(i.spent)} บาท
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* ---------------- กลาง: ทิศทางใหม่ ---------------- */}

@@ -42,6 +42,7 @@ export interface YearTransition {
     label: string;
     status: string;
     stats: { k: string; v: string; sub?: string }[];
+    byInitiative: { label: string; percent: number; spent: number }[];
   };
   carryForward: CarryForward[];
   fixes: FixItem[];
@@ -95,6 +96,12 @@ export function buildYearTransition(
           sub: "ไม่มีการบันทึกเลยตลอดปี",
         },
       ],
+      byInitiative: exec.initiatives.map((i) => ({
+        // "ง8-1 ผลักดันเทคโนโลยี นวัตกรรมสู่ชุมชน" -> "ง8-1 ผลักดันเทคโนโลยี"
+        label: i.label.split(" ").slice(0, 2).join(" "),
+        percent: i.percent,
+        spent: i.spent,
+      })),
     },
 
     // ---------------- กลาง: ลากไปต่อ ----------------
