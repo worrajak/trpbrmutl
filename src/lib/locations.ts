@@ -88,8 +88,8 @@ export const locations: ProjectLocation[] = [
   {
     id: "loc-huaynamrin",
     name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำริน",
-    lat: 19.3214,
-    lng: 99.5214,
+    lat: 19.0651,
+    lng: 99.4639,
     province: "เชียงราย",
     subProjectIds: ["sp-swps-21", "sp-swps-22"],
   },
