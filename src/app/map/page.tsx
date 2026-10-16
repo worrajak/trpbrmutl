@@ -12,6 +12,15 @@ const ProjectMap = dynamic(() => import("@/components/ProjectMap"), {
   ),
 });
 
+const JourneyMap = dynamic(() => import("@/components/JourneyMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[480px] items-center justify-center rounded-lg bg-gray-100">
+      <p className="text-[0.9rem] text-gray-500">กำลังโหลดแผนที่...</p>
+    </div>
+  ),
+});
+
 export default function MapPage() {
   const totalLocations = locations.length;
   const locationsWithProjects = locations.filter(
@@ -77,6 +86,16 @@ export default function MapPage() {
 
       {/* Map */}
       <ProjectMap />
+
+      {/* ผลงานย้อนหลังรายปี — ข้อมูลจาก src/lib/journey-map.ts */}
+      <section id="history" className="scroll-mt-20 rounded-lg bg-white p-4 shadow sm:p-6">
+        <h2 className="text-lg font-semibold text-gray-800">เส้นทางผลงาน 2550–2569</h2>
+        <p className="mb-3 text-[0.9rem] text-gray-600">
+          ปีไหน ทำอะไร ที่ไหน ใครเป็นหัวหน้าโครงการ · ถ้าเอกสารไม่ระบุหัวหน้าโครงการ แสดงเป็นกลุ่มแผนงานใต้ร่มพระบารมี ·{" "}
+          <a href="/journey" className="text-cyan-700 hover:underline">ดู 25 ปีการเดินทาง →</a>
+        </p>
+        <JourneyMap />
+      </section>
 
       {/* Location list */}
       <div className="rounded-lg bg-white p-6 shadow">

@@ -230,6 +230,7 @@ export default function JourneyPage() {
       </Section>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[0.9rem]">
+        <Link href="/map#history" className="font-medium text-cyan-700 hover:underline">🗺 แผนที่ผลงานรายปี →</Link>
         <Link href="/foundation" className="font-medium text-cyan-700 hover:underline">📖 ที่มาและ 3 แผนงานปีปัจจุบัน →</Link>
         <Link href="/executive-summary" className="font-medium text-cyan-700 hover:underline">📋 บทสรุปผู้บริหารปี 2569 →</Link>
       </div>
