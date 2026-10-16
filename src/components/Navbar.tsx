@@ -20,6 +20,7 @@ const mainLinks = [
 
 const aboutLinks = [
   { href: "/foundation", label: "📖 ที่มา" },
+  { href: "/journey", label: "🧭 25 ปีการเดินทาง" },
   { href: "/indicators", label: "📊 ตัวชี้วัด" },
   { href: "/sdgs", label: "🌐 SDGs" },
   { href: "/staff", label: "👥 บุคลากร" },
