@@ -165,7 +165,7 @@ export default function JourneyPage() {
           ไม่มีฝ่ายใดเป็นแกนหลักในทุกเรื่อง แต่ละฝ่ายเป็นแกนในมิติของตัวเอง และเป็นแกนรองให้ฝ่ายอื่น
           มทร.ล้านนาเป็นแกนหลักในมิติวิศวกรรมและเทคโนโลยี ส่วนโจทย์ ทิศทางวิจัย นโยบาย และเงิน มาจากอีกสี่ฝ่าย
         </p>
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-5">
           {ACTORS.map((a) => {
             const us = a.key === "rmutl";
             return (
