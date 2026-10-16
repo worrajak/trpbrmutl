@@ -12,9 +12,11 @@
  *   [Y60]    "ผลการดำเนินงานสนับสนุนมูลนิธิโครงการหลวง เดือนมกราคม 2560"
  *   [DB]     ฐานข้อมูลระบบติดตามโครงการ ปีงบ 2569 (เฉพาะโครงการที่ชื่อหรือ site ระบุพื้นที่)
  *
- * พิกัด: ค้นจาก OpenStreetMap (Nominatim) 16 ต.ค. 2569
- *   precise=true  → พบตำแหน่งของศูนย์/สถานที่นั้นเอง
- *   precise=false → ไม่พบในแผนที่ ใช้จุดกลางอำเภอแทน (แสดงคำเตือนใน popup)
+ * พิกัด
+ *   ศูนย์/สถานีโครงการหลวง 28 แห่ง → data/royal-project-stations.csv (ผู้ใช้ให้มา 16 ต.ค. 2569)
+ *   ที่เหลือ → ค้นจาก OpenStreetMap (Nominatim) 16 ต.ค. 2569
+ *   precise=true  → ตำแหน่งของศูนย์/สถานที่นั้นเอง
+ *   precise=false → ไม่มีพิกัดรายศูนย์ ใช้จุดกลางอำเภอแทน (แสดงคำเตือนใน popup)
  */
 
 export const LEAD_FALLBACK = "กลุ่มแผนงานใต้ร่มพระบารมี";
@@ -39,35 +41,35 @@ export interface JourneyPlace {
 }
 
 export const JOURNEY_PLACES: JourneyPlace[] = [
-  { id: "angkhang", name: "สถานีเกษตรหลวงอ่างขาง", province: "เชียงใหม่", lat: 19.9093, lng: 99.0413, precise: true },
-  { id: "huailuek", name: "ศูนย์พัฒนาโครงการหลวงห้วยลึก", province: "เชียงใหม่", lat: 19.5313, lng: 99.0549, precise: true },
-  { id: "nongkhiao", name: "ศูนย์พัฒนาโครงการหลวงหนองเขียว", province: "เชียงใหม่", lat: 19.5358, lng: 98.9462, precise: false },
-  { id: "kaenoi", name: "ศูนย์พัฒนาโครงการหลวงแกน้อย", province: "เชียงใหม่", lat: 19.664, lng: 98.794, precise: true },
-  { id: "mokcham", name: "ศูนย์พัฒนาโครงการหลวงหมอกจ๋าม", province: "เชียงใหม่", lat: 19.9612, lng: 99.3406, precise: false },
-  { id: "nonghoi", name: "ศูนย์พัฒนาโครงการหลวงหนองหอย", province: "เชียงใหม่", lat: 18.954, lng: 98.8797, precise: false },
-  { id: "maesamai", name: "ศูนย์พัฒนาโครงการหลวงแม่สาใหม่", province: "เชียงใหม่", lat: 18.954, lng: 98.8797, precise: false },
-  { id: "maelod", name: "ศูนย์พัฒนาโครงการหลวงแม่หลอด", province: "เชียงใหม่", lat: 19.1895, lng: 98.8672, precise: false },
-  { id: "thungroeng", name: "ศูนย์พัฒนาโครงการหลวงทุ่งเริง", province: "เชียงใหม่", lat: 18.8119, lng: 98.8178, precise: true },
-  { id: "thungrao", name: "ศูนย์พัฒนาโครงการหลวงทุ่งเรา", province: "เชียงใหม่", lat: 18.9015, lng: 98.6502, precise: false },
-  { id: "pangda", name: "สถานีเกษตรหลวงปางดะ", province: "เชียงใหม่", lat: 18.9015, lng: 98.6502, precise: false },
-  { id: "watchan", name: "ศูนย์พัฒนาโครงการหลวงวัดจันทร์", province: "เชียงใหม่", lat: 19.0149, lng: 98.3028, precise: false },
-  { id: "inthanon", name: "สถานีเกษตรหลวงอินทนนท์", province: "เชียงใหม่", lat: 18.3743, lng: 98.5765, precise: false },
-  { id: "khunwang", name: "ศูนย์พัฒนาโครงการหลวงขุนวาง", province: "เชียงใหม่", lat: 18.674, lng: 98.6573, precise: false },
-  { id: "maehae", name: "ศูนย์พัฒนาโครงการหลวงแม่แฮ", province: "เชียงใหม่", lat: 18.5739, lng: 98.3593, precise: false },
-  { id: "khunpae", name: "ศูนย์พัฒนาโครงการหลวงขุนแปะ", province: "เชียงใหม่", lat: 18.3743, lng: 98.5765, precise: false },
-  { id: "thungluang", name: "ศูนย์พัฒนาโครงการหลวงทุ่งหลวง", province: "เชียงใหม่", lat: 18.674, lng: 98.6573, precise: false },
+  { id: "angkhang", name: "สถานีเกษตรหลวงอ่างขาง", province: "เชียงใหม่", lat: 19.9019, lng: 99.0399, precise: true },
+  { id: "huailuek", name: "ศูนย์พัฒนาโครงการหลวงห้วยลึก", province: "เชียงใหม่", lat: 19.3142, lng: 98.8541, precise: true },
+  { id: "nongkhiao", name: "ศูนย์พัฒนาโครงการหลวงหนองเขียว", province: "เชียงใหม่", lat: 19.6841, lng: 98.8214, precise: true },
+  { id: "kaenoi", name: "ศูนย์พัฒนาโครงการหลวงแกน้อย", province: "เชียงใหม่", lat: 19.6787, lng: 98.7905, precise: true },
+  { id: "mokcham", name: "ศูนย์พัฒนาโครงการหลวงหมอกจ๋าม", province: "เชียงใหม่", lat: 20.0541, lng: 99.2141, precise: true },
+  { id: "nonghoi", name: "ศูนย์พัฒนาโครงการหลวงหนองหอย", province: "เชียงใหม่", lat: 18.9312, lng: 98.8241, precise: true },
+  { id: "maesamai", name: "ศูนย์พัฒนาโครงการหลวงแม่สาใหม่", province: "เชียงใหม่", lat: 18.9321, lng: 98.8954, precise: true },
+  { id: "maelod", name: "ศูนย์พัฒนาโครงการหลวงแม่หลอด", province: "เชียงใหม่", lat: 19.1542, lng: 98.7412, precise: true },
+  { id: "thungroeng", name: "ศูนย์พัฒนาโครงการหลวงทุ่งเริง", province: "เชียงใหม่", lat: 18.7891, lng: 98.8324, precise: true },
+  { id: "thungrao", name: "ศูนย์พัฒนาโครงการหลวงทุ่งเรา", province: "เชียงใหม่", lat: 18.9102, lng: 98.8541, precise: true },
+  { id: "pangda", name: "สถานีเกษตรหลวงปางดะ", province: "เชียงใหม่", lat: 18.8789, lng: 98.6653, precise: true },
+  { id: "watchan", name: "ศูนย์พัฒนาโครงการหลวงวัดจันทร์", province: "เชียงใหม่", lat: 19.1214, lng: 98.1542, precise: true },
+  { id: "inthanon", name: "สถานีเกษตรหลวงอินทนนท์", province: "เชียงใหม่", lat: 18.5531, lng: 98.5242, precise: true },
+  { id: "khunwang", name: "ศูนย์พัฒนาโครงการหลวงขุนวาง", province: "เชียงใหม่", lat: 18.4902, lng: 98.5083, precise: true },
+  { id: "maehae", name: "ศูนย์พัฒนาโครงการหลวงแม่แฮ", province: "เชียงใหม่", lat: 18.5214, lng: 98.3214, precise: true },
+  { id: "khunpae", name: "ศูนย์พัฒนาโครงการหลวงขุนแปะ", province: "เชียงใหม่", lat: 18.3116, lng: 98.4801, precise: true },
+  { id: "thungluang", name: "ศูนย์พัฒนาโครงการหลวงทุ่งหลวง", province: "เชียงใหม่", lat: 18.8241, lng: 98.5982, precise: true },
   { id: "khunhuaihaeng", name: "ศูนย์พัฒนาโครงการหลวงขุนห้วยแห้ง", province: "เชียงใหม่", lat: 18.5739, lng: 98.3593, precise: false },
-  { id: "maesapok", name: "ศูนย์พัฒนาโครงการหลวงแม่สะป๊อก", province: "เชียงใหม่", lat: 18.674, lng: 98.6573, precise: false },
-  { id: "monngo", name: "ศูนย์พัฒนาโครงการหลวงม่อนเงาะ", province: "เชียงใหม่", lat: 19.1895, lng: 98.8672, precise: false },
-  { id: "huainamkhun", name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำขุ่น", province: "เชียงราย", lat: 20.2506, lng: 99.6757, precise: false },
-  { id: "huaisompoi", name: "ศูนย์พัฒนาโครงการหลวงห้วยส้มป่อย", province: "เชียงใหม่", lat: 18.3743, lng: 98.5765, precise: false },
-  { id: "huaisiao", name: "ศูนย์พัฒนาโครงการหลวงห้วยเสี้ยว", province: "เชียงใหม่", lat: 18.7243, lng: 98.9002, precise: false },
-  { id: "maepunluang", name: "ศูนย์พัฒนาโครงการหลวงแม่ปูนหลวง", province: "เชียงราย", lat: 19.2719, lng: 99.4508, precise: false },
-  { id: "huainamrin", name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำริน", province: "เชียงราย", lat: 19.0637, lng: 99.4639, precise: true },
-  { id: "sango", name: "ศูนย์พัฒนาโครงการหลวงสะโง๊ะ", province: "เชียงราย", lat: 20.2741, lng: 100.0836, precise: false },
-  { id: "phatang", name: "ศูนย์พัฒนาโครงการหลวงผาตั้ง", province: "เชียงราย", lat: 20.0154, lng: 100.4788, precise: false },
-  { id: "huailaeng", name: "ศูนย์พัฒนาโครงการหลวงห้วยแล้ง", province: "เชียงราย", lat: 20.0154, lng: 100.4788, precise: false },
-  { id: "pangkha", name: "ศูนย์พัฒนาโครงการหลวงปังค่า", province: "พะเยา", lat: 19.2045, lng: 100.3864, precise: false },
+  { id: "maesapok", name: "ศูนย์พัฒนาโครงการหลวงแม่สะป๊อก", province: "เชียงใหม่", lat: 18.7841, lng: 98.5841, precise: true },
+  { id: "monngo", name: "ศูนย์พัฒนาโครงการหลวงม่อนเงาะ", province: "เชียงใหม่", lat: 19.1245, lng: 98.7854, precise: true },
+  { id: "huainamkhun", name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำขุ่น", province: "เชียงราย", lat: 19.5214, lng: 99.5412, precise: true },
+  { id: "huaisompoi", name: "ศูนย์พัฒนาโครงการหลวงห้วยส้มป่อย", province: "เชียงใหม่", lat: 18.4521, lng: 98.5421, precise: true },
+  { id: "huaisiao", name: "ศูนย์พัฒนาโครงการหลวงห้วยเสี้ยว", province: "เชียงใหม่", lat: 18.7421, lng: 98.8741, precise: true },
+  { id: "maepunluang", name: "ศูนย์พัฒนาโครงการหลวงแม่ปูนหลวง", province: "เชียงใหม่", lat: 19.3214, lng: 99.4125, precise: true },
+  { id: "huainamrin", name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำริน", province: "เชียงราย", lat: 19.3214, lng: 99.5214, precise: true },
+  { id: "sango", name: "ศูนย์พัฒนาโครงการหลวงสะโง๊ะ", province: "เชียงราย", lat: 20.3214, lng: 100.0214, precise: true },
+  { id: "phatang", name: "ศูนย์พัฒนาโครงการหลวงผาตั้ง", province: "เชียงราย", lat: 20.3541, lng: 100.2145, precise: true },
+  { id: "huailaeng", name: "ศูนย์พัฒนาโครงการหลวงห้วยแล้ง", province: "เชียงราย", lat: 20.2841, lng: 100.3542, precise: true },
+  { id: "pangkha", name: "ศูนย์พัฒนาโครงการหลวงปังค่า", province: "พะเยา", lat: 19.4521, lng: 100.3214, precise: true },
   { id: "chakkraphan", name: "ศูนย์พัฒนาพันธุ์พืชจักรพันธ์เพ็ญศิริ", province: "เชียงราย", lat: 20.4398, lng: 99.883, precise: false },
   { id: "factory1", name: "โรงงานหลวงอาหารสำเร็จรูปที่ 1 (ฝาง)", province: "เชียงใหม่", lat: 19.9098, lng: 99.1393, precise: false },
   { id: "factory2", name: "โรงงานหลวงอาหารสำเร็จรูปที่ 2 (แม่จัน)", province: "เชียงราย", lat: 20.1471, lng: 99.8532, precise: false },
