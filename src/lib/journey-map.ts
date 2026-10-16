@@ -64,7 +64,7 @@ export const JOURNEY_PLACES: JourneyPlace[] = [
   { id: "huainamkhun", name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำขุ่น", province: "เชียงราย", lat: 19.5214, lng: 99.5412, precise: true },
   { id: "huaisompoi", name: "ศูนย์พัฒนาโครงการหลวงห้วยส้มป่อย", province: "เชียงใหม่", lat: 18.4521, lng: 98.5421, precise: true },
   { id: "huaisiao", name: "ศูนย์พัฒนาโครงการหลวงห้วยเสี้ยว", province: "เชียงใหม่", lat: 18.7421, lng: 98.8741, precise: true },
-  { id: "maepunluang", name: "ศูนย์พัฒนาโครงการหลวงแม่ปูนหลวง", province: "เชียงใหม่", lat: 19.3214, lng: 99.4125, precise: true },
+  { id: "maepunluang", name: "ศูนย์พัฒนาโครงการหลวงแม่ปูนหลวง", province: "เชียงใหม่", lat: 19.333, lng: 99.3139, precise: true },
   { id: "huainamrin", name: "ศูนย์พัฒนาโครงการหลวงห้วยน้ำริน", province: "เชียงราย", lat: 19.3214, lng: 99.5214, precise: true },
   { id: "sango", name: "ศูนย์พัฒนาโครงการหลวงสะโง๊ะ", province: "เชียงราย", lat: 20.3214, lng: 100.0214, precise: true },
   { id: "phatang", name: "ศูนย์พัฒนาโครงการหลวงผาตั้ง", province: "เชียงราย", lat: 20.3541, lng: 100.2145, precise: true },
