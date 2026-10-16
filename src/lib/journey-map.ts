@@ -42,7 +42,7 @@ export interface JourneyPlace {
 
 export const JOURNEY_PLACES: JourneyPlace[] = [
   { id: "angkhang", name: "สถานีเกษตรหลวงอ่างขาง", province: "เชียงใหม่", lat: 19.9019, lng: 99.0399, precise: true },
-  { id: "huailuek", name: "ศูนย์พัฒนาโครงการหลวงห้วยลึก", province: "เชียงใหม่", lat: 19.3142, lng: 98.8541, precise: true },
+  { id: "huailuek", name: "ศูนย์พัฒนาโครงการหลวงห้วยลึก", province: "เชียงใหม่", lat: 19.5314, lng: 99.0549, precise: true },
   { id: "nongkhiao", name: "ศูนย์พัฒนาโครงการหลวงหนองเขียว", province: "เชียงใหม่", lat: 19.6841, lng: 98.8214, precise: true },
   { id: "kaenoi", name: "ศูนย์พัฒนาโครงการหลวงแกน้อย", province: "เชียงใหม่", lat: 19.6787, lng: 98.7905, precise: true },
   { id: "mokcham", name: "ศูนย์พัฒนาโครงการหลวงหมอกจ๋าม", province: "เชียงใหม่", lat: 20.0541, lng: 99.2141, precise: true },
