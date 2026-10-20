@@ -57,7 +57,7 @@ export const G9_TOPICS: G9Topic[] = [
   { code: "2.1.1", plan: "2", title: "สำรวจโจทย์อาชีพและความเสี่ยงภัยภูมิอากาศของชุมชนแบบมีส่วนร่วม ป้อนข้อมูล LifeDB", phase: "3 เดือน", months: "ธ.ค.–ก.พ.", slots: 4, budgetEach: 50000, track: "S1", climateCore: true },
   { code: "2.1.2", plan: "2", title: "สืบสานภูมิปัญญาท้องถิ่นด้วยการวิจัยแบบมีส่วนร่วม สู่ชุดองค์ความรู้", phase: "6 เดือน", months: "ธ.ค.–พ.ค.", slots: 2, budgetEach: 100000, track: "S2", climateCore: false },
   { code: "2.1.3", plan: "2", title: "ชุมชนพื้นที่สูงเข้มแข็งรับมือภัยภูมิอากาศ แผนชุมชนและทักษะรับมือ", phase: "10 เดือน", months: "ธ.ค.–ก.ย.", slots: 1, budgetEach: 200000, track: "S3", climateCore: true },
-  { code: "2.2.1", plan: "2", title: "หลักสูตรระยะสั้นอาชีพทางเลือกช่วงแล้งและหลังน้ำหลาก", phase: "3 เดือน", months: "", slots: 5, budgetEach: 80000, track: "S1", climateCore: true },
+  { code: "2.2.1", plan: "2", title: "หลักสูตรระยะสั้นอาชีพทางเลือกช่วงแล้งและหลังน้ำหลาก", phase: "3 เดือน", months: "ธ.ค.–ก.พ. 3 โครงการ · มี.ค.–พ.ค. 2 โครงการ", slots: 5, budgetEach: 80000, track: "S1", climateCore: true },
   { code: "2.2.2", plan: "2", title: "หลักสูตรอาชีพตามมาตรฐานสมรรถนะ ประเมินโดยหน่วยรับรองภายนอก", phase: "6 เดือน", months: "ธ.ค.–พ.ค.", slots: 2, budgetEach: 150000, track: "S2", climateCore: false },
   { code: "2.2.3", plan: "2", title: "นักศึกษาลงปฏิบัติงานแก้โจทย์ชุมชนผ่านรายวิชาโครงงานและสหกิจ", phase: "6 เดือน", months: "ธ.ค.–พ.ค.", slots: 3, budgetEach: 80000, track: "S1", climateCore: false },
   { code: "2.2.4", plan: "2", title: "ช่างเทคนิคพื้นที่สูงด้านพลังงาน สูบน้ำ และระบบเตือนภัย ต่อยอดหลักสูตรวิศวกรรมพื้นที่สูง", phase: "10 เดือน", months: "ธ.ค.–ก.ย.", slots: 2, budgetEach: 200000, track: "S3", climateCore: true },

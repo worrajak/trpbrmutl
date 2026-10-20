@@ -260,6 +260,12 @@ export default function YearTransition({
               </li>
             ))}
           </ul>
+          <Link
+            href="/g9-2570"
+            className="mt-2 block rounded-md bg-cyan-700 px-2.5 py-1.5 text-center text-[0.85rem] font-bold text-white hover:bg-cyan-800"
+          >
+            (ร่าง) แนวทางโครงการ ปี 2570 · ครบ {data.to.g9.topics} หัวข้อ พร้อมข้อควรระวังในการเขียน ง.9 →
+          </Link>
         </div>
       </div>
 
